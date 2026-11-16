@@ -1,0 +1,5 @@
+# originales PNG de ChatGPT (~25 MB); el sitio usa los .webp
+img/originales/
+.claude/
+__pycache__/
+ruvector.db

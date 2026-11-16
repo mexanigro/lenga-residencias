@@ -1,0 +1,33 @@
+<!doctype html>
+<!-- Vistas limpias para usar como referencia al generar renders (no es parte del sitio) -->
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lenga — vistas de referencia</title>
+  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/plan.css">
+  <style>
+    html, body { margin: 0; height: 100%; background: #F4F2EE; overflow: hidden; }
+    canvas, svg { display: block; width: 100vw; height: 100vh; }
+  </style>
+  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js" } }</script>
+</head>
+<body>
+  <script type="module">
+    import { TYPES } from './js/data.js';
+    import { drawPlan } from './js/plan.js';
+    const q = new URLSearchParams(location.search);
+    if (q.has('plan')) {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      document.body.appendChild(svg);
+      drawPlan(svg, TYPES[q.get('plan')], { areas: false });
+    } else {
+      const { createScene } = await import('./js/scene.js');
+      const c = document.createElement('canvas');
+      document.body.appendChild(c);
+      createScene(c, { shot: true });
+    }
+  </script>
+</body>
+</html>

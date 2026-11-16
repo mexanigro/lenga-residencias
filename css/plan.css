@@ -1,0 +1,30 @@
+/* Planos de unidad (2D, estilo arquitectura) */
+.plan2d { font-family: 'Schibsted Grotesk', system-ui, sans-serif; }
+.plan2d .deck-bg { fill: #D3C2A6; }
+.plan2d .deck-ln { stroke: #B9A584; stroke-width: .03; }
+.plan2d .tile-bg { fill: #E3E8E7; }
+.plan2d .tile-ln { fill: none; stroke: #CBD3D1; stroke-width: .02; }
+.plan2d .wood-bg { fill: #EADFCB; }
+.plan2d .wood-ln { stroke: #DCCDB3; stroke-width: .02; }
+.plan2d .fx { fill: #FBFAF7; stroke: #4B5556; stroke-width: .035; }
+.plan2d line.fx { fill: none; }
+.plan2d .fx.dk { fill: #D6DCDA; }
+.plan2d .fx.ct { fill: #F2F3F1; }
+.plan2d .fx.sh { fill: #E6EDEF; }
+.plan2d .wall-in { fill: none; stroke: #1C2627; stroke-width: .12; }
+.plan2d .wall-out { fill: none; stroke: #1C2627; stroke-width: .32; }
+.plan2d .gap { fill: #EFE6D6; }
+.plan2d .swing { fill: none; stroke: #4B5556; stroke-width: .03; stroke-dasharray: .12 .08; }
+.plan2d .glass { stroke: #1C2627; stroke-width: .32; }
+.plan2d .glass-in { stroke: #D4E6EA; stroke-width: .16; }
+.plan2d .rail { stroke: #1C2627; stroke-width: .08; }
+.plan2d .entry { fill: none; stroke: #A8701A; stroke-width: .12; }
+.plan2d .entry-t { font-size: .42px; font-weight: 500; fill: #A8701A; text-anchor: middle; }
+.plan2d .lbl { font-size: .34px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; fill: #1C2627; text-anchor: middle; paint-order: stroke; stroke: #F4EFE6; stroke-width: .14; }
+.plan2d .lbl-a { font-size: .3px; fill: #50625F; text-anchor: middle; paint-order: stroke; stroke: #F4EFE6; stroke-width: .14; }
+.plan2d .north circle { fill: none; stroke: #1C2627; stroke-width: .04; }
+.plan2d .north path { fill: #1C2627; }
+.plan2d .north text { font-size: .42px; font-weight: 600; fill: #1C2627; text-anchor: middle; }
+.plan2d .scale .sc-b { fill: #1C2627; }
+.plan2d .scale .sc-w { fill: #fff; stroke: #1C2627; stroke-width: .03; }
+.plan2d .scale text { font-size: .32px; fill: #50625F; text-anchor: middle; }
