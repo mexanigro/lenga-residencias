@@ -2,11 +2,13 @@
 
 Sitio conceptual de un desarrollo inmobiliario (locación y marca ficticias), hecho para portfolio.
 
-- **Inicio por scroll:** la cámara baja sobre un mapa topográfico 3D del lago y la torre se arma piso a piso (Three.js).
-- **Final por scroll: el edificio.** Render fotorrealista con zonas calibradas por piso, ascensor para elegir altura y el piso elegido "saliendo" de la fachada.
-- **Planta del piso** que gira según la rotación de cada planta, con unidades por estado.
-- **Ficha de unidad** con plano de arquitecto (SVG generado desde los datos) y render 3D de la tipología.
-- **Recorrido en primera persona** por ambientes, con mini plano de ubicación.
+- **Carga:** placeholder borroso embebido de la primera toma, contador real de las imágenes críticas y entrada orquestada.
+- **Inicio por scroll, todo fotográfico:** dos tomas aéreas del lago con zoom hacia el lote, el lote vacío alineado al render y la torre que sube piso a piso recortando el render real.
+- **Final por scroll: el edificio.** Render fotorrealista con zonas calibradas por piso y ascensor para elegir altura.
+- **Planta del piso:** render cenital de cada planta, girado según la rotación del piso, con las unidades marcadas por estado.
+- **Ficha de unidad:** maqueta 3D de la tipología con puntos por ambiente, y plano de arquitecto (SVG generado desde los datos).
+- **Vistas 360°** de cada ambiente (living, cocina, balcón, dormitorios y baño), con saltos entre ambientes y mini plano con la dirección de la mirada.
+- Navegación por niveles con URL propia (`#/piso/10/10C/living`), migas, Escape para subir y botón atrás del navegador.
 
 ## Correrlo
 
@@ -20,16 +22,19 @@ y abrir http://localhost:5173.
 
 ## Estructura
 
+- `js/main.js` carga, scroll (Lenis) y secuencia de tomas
+- `js/building.js` edificio, ascensor, planta, ficha y router de niveles
+- `js/pano.js` visor 360° (Three.js, se carga solo al entrar a un ambiente)
+- `js/plan.js` dibujo de planos
 - `js/data.js` pisos, tipologías y unidades
-- `js/scene.js` escena 3D del inicio
-- `js/building.js` edificio, planta y ficha
-- `js/tour.js` recorrido interior
-- `js/plan.js` dibujo de planos y plantas
 - `js/zones.js` contorno de cada piso sobre el render (generado con `tools/track.py` + `tools/fit.py`)
+- `js/assets.js` cajas de las plantas y placeholder del loader (generado con `tools/assets.py`)
+- `tools/assets.py` procesa los originales de `img/originales/` (no versionados) a los `.webp` del sitio: plantas con fondo transparente, panoramas con la costura fundida
+- `tools/align.py` alinea la toma del lote al render de la torre
 - `shots.html` vistas limpias que se usaron como referencia para generar los renders
 
 Si se cambia `img/torre.webp`, hay que regenerar `js/zones.js` con los scripts de `tools/`.
 
 ## Créditos
 
-Renders del edificio, tipologías e interiores generados con ChatGPT a partir de la maqueta y los planos del proyecto. Librerías: Three.js, GSAP + ScrollTrigger, Lenis.
+Tomas aéreas, renders del edificio, plantas, tipologías y panoramas 360° generados con ChatGPT a partir de la maqueta y los planos del proyecto. Librerías: Three.js y Lenis.

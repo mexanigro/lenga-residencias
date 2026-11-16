@@ -1,276 +1,424 @@
-// Edificio fotorrealista: zonas por piso sobre el render, ascensor, planta y ficha de unidad.
+// Navegación por niveles: edificio → piso → unidad → 360°.
+// El estado vive en la URL (#/piso/12/12A/living), así el botón "atrás" del navegador funciona.
 import { FLOORS, TYPES, ZONES, bearingInfo } from './data.js';
-import { FLOOR_ZONES } from './zones.js';
-import { drawPlan, drawPlate } from './plan.js';
-import { openTour } from './tour.js';
+import { FLOOR_ZONES, RENDER } from './zones.js';
+import { PLATES } from './assets.js';
+import { drawPlan } from './plan.js';
 
 const $ = (s) => document.querySelector(s);
-const $$ = (s) => [...document.querySelectorAll(s)];
 const NS = 'http://www.w3.org/2000/svg';
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const touchFirst = matchMedia('(hover: none)').matches;
 const m2 = (n) => `${n.toLocaleString('es-AR')} m²`;
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
-const pts = (arr) => arr.map((p) => p.join(',')).join(' ');
-const ISO = { B1: 1, B2: 1, L2: 1, L3: 1, C3: 1, PH: 1 }; // renders 3D disponibles
+const pts = (a) => a.map((p) => p.join(',')).join(' ');
+const svgEl = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); parent?.appendChild(e); return e; };
+const wait = (ms) => new Promise((r) => setTimeout(r, reduced ? 0 : ms));
+
+// Ambientes que se pueden recorrer en cada tipología: [vista 360, nombre, x %, y %] sobre el render 3D
+const SPOTS = {
+  B1: [['living', 'Living', 36, 36], ['kitchen', 'Cocina', 68, 28], ['balcony', 'Balcón', 50, 10], ['suite', 'Dormitorio principal', 30, 72], ['bedroom', 'Dormitorio', 70, 72], ['bath', 'Baño', 52, 63]],
+  B2: [['living', 'Living', 33, 35], ['kitchen', 'Cocina', 68, 27], ['balcony', 'Balcón', 50, 10], ['suite', 'Suite', 32, 70], ['bedroom', 'Dormitorio', 70, 72], ['bath', 'Baño', 48, 72]],
+  L2: [['living', 'Living', 35, 38], ['kitchen', 'Cocina y comedor', 70, 38], ['balcony', 'Balcón', 50, 10], ['suite', 'Suite principal', 27, 72], ['bedroom', 'Segunda suite', 73, 72], ['bath', 'Baño', 48, 67]],
+  L3: [['living', 'Living', 32, 36], ['kitchen', 'Cocina', 62, 25], ['balcony', 'Balcón', 45, 9], ['suite', 'Suite', 25, 72], ['bedroom', 'Dormitorio', 60, 76], ['bath', 'Baño', 42, 62]],
+  C3: [['living', 'Living', 30, 38], ['kitchen', 'Cocina', 75, 30], ['balcony', 'Galería', 50, 10], ['suite', 'Suite', 22, 72], ['bedroom', 'Dormitorio', 68, 75], ['bath', 'Baño', 37, 65]],
+  PH: [['living', 'Living', 28, 40], ['kitchen', 'Cocina', 75, 40], ['balcony', 'Terraza', 50, 15], ['suite', 'Suite', 20, 72], ['bedroom', 'Dormitorio', 68, 75], ['bath', 'Baño', 40, 72]],
+};
+// Ambiente del plano que corresponde a cada vista (para el mini plano del 360°)
+function roomFor(t, key) {
+  const p = t.plan, beds = p.filter((r) => /^(suite|dormitorio)/i.test(r[0]));
+  return {
+    living: () => p.find((r) => /^(estar|comedor)/i.test(r[0])),
+    kitchen: () => p.find((r) => /^cocina/i.test(r[0])),
+    suite: () => beds[0],
+    bedroom: () => beds[1] || p.find((r) => /^(estudio|biblioteca)/i.test(r[0])),
+    bath: () => p.find((r) => r[0] === 'Baño'),
+    balcony: () => p.find((r) => r[5] === 'balcony'),
+  }[key]?.();
+}
 
 function zoneRange(zone) {
   const ns = FLOORS.filter((f) => f.zone === zone).map((f) => f.n);
   return ns.length > 1 ? `pisos ${ns[0]} al ${ns.at(-1)}` : `piso ${ns[0]}`;
 }
+const avail = (f) => f.units.filter((u) => u.status === 'disponible').length;
+const bbox = (z) => { const xs = z.map((p) => p[0]), ys = z.map((p) => p[1]); return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]; };
 
 export function initBuilding({ lockScroll }) {
-  const bld = $('#bld'), svg = $('#zones'), polys = $('#zonePolys');
-  const selClip = $('#selClipPoly'), edge = $('#edge'), hole = $('#hole'), drawer = $('#drawer');
-  const leader = $('#leader'), leaderText = $('#leaderText');
-  const rail = $('#rail'), cab = $('#cab'), elevator = $('#elevator');
-  const card = {
-    floor: $('#cFloor'), zone: $('#cZone'), text: $('#cText'), units: $('#cUnits'), avail: $('#cAvail'),
-    front: $('#cFront'), needle: $('#compassNeedle'), open: $('#openPlate'),
-  };
-  let selected = 11, hover = null, live = false, overlay = null;
+  const stage = $('#stage'), frame = $('#frame'), zonesSvg = $('#zones');
+  const tip = $('#tip'), crumbs = $('#crumbs');
+  const levels = { floor: $('#floorLevel'), unit: $('#unitLevel'), pano: $('#panoLevel') };
+  let state = { level: 'building' }, live = false, hover = null, busy = false, pano = null;
 
-  /* zonas sobre el render */
+  /* ---------------- edificio ---------------- */
+  const lit = $('#litImg'), litPoly = $('#litClip'), edge = $('#litEdge'), hole = $('#hole');
   const zoneEls = FLOORS.map((f, i) => {
-    const p = document.createElementNS(NS, 'polygon');
-    p.setAttribute('points', pts(FLOOR_ZONES[f.n]));
-    p.setAttribute('class', 'zone');
-    p.addEventListener('pointerenter', () => setHover(i));
-    p.addEventListener('pointerleave', () => setHover(null));
-    p.addEventListener('click', () => (i === selected ? openPlate() : select(i)));
-    polys.appendChild(p);
+    const p = svgEl('polygon', { points: pts(FLOOR_ZONES[f.n]), class: `zone${f.zone === 'club' ? ' is-club' : ''}` }, $('#zonePolys'));
+    p.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') setHover(i, e); });
+    p.addEventListener('pointermove', (e) => { if (e.pointerType !== 'touch') placeTip(e.clientX, e.clientY); });
+    p.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') setHover(null); });
+    p.addEventListener('click', (e) => {
+      if (f.zone === 'club') return;
+      // en pantallas táctiles el primer toque muestra el piso y el segundo entra
+      if (touchFirst && hover !== i) { setHover(i, e, true); return; }
+      go({ level: 'floor', floor: f.n });
+    });
     return p;
   });
 
-  /* ascensor */
-  const floorBtns = [];
+  function setHover(i, e, touch = false) {
+    hover = i;
+    zonesSvg.classList.toggle('has-hover', i != null);
+    floorBtns.forEach((b, k) => b.classList.toggle('is-hot', k === i));
+    if (i == null) { tip.classList.remove('is-on'); return; }
+    const f = FLOORS[i], z = FLOOR_ZONES[f.n];
+    litPoly.setAttribute('points', pts(z));
+    edge.setAttribute('points', pts(z));
+    hole.setAttribute('points', pts(z));
+    const club = f.zone === 'club';
+    tip.innerHTML = `<p class="tip__floor">Piso ${f.n}</p><p class="kicker tip__zone">${ZONES[f.zone].name}</p>
+      <p class="tip__avail">${club ? 'Lobby, pileta, spa y gimnasio' : `${avail(f)} de ${f.units.length} unidades disponibles`}</p>
+      ${club ? '' : touch ? '<div class="tip__go"><button class="btn btn--accent btn--sm" type="button">Entrar al piso</button></div>' : '<p class="tip__go">Hacé clic para ver la planta</p>'}`;
+    tip.classList.toggle('is-touch', touch);
+    tip.querySelector('button')?.addEventListener('click', () => go({ level: 'floor', floor: f.n }));
+    tip.classList.add('is-on');
+    if (touch || !e) {
+      const [, y0, x1, y1] = bbox(z), pt = zonesSvg.createSVGPoint();
+      pt.x = x1; pt.y = (y0 + y1) / 2;
+      const s = pt.matrixTransform(zonesSvg.getScreenCTM());
+      placeTip(Math.min(s.x, innerWidth - 260), s.y);
+    } else placeTip(e.clientX, e.clientY);
+  }
+  function placeTip(x, y) {
+    const w = tip.offsetWidth || 230, h = tip.offsetHeight || 120;
+    const left = x + 22 + w > innerWidth - 90 ? x - w - 22 : x + 22;
+    tip.style.transform = `translate(${Math.max(12, left)}px, ${Math.min(Math.max(80, y - h / 2), innerHeight - h - 12)}px)`;
+  }
+  document.addEventListener('pointerdown', (e) => {
+    if (touchFirst && hover != null && !e.target.closest('.zone, .tip, .elevator')) setHover(null);
+  });
+
+  // resumen de disponibilidad en la tarjeta del edificio
+  const all = FLOORS.flatMap((f) => f.units);
+  $('#statAvail').textContent = all.filter((u) => u.status === 'disponible').length;
+  $('#statUnits').textContent = all.length;
+
+  /* ---------------- ascensor ---------------- */
+  const rail = $('#rail'), cab = $('#cab'), floorBtns = [];
   let lastZone = null;
   for (let i = FLOORS.length - 1; i >= 0; i--) {
-    const f = FLOORS[i];
-    const li = document.createElement('li');
+    const f = FLOORS[i], li = document.createElement('li');
     if (f.zone !== lastZone) { li.dataset.zone = ZONES[f.zone].name; lastZone = f.zone; }
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = String(f.n).padStart(2, '0');
-    b.setAttribute('aria-label', `Piso ${f.n}, ${ZONES[f.zone].name}`);
+    b.setAttribute('aria-label', `Piso ${f.n}, ${ZONES[f.zone].name}${f.zone === 'club' ? ', espacios comunes' : `, ${avail(f)} disponibles`}`);
     b.dataset.i = i;
     b.tabIndex = -1;
-    b.addEventListener('pointerenter', () => setHover(i));
-    b.addEventListener('pointerleave', () => setHover(null));
+    if (f.zone === 'club') b.classList.add('is-club');
+    b.addEventListener('pointerenter', () => { if (state.level === 'building') setHover(i); });
+    b.addEventListener('pointerleave', () => { if (state.level === 'building') setHover(null); });
+    b.addEventListener('focus', () => { if (state.level === 'building') setHover(i); });
     li.appendChild(b);
     rail.appendChild(li);
     floorBtns[i] = b;
   }
-  rail.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) select(+b.dataset.i); });
-  rail.addEventListener('keydown', (e) => {
-    const d = { ArrowUp: 1, ArrowDown: -1, PageUp: 3, PageDown: -3 }[e.key];
-    if (d) { e.preventDefault(); select(selected + d, true); }
-    if (e.key === 'Home') { e.preventDefault(); select(FLOORS.length - 1, true); }
-    if (e.key === 'End') { e.preventDefault(); select(0, true); }
-    if (e.key === 'Enter' && !overlay) { e.preventDefault(); openPlate(); }
+  rail.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    const f = FLOORS[+b.dataset.i];
+    if (f.zone !== 'club') go({ level: 'floor', floor: f.n });
   });
-  // arrastrar la cabina del ascensor
-  let railDrag = false;
-  const railPick = (y) => {
-    const r = rail.getBoundingClientRect();
-    const k = Math.floor(Math.min(0.999, Math.max(0, (y - r.top) / r.height)) * FLOORS.length);
-    select(FLOORS.length - 1 - k);
-  };
-  rail.addEventListener('pointerdown', (e) => { if (e.pointerType === 'mouse') return; railDrag = true; rail.setPointerCapture(e.pointerId); });
-  rail.addEventListener('pointermove', (e) => { if (railDrag) railPick(e.clientY); });
-  rail.addEventListener('pointerup', () => { railDrag = false; });
-  rail.addEventListener('pointercancel', () => { railDrag = false; });
-
-  function setHover(i) {
-    hover = i;
-    zoneEls.forEach((z, k) => z.classList.toggle('is-hot', k === i && k !== selected));
-    floorBtns.forEach((b, k) => b.classList.toggle('is-hot', k === i));
-    placeLeader(i ?? selected);
+  rail.addEventListener('keydown', (e) => {
+    const d = { ArrowUp: 1, ArrowDown: -1 }[e.key];
+    if (!d) return;
+    e.preventDefault();
+    const cur = +document.activeElement.dataset.i || 0;
+    const n = Math.max(0, Math.min(FLOORS.length - 1, cur + d));
+    floorBtns.forEach((b, k) => { b.tabIndex = k === n ? 0 : -1; });
+    floorBtns[n].focus();
+  });
+  floorBtns[11].tabIndex = 0;
+  function markFloor(n) {
+    const i = n ? FLOORS.findIndex((f) => f.n === n) : -1;
+    floorBtns.forEach((b, k) => b.setAttribute('aria-current', k === i ? 'true' : 'false'));
+    cab.hidden = i < 0;
+    if (i < 0) return;
+    const r = floorBtns[i].getBoundingClientRect(), nr = $('#elevator').getBoundingClientRect();
+    cab.style.top = `${r.top - nr.top + 1}px`;
+    cab.style.height = `${r.height - 2}px`;
   }
 
-  function select(i, focus = false) {
-    i = Math.max(0, Math.min(FLOORS.length - 1, i));
-    const changed = i !== selected;
-    if (changed && live) bld.classList.add('is-touched');
-    selected = i;
-    const f = FLOORS[i], club = f.zone === 'club';
-    card.floor.textContent = String(f.n).padStart(2, '0');
-    card.zone.textContent = ZONES[f.zone].name;
-    card.text.textContent = ZONES[f.zone].text;
-    card.units.textContent = club ? '—' : f.units.length;
-    card.avail.textContent = club ? '—' : f.units.filter((u) => u.status === 'disponible').length;
-    card.front.textContent = bearingInfo(f.rot).dir;
-    card.needle.style.transform = `rotate(${f.rot}deg)`;
-    card.open.hidden = club;
-    floorBtns.forEach((b, k) => { b.setAttribute('aria-current', k === i ? 'true' : 'false'); b.tabIndex = k === i ? 0 : -1; });
-    const b = floorBtns[i], r = b.getBoundingClientRect(), rr = rail.getBoundingClientRect();
-    cab.style.top = `${r.top - rr.top + rail.offsetTop + 2}px`;
-    cab.style.height = `${Math.max(12, r.height - 4)}px`;
-    if (focus) b.focus();
-    // el piso elegido "sale" de la fachada como un cajón
-    const z = FLOOR_ZONES[f.n];
-    selClip.setAttribute('points', pts(z));
-    edge.setAttribute('points', pts(z));
-    hole.setAttribute('points', pts(z));
-    if (changed) drawer.animate([{ transform: 'translateX(0) scale(1)' }, { transform: 'translateX(-14px) scale(1.035)' }], { duration: 520, easing: 'cubic-bezier(.22,.8,.2,1)' });
-    drawer.style.transform = 'translateX(-14px) scale(1.035)';
-    zoneEls.forEach((zz, k) => zz.classList.toggle('is-hot', k === hover && k !== i));
-    placeLeader(hover ?? i);
-    if (overlay === 'plate') club ? closePlate() : renderPlate();
-  }
-
-  function placeLeader(i) {
-    if (i == null || !live || innerWidth < 640) return;
-    const f = FLOORS[i], z = FLOOR_ZONES[f.n];
-    const half = z.length / 2;
-    const right = [z[half - 1], z[half]]; // último punto del borde superior y primero del inferior
-    const pt = svg.createSVGPoint();
-    pt.x = Math.max(right[0][0], right[1][0]);
-    pt.y = (right[0][1] + right[1][1]) / 2;
-    const s = pt.matrixTransform(svg.getScreenCTM());
-    const end = $('#elevator').getBoundingClientRect().left - 120;
-    leader.style.left = `${s.x + 6}px`;
-    leader.style.top = `${s.y}px`;
-    leader.style.width = `${Math.max(40, end - s.x)}px`;
-    const club = f.zone === 'club';
-    const avail = f.units.filter((u) => u.status === 'disponible').length;
-    leaderText.innerHTML = `Piso ${f.n}<small>${club ? 'Club y espacios comunes' : `${ZONES[f.zone].name}, ${avail} de ${f.units.length} disponibles`}</small>`;
-  }
-  window.addEventListener('resize', () => select(selected));
-
-  /* planta */
-  const plate = $('#plate'), plateSvg = $('#plateSvg'), unitList = $('#unitList');
-  let plateRot = null, plateUnits = [];
-  card.open.addEventListener('click', openPlate);
-  $('#plateBack').addEventListener('click', closePlate);
-  function openPlate() {
-    if (FLOORS[selected].zone === 'club') return;
-    overlay = 'plate';
-    plate.hidden = false;
-    plate.appendChild(elevator); // el ascensor sigue disponible para cambiar de piso desde la planta
-    document.body.classList.add('plate-open', 'overlay-open');
-    lockScroll(true);
-    renderPlate();
-    $('#plateBack').focus();
-  }
-  function closePlate() {
-    closeUnit(false);
-    overlay = null;
-    plate.hidden = true;
-    bld.appendChild(elevator);
-    plateRot = null;
-    document.body.classList.remove('plate-open', 'overlay-open');
-    lockScroll(false);
-    card.open.focus({ preventScroll: true });
-  }
-  function renderPlate() {
-    const f = FLOORS[selected];
-    $('#pZone').textContent = ZONES[f.zone].name;
-    $('#pTitle').textContent = `Piso ${f.n}`;
-    $('#pText').textContent = `${ZONES[f.zone].text} Frente al ${bearingInfo(f.rot).dir.toLowerCase()}, girado ${f.rot}° respecto del piso 3.`;
-    $('#pShare').textContent = `Planta típica de los ${zoneRange(f.zone)}: cambia la orientación, no la distribución.`;
-    plateUnits = drawPlate(plateSvg, f, TYPES, { onUnit: (k) => openUnit(k) });
-    const g = plateSvg.querySelector('.plate');
-    g.removeAttribute('transform');
-    g.style.transform = `rotate(${f.rot}deg)`;
-    if (plateRot !== null && plateRot !== f.rot) {
-      g.animate([{ transform: `rotate(${plateRot}deg)`, opacity: 0.4 }, { transform: `rotate(${f.rot}deg)`, opacity: 1 }], { duration: 650, easing: 'cubic-bezier(.22,.8,.2,1)' });
+  /* ---------------- planta del piso ---------------- */
+  const plate = $('#plate'), plateImg = $('#plateImg'), plateSvg = $('#plateUnits'), tags = $('#plateTags');
+  let plateZone = null;
+  function renderFloor(n) {
+    const f = FLOORS.find((x) => x.n === n), meta = PLATES[f.zone];
+    $('#fZone').textContent = ZONES[f.zone].name;
+    $('#fTitle').textContent = `Piso ${f.n}`;
+    $('#fText').textContent = `${ZONES[f.zone].text} Mira al ${bearingInfo(f.rot).dir.toLowerCase()}: la planta gira ${f.rot}° respecto del piso 3.`;
+    $('#fUnits').textContent = f.units.length;
+    $('#fAvail').textContent = avail(f);
+    $('#fFront').textContent = bearingInfo(f.rot).dir;
+    $('#fShare').textContent = `Misma distribución en los ${zoneRange(f.zone)}; lo que cambia es hacia dónde mira cada unidad.`;
+    if (plateZone !== f.zone) {
+      plateZone = f.zone;
+      plateImg.src = `img/plate-${f.zone}.webp`;
+      plateSvg.setAttribute('viewBox', `0 0 ${meta.w} ${meta.h}`);
     }
-    plateRot = f.rot;
-    unitList.innerHTML = '';
+    const [x0, y0, x1, y1] = meta.box;
+    const X = (x) => x0 + ((x + 13) / 26) * (x1 - x0), Y = (y) => y0 + ((y + 13) / 26) * (y1 - y0);
+    plateSvg.innerHTML = '';
+    tags.innerHTML = '';
+    const list = $('#unitCards');
+    list.innerHTML = '';
     f.units.forEach((u, k) => {
       const t = TYPES[u.type];
+      const g = svgEl('g', { class: `u u--${u.status}`, tabindex: -1 }, plateSvg);
+      const d = `M${u.poly.map(([x, y]) => `${X(x)} ${Y(y)}`).join('L')}Z` + (u.hole ? `M${u.hole.map(([x, y]) => `${X(x)} ${Y(y)}`).join('L')}Z` : '');
+      svgEl('path', { d, class: 'u-veil', 'fill-rule': 'evenodd' }, g);
+      const [cx, cy] = { TL: [-7.5, -7.5], TR: [7.5, -7.5], BR: [7.5, 7.5], BL: [-7.5, 7.5], LH: [-8, 0], RH: [8, 0], FULL: [0, -8] }[u.shape];
+      const tag = document.createElement('div');
+      tag.className = 'utag';
+      tag.style.left = `${(X(cx) / meta.w) * 100}%`;
+      tag.style.top = `${(Y(cy) / meta.h) * 100}%`;
+      tag.style.rotate = `${-f.rot}deg`;
+      tag.innerHTML = `<b>${u.id}</b><span class="chip chip--${u.status}">${cap(u.status)}</span>`;
+      tags.appendChild(tag);
       const li = document.createElement('li');
       const b = document.createElement('button');
+      b.className = 'ucard';
       b.type = 'button';
-      b.innerHTML = `<b>${u.id}</b><span>${t.rooms}<small>${t.name}, ${m2(t.covered + t.open)} totales</small></span><em class="st-${u.status}">${cap(u.status)}</em>`;
-      const hot = (v) => { plateUnits[k]?.classList.toggle('is-hot', v); b.classList.toggle('is-hot', v); };
-      b.addEventListener('pointerenter', () => hot(true));
-      b.addEventListener('pointerleave', () => hot(false));
+      b.innerHTML = `<span class="ucard__id">${u.id}</span><span class="ucard__t">${cap(t.rooms)}<small>${t.name}, ${m2(t.covered + t.open)}</small></span><span class="chip chip--${u.status}">${cap(u.status)}</span>`;
+      li.appendChild(b);
+      list.appendChild(li);
+      const hot = (v) => { g.classList.toggle('is-hot', v); b.classList.toggle('is-hot', v); };
+      for (const el of [g, b]) {
+        el.addEventListener('pointerenter', () => hot(true));
+        el.addEventListener('pointerleave', () => hot(false));
+        el.addEventListener('click', () => go({ level: 'unit', floor: f.n, unit: u.id }));
+      }
       b.addEventListener('focus', () => hot(true));
       b.addEventListener('blur', () => hot(false));
-      b.addEventListener('click', () => openUnit(k));
-      plateUnits[k]?.addEventListener('pointerenter', () => hot(true));
-      plateUnits[k]?.addEventListener('pointerleave', () => hot(false));
-      li.appendChild(b);
-      unitList.appendChild(li);
     });
+    plate.style.transform = `rotate(${f.rot}deg)`;
+    markFloor(f.n);
   }
 
-  /* ficha de unidad */
-  const unit = $('#unit'), tab2d = $('#tab2d'), tab3d = $('#tab3d');
-  let current = null;
-  function openUnit(k) {
-    const f = FLOORS[selected], u = f.units[k], t = TYPES[u.type];
-    current = { f, u, t, k };
+  /* ---------------- unidad ---------------- */
+  const iso = $('#isoImg'), isoSpots = $('#isoSpots');
+  function renderUnit(n, id) {
+    const f = FLOORS.find((x) => x.n === n), u = f.units.find((x) => x.id === id), t = TYPES[u.type];
     const b = bearingInfo(u.bearing);
     const balcony = t.plan.find((r) => r[5] === 'balcony')[0];
     $('#uKicker').textContent = `Piso ${f.n}, ${ZONES[f.zone].name}`;
     $('#uTitle').textContent = `Unidad ${u.id}`;
     $('#uType').textContent = `${t.name}: ${t.rooms}`;
+    $('#uStatus').className = `chip chip--${u.status}`;
+    $('#uStatus').textContent = cap(u.status);
     $('#uFacts').innerHTML = [
-      ['Superficie cubierta', m2(t.covered)], [balcony, m2(t.open)], ['Total', m2(t.covered + t.open)],
-      ['Orientación', b.dir], ['Vista a', b.view], ['Estado', cap(u.status)],
+      ['Cubierta', m2(t.covered)], [balcony, m2(t.open)], ['Total', m2(t.covered + t.open)],
+      ['Orientación', b.dir], ['Vista', cap(b.view)],
     ].map(([dt, dd]) => `<div><dt>${dt}</dt><dd>${dd}</dd></div>`).join('');
     const cta = $('#uCta');
     cta.textContent = u.status === 'vendida' ? 'Consultar por unidades similares' : `Consultar por la ${u.id}`;
     cta.href = `mailto:hola@lenga-ilen.com?subject=${encodeURIComponent(`Consulta por la unidad ${u.id} de Lenga`)}`;
-    drawPlan($('#plan2d'), t, { bearing: u.bearing });
-    $('#plan2d').setAttribute('aria-label', `Plano ${t.name}, ${t.rooms}`);
-    const iso = $('#iso');
-    tab3d.hidden = !ISO[u.type];
     iso.src = `img/iso-${u.type}.webp`;
-    iso.alt = `Render 3D de la ${t.name}, ${t.rooms}, con equipamiento`;
-    setTab(false);
-    overlay = 'unit';
-    unit.hidden = false;
-    $('#unitBack').focus();
+    iso.alt = `Maqueta 3D de la ${t.name}: ${t.rooms}`;
+    isoSpots.innerHTML = '';
+    for (const [key, label, x, y] of SPOTS[u.type]) {
+      const s = document.createElement('button');
+      s.className = 'spot';
+      s.type = 'button';
+      s.style.left = `${x}%`;
+      s.style.top = `${y}%`;
+      s.innerHTML = `<span>${label}</span>`;
+      s.setAttribute('aria-label', `Recorrer ${label.toLowerCase()} en 360°`);
+      s.addEventListener('click', () => go({ level: 'pano', floor: f.n, unit: u.id, room: key }));
+      isoSpots.appendChild(s);
+    }
+    drawPlan($('#plan2d'), t, { bearing: u.bearing });
+    setTab('iso');
   }
-  function closeUnit(focusBack = true) {
-    if (unit.hidden) return;
-    unit.hidden = true;
-    overlay = 'plate';
-    if (focusBack && current) unitList.querySelectorAll('button')[current.k]?.focus();
+  function setTab(which) {
+    $('#tabIso').setAttribute('aria-selected', String(which === 'iso'));
+    $('#tabPlan').setAttribute('aria-selected', String(which === 'plan'));
+    $('#isoView').hidden = which !== 'iso';
+    $('#planView').hidden = which !== 'plan';
   }
-  $('#unitBack').addEventListener('click', () => closeUnit());
-  function setTab(three) {
-    tab2d.setAttribute('aria-selected', String(!three));
-    tab3d.setAttribute('aria-selected', String(three));
-    $('#view2d').hidden = three;
-    $('#view3d').hidden = !three;
-  }
-  tab2d.addEventListener('click', () => setTab(false));
-  tab3d.addEventListener('click', () => setTab(true));
-  $('.unit__tabs').addEventListener('keydown', (e) => {
-    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-    const three = tab2d.getAttribute('aria-selected') === 'true';
-    setTab(three);
-    (three ? tab3d : tab2d).focus();
-  });
-  $('#tourOpen').addEventListener('click', () => {
-    overlay = 'tour';
-    openTour(current, () => { overlay = 'unit'; $('#tourOpen').focus(); });
-  });
+  $('#tabIso').addEventListener('click', () => setTab('iso'));
+  $('#tabPlan').addEventListener('click', () => setTab('plan'));
+  $('#tourBtn').addEventListener('click', () => go({ ...state, level: 'pano', room: 'living' }));
 
-  document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape' || !overlay || overlay === 'tour') return;
-    if (overlay === 'unit') closeUnit(); else if (overlay === 'plate') closePlate();
-  });
-
-  // recorrido inicial de las losas, de abajo hacia arriba, para mostrar que se pueden tocar
-  function scan() {
-    zoneEls.forEach((z, k) => {
-      setTimeout(() => { z.classList.add('is-scan'); setTimeout(() => z.classList.remove('is-scan'), 260); }, 200 + k * 55);
+  /* ---------------- 360 ---------------- */
+  async function renderPano(st) {
+    const f = FLOORS.find((x) => x.n === st.floor), u = f.units.find((x) => x.id === st.unit), t = TYPES[u.type];
+    const spots = SPOTS[u.type];
+    const label = (k) => spots.find((s) => s[0] === k)?.[1] || k;
+    $('#pKicker').textContent = `Unidad ${u.id}, ${t.name}`;
+    $('#pTitle').textContent = label(st.room);
+    const bar = $('#panoRooms');
+    bar.innerHTML = '';
+    for (const [key, lab] of spots) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = lab;
+      b.setAttribute('aria-current', String(key === st.room));
+      b.addEventListener('click', () => go({ ...st, room: key }, { replace: true }));
+      bar.appendChild(b);
+    }
+    drawPlan($('#panoMap'), t, { areas: false });
+    if (!pano) {
+      const { createPano } = await import('./pano.js');
+      pano = createPano($('#panoCanvas'), $('#panoSpots'), { reduced });
+    }
+    const room = roomFor(t, st.room);
+    pano.show(st.room, {
+      available: spots.map((s) => s[0]),
+      label,
+      onGo: (key) => go({ ...st, room: key }, { replace: true }),
+      onLook: (deg) => placeMe(room, deg),
     });
+    placeMe(room, 0);
+  }
+  function placeMe(room, deg) {
+    const map = $('#panoMap');
+    let g = map.querySelector('.me-g');
+    if (!g) g = svgEl('g', { class: 'me-g' }, map);
+    if (!room) { g.innerHTML = ''; return; }
+    const [, x, y, w, h] = room;
+    g.innerHTML = `<path class="cone" d="M0 0 L-2.4 -4.4 A5 5 0 0 1 2.4 -4.4 Z" transform="translate(${x + w / 2} ${y + h / 2}) rotate(${deg})"/><circle class="me" cx="${x + w / 2}" cy="${y + h / 2}" r=".6"/>`;
+  }
+  $('#zoomIn').addEventListener('click', () => pano?.zoom(-10));
+  $('#zoomOut').addEventListener('click', () => pano?.zoom(10));
+
+  /* ---------------- migas de pan ---------------- */
+  function renderCrumbs() {
+    const items = [['Edificio', { level: 'building' }]];
+    if (state.floor) items.push([`Piso ${state.floor}`, { level: 'floor', floor: state.floor }]);
+    if (state.unit) items.push([`Unidad ${state.unit}`, { level: 'unit', floor: state.floor, unit: state.unit }]);
+    if (state.room) items.push(['Vista 360°', state]);
+    crumbs.innerHTML = '';
+    items.forEach(([label, to], i) => {
+      if (i) crumbs.appendChild(document.createElement('i'));
+      const last = i === items.length - 1;
+      const el = document.createElement(last ? 'span' : 'button');
+      el.textContent = label;
+      if (last) el.setAttribute('aria-current', 'page');
+      else { el.type = 'button'; el.addEventListener('click', () => go(to)); }
+      crumbs.appendChild(el);
+    });
+    crumbs.classList.toggle('is-on', live || state.level !== 'building');
   }
 
-  select(selected);
+  /* ---------------- router y transiciones ---------------- */
+  const hashOf = (s) => s.level === 'building' ? '#edificio' : `#/piso/${s.floor}${s.unit ? `/${s.unit}` : ''}${s.room ? `/${s.room}` : ''}`;
+  function parse(hash) {
+    const m = hash.match(/^#\/piso\/(\d+)(?:\/(\w+))?(?:\/(\w+))?/);
+    if (!m) return { level: 'building' };
+    const f = FLOORS.find((x) => x.n === +m[1]);
+    if (!f || f.zone === 'club') return { level: 'building' };
+    const u = m[2] && f.units.find((x) => x.id === m[2]);
+    if (!u) return { level: 'floor', floor: f.n };
+    if (m[3] && SPOTS[u.type].some((s) => s[0] === m[3])) return { level: 'pano', floor: f.n, unit: u.id, room: m[3] };
+    return { level: 'unit', floor: f.n, unit: u.id };
+  }
+
+  function show(el) { el.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('is-in'))); }
+  async function hide(el) { if (el.hidden) return; el.classList.remove('is-in'); await wait(380); el.hidden = true; }
+
+  // acerca el render al piso elegido antes de abrir su planta
+  function zoomTo(n, on) {
+    const z = FLOOR_ZONES[n], [x0, y0, x1, y1] = bbox(z);
+    const r = frame.getBoundingClientRect();
+    const fw = r.width / (frame._s || 1), fh = r.height / (frame._s || 1);
+    const s = on ? 2.6 : 1;
+    const px = ((x0 + x1) / 2 / RENDER.w) * fw, py = ((y0 + y1) / 2 / RENDER.h) * fh;
+    const tx = on ? (fw / 2 - px) * s : 0, ty = on ? (fh / 2 - py) * s : 0;
+    frame._s = s;
+    frame.style.transition = reduced ? 'none' : 'transform .8s cubic-bezier(.65,0,.25,1), filter .8s';
+    frame.style.transform = `translate(${tx}px, ${ty}px) scale(${s})`;
+    frame.style.filter = on ? 'blur(2px) brightness(.7)' : '';
+  }
+
+  async function go(next, { push = true, replace = false } = {}) {
+    if (busy) return;
+    busy = true;
+    const prev = state;
+    state = next;
+    if (push) history[replace ? 'replaceState' : 'pushState'](next, '', hashOf(next));
+    setHover(null);
+    const order = ['building', 'floor', 'unit', 'pano'];
+    const down = order.indexOf(next.level) > order.indexOf(prev.level);
+    document.body.classList.toggle('in-level', next.level !== 'building');
+    document.body.classList.toggle('show-elevator', live && (next.level === 'building' || next.level === 'floor'));
+    lockScroll(next.level !== 'building');
+
+    if (next.level === 'building') {
+      await Promise.all(Object.values(levels).map(hide));
+      pano?.pause();
+      zoomTo(prev.floor || 12, false);
+      setTimeout(() => { frame.style.transition = ''; frame.style.filter = ''; }, 850);
+      markFloor(null);
+    } else {
+      if (prev.level === 'building') { zoomTo(next.floor, true); await wait(down ? 520 : 0); }
+      if (next.level === 'floor') {
+        if (prev.level === 'floor' && prev.floor !== next.floor) renderFloor(next.floor);
+        else { renderFloor(next.floor); show(levels.floor); }
+        await Promise.all([hide(levels.unit), hide(levels.pano)]);
+        pano?.pause();
+      }
+      if (next.level === 'unit') {
+        if (prev.level !== 'unit' || prev.unit !== next.unit) renderUnit(next.floor, next.unit);
+        if (prev.level === 'floor' || prev.level === 'building') renderFloor(next.floor);
+        show(levels.unit);
+        await hide(levels.pano);
+        pano?.pause();
+        if (!levels.floor.hidden) hide(levels.floor);
+      }
+      if (next.level === 'pano') {
+        if (prev.level !== 'unit' && prev.level !== 'pano') renderUnit(next.floor, next.unit);
+        show(levels.pano);
+        await renderPano(next);
+        if (prev.level !== 'pano') { hide(levels.unit); hide(levels.floor); }
+      }
+    }
+    renderCrumbs();
+    const focusTarget = { floor: '#fTitle', unit: '#uTitle', pano: '#pTitle' }[next.level];
+    if (focusTarget && prev.level !== next.level) $(focusTarget).focus({ preventScroll: true });
+    busy = false;
+  }
+
+  window.addEventListener('popstate', () => go(parse(location.hash), { push: false }));
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || busy) return;
+    const up = { floor: { level: 'building' }, unit: { level: 'floor', floor: state.floor }, pano: { level: 'unit', floor: state.floor, unit: state.unit } }[state.level];
+    if (up) go(up);
+  });
+  window.addEventListener('resize', () => { if (state.floor) markFloor(state.floor); if (state.level !== 'building') zoomTo(state.floor, true); });
+
   return {
     setLive(v) {
       if (v === live) return;
       live = v;
-      bld.classList.toggle('is-live', v);
-      bld.classList.toggle('has-sel', v);
-      bld.classList.toggle('has-floor', v);
-      if (v) { select(selected); scan(); }
+      stage.classList.toggle('is-live', v);
+      document.body.classList.toggle('show-elevator', v && (state.level === 'building' || state.level === 'floor'));
+      if (v && state.floor) markFloor(state.floor);
+      renderCrumbs();
+      if (v && state.level === 'building') scan();
+      if (!v) setHover(null);
     },
+    openFromHash() { const s = parse(location.hash); if (s.level !== 'building') go(s, { push: false }); },
   };
+
+  // recorrido de luz por las losas, de abajo hacia arriba, para invitar a tocar
+  function scan() {
+    if (reduced) return;
+    FLOORS.forEach((f, k) => {
+      setTimeout(() => {
+        const p = svgEl('polygon', { points: pts(FLOOR_ZONES[f.n]), class: 'scan' }, zonesSvg);
+        p.animate([{ opacity: 0 }, { opacity: 1 }, { opacity: 0 }], { duration: 520, easing: 'ease-out' }).finished.then(() => p.remove());
+      }, 250 + k * 55);
+    });
+  }
 }

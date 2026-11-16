@@ -1,6 +1,5 @@
 // Dibujo de planos en SVG (metros como unidad). Muros, aberturas y equipamiento
 // se derivan de la lista de ambientes de cada tipología.
-import { CORE } from './data.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 const el = (tag, attrs, parent) => {
@@ -246,60 +245,4 @@ export function drawPlan(svg, t, { bearing = 0, areas = true } = {}) {
   for (let i = 0; i < 4; i++) el('rect', { x: i, y: 0, width: 1, height: 0.18, class: i % 2 ? 'sc-b' : 'sc-w' }, sc);
   el('text', { x: 0, y: 0.75 }, sc).textContent = '0';
   el('text', { x: 4, y: 0.75 }, sc).textContent = '4 m';
-}
-
-/**
- * Planta del piso: losa, núcleo y unidades por estado. El dibujo gira con el piso;
- * las referencias del entorno (lago, cerro) quedan fijas.
- */
-export function drawPlate(svg, floor, types, { onUnit } = {}) {
-  svg.innerHTML = '';
-  svg.setAttribute('viewBox', '-24 -24 48 48');
-  const defs = el('defs', {}, svg);
-  const h = el('pattern', { id: 'sold', width: 0.9, height: 0.9, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, defs);
-  el('line', { x1: 0, y1: 0, x2: 0, y2: 0.9, class: 'sold-ln' }, h);
-
-  // entorno fijo
-  const ctx = el('g', { class: 'ctx' }, svg);
-  el('circle', { cx: 0, cy: 0, r: 20.5, class: 'ring' }, ctx);
-  for (let a = 0; a < 360; a += 15) {
-    const r1 = a % 90 === 0 ? 19.3 : 19.9, rad = (a * Math.PI) / 180;
-    el('line', { x1: Math.sin(rad) * r1, y1: -Math.cos(rad) * r1, x2: Math.sin(rad) * 20.5, y2: -Math.cos(rad) * 20.5, class: 'tick' }, ctx);
-  }
-  const ctxLab = [['Lago Ilén', 0, -21.9, 'water'], ['Cerro Ilén', 0, 22.9, ''], ['Pueblo y muelle', -22.4, 0, 'v'], ['Bosque de lengas', 22.4, 0, 'v']];
-  for (const [t, x, y, c] of ctxLab) {
-    const tx = el('text', { x, y, class: `ctx-t ${c}` }, ctx);
-    if (c.includes('v')) tx.setAttribute('transform', `rotate(${x < 0 ? -90 : 90} ${x} ${y})`);
-    tx.textContent = t;
-  }
-  el('text', { x: 0, y: -18.2, class: 'ctx-n' }, ctx).textContent = 'N';
-
-  // losa rotada
-  const g = el('g', { class: 'plate', transform: `rotate(${floor.rot})` }, svg);
-  el('rect', { x: -13, y: -13, width: 26, height: 26, rx: 3.2, class: 'slab' }, g);
-  el('rect', { x: -11.6, y: -11.6, width: 23.2, height: 23.2, rx: 1.8, class: 'glazing' }, g);
-  const units = [];
-  floor.units.forEach((u, k) => {
-    const ug = el('g', { class: `unit u-${u.status}`, tabindex: 0, role: 'button', 'aria-label': `Unidad ${u.id}, ${types[u.type].rooms}, ${u.status}` }, g);
-    const d = `M${u.poly.map((p) => p.join(' ')).join('L')}Z` + (u.hole ? `M${u.hole.map((p) => p.join(' ')).join('L')}Z` : '');
-    el('path', { d, class: 'u-fill', 'fill-rule': 'evenodd' }, ug);
-    if (u.status === 'vendida') el('path', { d, fill: 'url(#sold)', 'fill-rule': 'evenodd', class: 'u-hatch' }, ug);
-    el('path', { d, class: 'u-edge', 'fill-rule': 'evenodd' }, ug);
-    // punto del rótulo: el centro "útil" de cada forma, lejos del núcleo
-    const [cx, cy] = { TL: [-7.5, -7.5], TR: [7.5, -7.5], BR: [7.5, 7.5], BL: [-7.5, 7.5], LH: [-8, 0], RH: [8, 0], FULL: [0, -8] }[u.shape];
-    // el texto se contra-rota para quedar derecho
-    const tg = el('g', { transform: `translate(${cx} ${cy}) rotate(${-floor.rot})`, class: 'u-tag' }, ug);
-    el('text', { x: 0, y: -0.2, class: 'u-id' }, tg).textContent = u.letter;
-    el('text', { x: 0, y: 1.5, class: 'u-st' }, tg).textContent = u.status;
-    ug.addEventListener('click', () => onUnit?.(k));
-    ug.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onUnit?.(k); } });
-    units.push(ug);
-  });
-  // núcleo: ascensores y escalera
-  const core = el('g', { class: 'core' }, g);
-  el('path', { d: `M${CORE.map((p) => p.join(' ')).join('L')}Z`, class: 'core-bg' }, core);
-  for (const x of [-3.4, -1.6]) { el('rect', { x, y: -3.4, width: 1.6, height: 1.8, class: 'lift' }, core); el('path', { d: `M${x} -3.4L${x + 1.6} -1.6M${x + 1.6} -3.4L${x} -1.6`, class: 'lift-x' }, core); }
-  for (let i = 0; i < 9; i++) el('line', { x1: 0.6 + i * 0.32, y1: -3.4, x2: 0.6 + i * 0.32, y2: 0.4, class: 'stair' }, core);
-  el('rect', { x: -3.4, y: 0.9, width: 6.8, height: 2.5, class: 'lobby' }, core);
-  return units;
 }

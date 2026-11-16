@@ -2,194 +2,207 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Lenga — Residencias sobre el lago Ilén</title>
-  <meta name="description" content="Lenga: dieciocho pisos de residencias frente al lago Ilén. Elegí piso, mirá la planta y recorré cada departamento. Proyecto conceptual con locación ficticia.">
-  <meta name="theme-color" content="#0F2B33">
+  <meta name="description" content="Lenga: dieciocho pisos de residencias frente al lago Ilén. Elegí tu piso, mirá la planta y recorré cada departamento en 360°. Proyecto conceptual con locación ficticia.">
+  <meta name="theme-color" content="#0B151B">
+  <meta property="og:title" content="Lenga — Residencias sobre el lago Ilén">
+  <meta property="og:description" content="Elegí tu piso, mirá la planta y recorré cada departamento en 360°.">
+  <meta property="og:image" content="img/torre.webp">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300;1,6..72,400&family=Schibsted+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&family=Schibsted+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="preload" as="image" href="img/aerea-1.webp" fetchpriority="high">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/plan.css">
-  <link rel="preload" as="image" href="img/torre.webp">
   <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js" } }</script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js" defer></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js" defer></script>
   <script src="https://unpkg.com/lenis@1.1.20/dist/lenis.min.js" defer></script>
   <script type="module" src="js/main.js"></script>
 </head>
 <body class="is-loading">
   <a class="skip" href="#edificio">Ir directo al edificio</a>
 
-  <div class="loader" id="loader" role="status" aria-label="Cargando">
-    <svg class="loader__tower" id="loaderTower" viewBox="0 0 200 240" aria-hidden="true"></svg>
-    <p class="loader__name">Lenga</p>
-    <p class="loader__pct"><span id="loaderPct">0</span>%</p>
+  <div class="loader" id="loader" role="status" aria-live="polite">
+    <div class="loader__bg" id="loaderBg"></div>
+    <div class="loader__in">
+      <p class="loader__mark">Lenga</p>
+      <p class="loader__sub">Residencias sobre el lago Ilén</p>
+      <div class="loader__bar" aria-hidden="true"><i id="loaderBar"></i></div>
+      <p class="loader__pct"><span id="loaderPct">0</span> %</p>
+    </div>
   </div>
 
-  <canvas class="gl" id="gl" aria-hidden="true"></canvas>
-  <div class="maplabels" id="maplabels" aria-hidden="true"></div>
-
-  <header class="hud" id="hud">
-    <a href="#top" class="wordmark" aria-label="Lenga, volver al inicio">Lenga</a>
-    <nav class="hud__nav" aria-label="Principal">
-      <a class="hud__btn" href="#edificio">Elegir piso</a>
-      <a class="hud__btn hud__btn--solid" href="mailto:hola@lenga-ilen.com?subject=Consulta%20por%20Lenga">Consultar</a>
-    </nav>
+  <header class="hud">
+    <a class="wordmark" href="#top" id="toTop" aria-label="Lenga, volver al inicio">Lenga</a>
+    <nav class="crumbs glass" id="crumbs" aria-label="Estás en"></nav>
+    <div class="hud__end">
+      <a class="btn btn--light btn--sm" href="mailto:hola@lenga-ilen.com?subject=Consulta%20por%20Lenga">Consultar</a>
+    </div>
   </header>
 
-  <div class="legend" id="legend" aria-hidden="true">
-    <svg class="legend__north" viewBox="0 0 24 32"><path d="M12 2 L18 26 L12 21 L6 26 Z" /><text x="12" y="32">N</text></svg>
-    <div class="legend__scale"><i id="scaleBar"></i><span>100 m</span></div>
-    <p>Cámara a <b id="alt">560</b> m sobre el lago</p>
-  </div>
-
   <main>
-    <!-- Todo el recorrido es un solo escenario fijo: el scroll baja la cámara, arma la torre y termina en el edificio -->
-    <section class="intro" id="top" aria-label="Lenga">
-      <div class="intro__stage">
-        <div class="hero" id="hero">
-          <h1 class="hero__title">Lenga</h1>
-          <p class="hero__lede">Dieciocho pisos de residencias frente al lago Ilén, en Puerto Ilén.</p>
+    <section class="story" id="top" aria-label="Lenga">
+      <div class="stage" id="stage">
+        <div class="shot" id="shot1" style="--x: 53%; --y: 56%">
+          <img class="shot__img" src="img/aerea-1.webp" alt="Vista aérea del lago Ilén y Puerto Ilén al atardecer, con la cordillera detrás" fetchpriority="high">
+          <span class="place" style="left: 62%; top: 84%">Lago Ilén</span>
+          <span class="place" style="left: 47%; top: 26%">Cordillera de los Andes</span>
+          <div class="pin" style="left: 85%; top: 51%"><span class="pin__label">Puerto Ilén</span><i class="pin__stem"></i><i class="pin__dot"></i></div>
+          <div class="pin pin--site" style="left: 53%; top: 56%"><span class="pin__label pin__label--site">Lenga</span><i class="pin__stem"></i><i class="pin__dot"></i></div>
         </div>
-        <div class="why" id="why">
-          <h2>¿Por qué Puerto Ilén?</h2>
-          <p>Un pueblo de nueve mil habitantes sobre un lago de cuarenta kilómetros. Las pistas quedan a doce minutos, el aeropuerto a veinticinco y no hay un solo semáforo.</p>
+        <div class="shot" id="shot2" style="--x: 52%; --y: 50%">
+          <img class="shot__img" src="img/aerea-2.webp" alt="El lote frente a la costanera, al atardecer" loading="lazy">
+          <div class="pin pin--site" style="left: 52%; top: 50%"><span class="pin__label pin__label--site">El lote</span><i class="pin__stem"></i><i class="pin__dot"></i></div>
         </div>
-        <div class="rise" id="rise">
-          <div class="rise__grid" aria-hidden="true"><span class="rise__sweep" id="sweep"></span></div>
-          <div class="rise__copy">
-            <h2>Dieciocho pisos que giran hacia el lago.</h2>
-            <p>Cada planta rota 4° sobre la de abajo. Así todas las unidades miran al agua sin taparse entre sí.</p>
-          </div>
-          <p class="rise__count" aria-hidden="true">Piso <b id="riseCount">01</b> de 18</p>
-        </div>
-        <p class="scroll-hint" id="hint"><span>Bajá para descender</span><i aria-hidden="true"></i></p>
 
-        <!-- Final del scroll: el edificio -->
-        <div class="bld" id="bld">
-          <div class="bld__media" id="bldMedia">
-            <div class="bld__frame" id="bldFrame">
-            <img class="bld__img" id="bldImg" src="img/torre.webp" alt="Render de Lenga al atardecer, frente al lago Ilén con la cordillera detrás" width="1536" height="1024">
-            <svg class="bld__zones" id="zones" viewBox="0 0 1536 1024" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-              <defs>
-                <clipPath id="selClip"><polygon id="selClipPoly" points="0,0" /></clipPath>
-                <filter id="lit" x="-5%" y="-20%" width="110%" height="140%">
-                  <feComponentTransfer><feFuncR type="linear" slope="1.28" intercept=".03" /><feFuncG type="linear" slope="1.2" intercept=".02" /><feFuncB type="linear" slope="1.08" /></feComponentTransfer>
-                </filter>
-                <filter id="drop" x="-10%" y="-40%" width="120%" height="200%"><feDropShadow dx="0" dy="10" stdDeviation="9" flood-color="#04141A" flood-opacity=".75" /></filter>
-              </defs>
-              <rect class="bld__dim" id="dim" width="1536" height="1024" />
-              <polygon class="bld__hole" id="hole" points="0,0" />
-              <g class="bld__drawer" id="drawer" filter="url(#drop)">
-                <image href="img/torre.webp" width="1536" height="1024" clip-path="url(#selClip)" filter="url(#lit)" />
-                <polygon class="bld__edge" id="edge" points="0,0" />
+        <div class="frame-wrap" id="frameWrap">
+          <div class="frame-wrap__bg" style="background-image: url(img/lote.webp)"></div>
+          <div class="frame-wrap__bg" id="bgTorre" style="background-image: url(img/torre.webp); opacity: 0"></div>
+          <div class="frame" id="frame">
+            <img src="img/lote.webp" alt="" loading="lazy">
+            <svg id="rise" viewBox="0 0 1536 1024" preserveAspectRatio="none" aria-hidden="true"><defs id="riseDefs"></defs></svg>
+            <img class="frame__torre" id="torre" src="img/torre.webp" alt="Render de Lenga al atardecer, frente al lago Ilén" loading="lazy">
+            <svg class="zones" id="zones" viewBox="0 0 1536 1024" preserveAspectRatio="none" aria-hidden="true">
+              <defs><clipPath id="litClipPath"><polygon id="litClip" points="0,0" /></clipPath></defs>
+              <rect class="dim" width="1536" height="1024" />
+              <polygon class="hole" id="hole" points="0,0" />
+              <g class="lit">
+                <image id="litImg" href="img/torre.webp" width="1536" height="1024" clip-path="url(#litClipPath)" style="filter: brightness(1.32) saturate(1.1)" />
+                <polygon class="lit-edge" id="litEdge" points="0,0" />
               </g>
               <g id="zonePolys"></g>
             </svg>
-            </div>
           </div>
+        </div>
 
-          <header class="bld__head" id="edificio" tabindex="-1">
-            <h2>Elegí tu altura.</h2>
-            <p>Pasá por la fachada o usá el ascensor de la derecha. Cada piso abre su planta.</p>
-          </header>
+        <div class="copy copy--hero" id="cHero">
+          <h1>Lenga</h1>
+          <p>Dieciocho pisos de residencias frente al lago Ilén, en Puerto Ilén.</p>
+        </div>
+        <div class="copy copy--side glass" id="cWhy">
+          <p class="kicker">Puerto Ilén</p>
+          <h2>Un pueblo chico frente a un lago enorme.</h2>
+          <p>Nueve mil habitantes y cuarenta kilómetros de agua. Las pistas quedan a doce minutos, el aeropuerto a veinticinco y no hay un solo semáforo.</p>
+        </div>
+        <div class="copy copy--left" id="cPlot">
+          <p class="kicker">El lote</p>
+          <h2>Sobre la costanera, a cuarenta metros del agua.</h2>
+        </div>
+        <div class="copy copy--left" id="cRise">
+          <p class="kicker">La torre</p>
+          <h2>Dieciocho pisos que giran hacia el lago.</h2>
+          <p>Cada planta rota 4° sobre la de abajo, así todas las unidades miran al agua sin taparse entre sí.</p>
+        </div>
+        <p class="counter" id="counter" aria-hidden="true">Piso <b id="riseN">01</b> de 18</p>
+        <p class="hint" id="hint"><i aria-hidden="true"></i><span>Deslizá para descender</span></p>
 
-          <aside class="bld__card" id="card" aria-live="polite">
-            <div class="card__top">
-              <p class="card__floor">Piso <span id="cFloor">12</span></p>
-              <svg class="compass" viewBox="0 0 64 64" aria-hidden="true">
-                <circle cx="32" cy="32" r="30" />
-                <text x="32" y="11">N</text>
-                <g id="compassNeedle"><path d="M32 14 L36 32 L32 50 L28 32 Z" /></g>
-              </svg>
-            </div>
-            <p class="card__hint">Tocá un piso de la fachada o deslizá el ascensor.</p>
-            <p class="card__zone" id="cZone">Lago</p>
-            <p class="card__text" id="cText"></p>
-            <dl class="card__facts">
-              <div><dt>Unidades</dt><dd id="cUnits">3</dd></div>
-              <div><dt>Disponibles</dt><dd id="cAvail">2</dd></div>
-              <div><dt>Frente al</dt><dd id="cFront">Norte</dd></div>
+        <div class="bui" id="bui">
+          <aside class="bcard glass" id="edificio" tabindex="-1" aria-labelledby="bTitle">
+            <p class="kicker">El edificio</p>
+            <h2 class="display" id="bTitle">Elegí tu altura.</h2>
+            <p class="muted">Tocá un piso de la fachada o usá el ascensor para ver su planta.</p>
+            <dl class="facts">
+              <div><dt>Disponibles</dt><dd id="statAvail">0</dd></div>
+              <div><dt>Unidades</dt><dd id="statUnits">0</dd></div>
+              <div><dt>Pisos</dt><dd>18</dd></div>
             </dl>
-            <button class="btn btn--amber" id="openPlate">Ver la planta</button>
           </aside>
-
-          <nav class="elevator" id="elevator" aria-label="Ascensor: elegir piso">
-            <p class="elevator__label" id="railLabel">Ascensor</p>
-            <ol class="elevator__rail" id="rail" aria-labelledby="railLabel"></ol>
-            <span class="elevator__cab" id="cab" aria-hidden="true"></span>
-          </nav>
-
-          <div class="bld__leader" id="leader" aria-hidden="true"><i></i><span id="leaderText"></span></div>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- Planta del piso -->
-  <section class="plate" id="plate" role="dialog" aria-modal="true" aria-labelledby="pTitle" hidden>
-    <div class="plate__info">
-      <button class="back" id="plateBack">Volver al edificio</button>
-      <p class="plate__kicker" id="pZone">Lago</p>
-      <h2 class="plate__title" id="pTitle">Piso 12</h2>
-      <p class="plate__text" id="pText"></p>
-      <p class="plate__legend">
-        <span class="dot dot--disponible"></span>Disponible
-        <span class="dot dot--reservada"></span>Reservada
-        <span class="dot dot--vendida"></span>Vendida
-      </p>
-      <ul class="unit-list" id="unitList"></ul>
-      <p class="plate__share" id="pShare"></p>
-    </div>
-    <div class="plate__draw">
-      <svg id="plateSvg" role="group" aria-label="Planta del piso"></svg>
+  <div class="tip glass" id="tip" role="status"></div>
+
+  <nav class="elevator glass" id="elevator" aria-label="Ascensor: elegir piso">
+    <span class="elevator__cab" id="cab" hidden></span>
+    <ol class="elevator__rail" id="rail"></ol>
+  </nav>
+
+  <!-- Piso -->
+  <section class="level level--floor" id="floorLevel" role="dialog" aria-labelledby="fTitle" hidden>
+    <aside class="panel glass">
+      <p class="kicker" id="fZone">Lago</p>
+      <h2 class="display" id="fTitle" tabindex="-1">Piso 12</h2>
+      <p class="muted" id="fText"></p>
+      <dl class="facts">
+        <div><dt>Unidades</dt><dd id="fUnits">3</dd></div>
+        <div><dt>Disponibles</dt><dd id="fAvail">2</dd></div>
+        <div><dt>Mira al</dt><dd id="fFront">Norte</dd></div>
+      </dl>
+      <ul class="units" id="unitCards"></ul>
+      <p class="note" id="fShare"></p>
+    </aside>
+    <div class="plate-stage">
+      <div class="plate-box">
+        <svg class="ring" viewBox="-24 -24 48 48" aria-hidden="true">
+          <circle r="22.6" /><circle r="23.4" />
+          <line x1="0" y1="-23.4" x2="0" y2="-21.6" /><line x1="0" y1="23.4" x2="0" y2="21.6" /><line x1="-23.4" y1="0" x2="-21.6" y2="0" /><line x1="23.4" y1="0" x2="21.6" y2="0" />
+          <text class="n" y="-20.2">N</text>
+          <text y="-24.4">Lago Ilén</text>
+          <text y="25.4">Cerro Ilén</text>
+          <text transform="translate(-24.6 0) rotate(-90)">Pueblo y muelle</text>
+          <text transform="translate(24.6 0) rotate(90)">Bosque de lengas</text>
+        </svg>
+        <div class="plate" id="plate">
+          <img id="plateImg" alt="Planta del piso vista desde arriba, con las unidades amuebladas">
+          <svg id="plateUnits" aria-hidden="true"></svg>
+          <div id="plateTags"></div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <!-- Ficha de unidad -->
-  <section class="unit" id="unit" role="dialog" aria-modal="true" aria-labelledby="uTitle" hidden>
-    <div class="unit__info">
-      <button class="back" id="unitBack">Volver a la planta</button>
-      <p class="unit__kicker" id="uKicker">Piso 12, Lago</p>
-      <h2 class="unit__title" id="uTitle">Unidad 12A</h2>
-      <p class="unit__type" id="uType"></p>
-      <dl class="unit__facts" id="uFacts"></dl>
-      <button class="btn btn--light" id="tourOpen">Recorrer por dentro</button>
-      <a class="btn btn--amber" id="uCta" href="mailto:hola@lenga-ilen.com">Consultar por esta unidad</a>
-    </div>
-    <div class="unit__view">
-      <div class="unit__tabs" role="tablist" aria-label="Vista de la unidad">
-        <button role="tab" id="tab2d" aria-selected="true" aria-controls="view2d">Plano</button>
-        <button role="tab" id="tab3d" aria-selected="false" aria-controls="view3d">Render 3D</button>
+  <!-- Unidad -->
+  <section class="level level--unit" id="unitLevel" role="dialog" aria-labelledby="uTitle" hidden>
+    <div class="unit-stage">
+      <div class="seg glass" role="tablist" aria-label="Vista de la unidad">
+        <button role="tab" id="tabIso" aria-selected="true" aria-controls="isoView">Maqueta 3D</button>
+        <button role="tab" id="tabPlan" aria-selected="false" aria-controls="planView">Plano</button>
       </div>
-      <div class="unit__sheet">
-        <div id="view2d" role="tabpanel" aria-labelledby="tab2d"><svg id="plan2d" role="img" aria-label="Plano de la unidad"></svg></div>
-        <div id="view3d" role="tabpanel" aria-labelledby="tab3d" hidden><img id="iso" alt=""></div>
+      <div class="sheet">
+        <div id="isoView" role="tabpanel" aria-labelledby="tabIso"><div class="iso"><img id="isoImg" alt=""><div id="isoSpots"></div></div></div>
+        <div id="planView" role="tabpanel" aria-labelledby="tabPlan" hidden><div class="planv"><svg id="plan2d" role="img" aria-label="Plano de la unidad"></svg></div></div>
       </div>
+      <p class="unit-hint">Tocá un ambiente de la maqueta para recorrerlo en 360°.</p>
     </div>
+    <aside class="panel glass">
+      <p class="kicker" id="uKicker">Piso 12, Lago</p>
+      <h2 class="display" id="uTitle" tabindex="-1">Unidad 12A</h2>
+      <p class="muted" id="uType"></p>
+      <div class="status-row"><span class="chip" id="uStatus"></span></div>
+      <dl class="facts" id="uFacts"></dl>
+      <div class="actions">
+        <button class="btn btn--accent" id="tourBtn" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18" /></svg>
+          Recorrer en 360°
+        </button>
+        <a class="btn btn--light" id="uCta" href="mailto:hola@lenga-ilen.com">Consultar</a>
+      </div>
+      <p class="note">Imágenes ilustrativas generadas para este proyecto.</p>
+    </aside>
   </section>
 
-  <!-- Recorrido en primera persona -->
-  <section class="tour" id="tour" role="dialog" aria-modal="true" aria-labelledby="tTitle" hidden>
-    <div class="tour__stage" id="tourStage">
-      <div class="tour__pano" id="pano"><img id="panoA" alt=""><img id="panoB" alt="" aria-hidden="true"><div class="tour__spots" id="spots"></div></div>
+  <!-- 360 -->
+  <section class="level level--pano" id="panoLevel" role="dialog" aria-labelledby="pTitle" hidden>
+    <div class="pano-canvas" id="panoCanvas" aria-label="Vista 360°, arrastrá para mirar alrededor"></div>
+    <div class="pano-spots" id="panoSpots"></div>
+    <div class="pano-title glass">
+      <p class="kicker" id="pKicker">Unidad 12A</p>
+      <h2 id="pTitle" tabindex="-1">Living</h2>
     </div>
-    <header class="tour__head">
-      <div>
-        <p class="tour__kicker" id="tKicker">Unidad 12A</p>
-        <h2 class="tour__title" id="tTitle">Living</h2>
-      </div>
-      <button class="tour__close" id="tourClose">Salir del recorrido</button>
-    </header>
-    <p class="tour__hint" id="tourHint">Arrastrá para mirar alrededor</p>
-    <div class="tour__map" aria-hidden="true"><svg id="tourMap"></svg></div>
-    <nav class="tour__stops" id="tourStops" aria-label="Ambientes"></nav>
+    <div class="pano-map glass" aria-hidden="true"><svg id="panoMap"></svg></div>
+    <p class="pano-hint glass" id="panoHint">Arrastrá para mirar en 360°</p>
+    <nav class="pano-bar glass" id="panoRooms" aria-label="Ambientes"></nav>
+    <div class="pano-zoom glass">
+      <button type="button" id="zoomIn" aria-label="Acercar">+</button>
+      <button type="button" id="zoomOut" aria-label="Alejar">−</button>
+    </div>
   </section>
 
   <a class="wa" href="https://wa.me/542940000000?text=Hola%2C%20quiero%20saber%20m%C3%A1s%20de%20Lenga" target="_blank" rel="noopener" aria-label="Escribir por WhatsApp">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3a.5.5 0 0 0 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.3c0-.1-.2-.2-.5-.3Z"/></svg>
   </a>
-  <p class="credit">Locación y marca ficticias. Proyecto de portfolio.</p>
+  <p class="credit">Locación, marca e imágenes ficticias. Proyecto de portfolio.</p>
 </body>
 </html>
