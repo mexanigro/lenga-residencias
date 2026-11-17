@@ -49,9 +49,18 @@ function planZoom(svg) {
     const [px, py] = toPlan(cx, cy), v = vb();
     set(px - (px - v.x) * f, py - (py - v.y) * f, v.width * f, v.height * f);
   };
-  svg.addEventListener('wheel', (e) => { e.preventDefault(); zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 0.82 : 1 / 0.82); }, { passive: false });
+  svg.addEventListener('wheel', (e) => {
+    // si la ficha no entra en pantalla la rueda la desplaza; para acercar ahí: Ctrl + rueda o pellizco del trackpad
+    const lvl = svg.closest('.level');
+    if (lvl && lvl.scrollHeight > lvl.clientHeight + 1 && !e.ctrlKey) return;
+    e.preventDefault();
+    // proporcional al giro: un clic de rueda ≈ 18 %, un trackpad avanza suave
+    const d = e.deltaY * (e.deltaMode === 1 ? 33 : 1);
+    zoomAt(e.clientX, e.clientY, Math.exp(Math.max(-1, Math.min(1, d / 100)) * 0.2));
+  }, { passive: false });
   svg.addEventListener('dblclick', () => set(...base()));
   svg.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return; // clic derecho: no arrastra
     svg.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, [e.clientX, e.clientY]);
     if (pointers.size === 2) {
@@ -76,6 +85,12 @@ function planZoom(svg) {
   const up = (e) => { pointers.delete(e.pointerId); if (pointers.size < 2) pinch = null; };
   svg.addEventListener('pointerup', up);
   svg.addEventListener('pointercancel', up);
+  svg.addEventListener('lostpointercapture', up);
+  // para los botones + y − (y el teclado): acercar o alejar desde el centro
+  return {
+    zoom(f) { const r = svg.getBoundingClientRect(); zoomAt(r.x + r.width / 2, r.y + r.height / 2, f); },
+    reset() { set(...base()); },
+  };
 }
 
 function zoneRange(zone) {
