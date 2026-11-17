@@ -17,7 +17,11 @@ const progress = (r) => { bar.style.width = `${r * 100}%`; pct.textContent = Mat
 const prog = setInterval(() => progress(flight.ready() * 0.96), 90); // la barra tiene su propia transición
 const torreImg = new Image();
 torreImg.src = 'img/torre.webp';
-await Promise.all([document.fonts.ready, flight.critical, torreImg.decode().catch(() => {})]);
+// ponytail: tope de 12 s; con una conexión muy lenta se entra igual y los cuadros siguen llegando
+await Promise.race([
+  Promise.all([document.fonts.ready, flight.critical, torreImg.decode().catch(() => {})]),
+  new Promise((r) => setTimeout(r, 12000)),
+]);
 clearInterval(prog);
 progress(1);
 await new Promise((r) => setTimeout(r, reduced ? 0 : 550));
@@ -30,7 +34,7 @@ if (!reduced) {
 }
 
 /* ================= scroll suave ================= */
-const lenis = reduced ? null : new window.Lenis({ lerp: 0.075, wheelMultiplier: 0.9 });
+const lenis = reduced || !window.Lenis ? null : new window.Lenis({ lerp: 0.075, wheelMultiplier: 0.9 });
 if (lenis) { const raf = (t) => { lenis.raf(t); requestAnimationFrame(raf); }; requestAnimationFrame(raf); }
 const lockScroll = (on) => {
   document.documentElement.classList.toggle('lenis-stopped', on);

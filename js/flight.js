@@ -9,7 +9,11 @@ const pad = (i) => String(i).padStart(3, '0');
 export function createFlight(canvas, marks, { reduced = false } = {}) {
   const ctx = canvas.getContext('2d', { alpha: false });
   const portrait = matchMedia('(max-aspect-ratio: 4/5)');
-  let set, imgs, ok, queue, critical, criticalTotal, criticalDone, lastKey = '';
+  let set, imgs, ok, gen = 0, criticalTotal = 1, criticalDone = 0, lastKey = '';
+  // una sola promesa para el loader: la cumple el primer set que junta sus cuadros críticos
+  // (si se gira la pantalla durante la carga se cambia de set y el nuevo la cumple)
+  let resolveCritical;
+  const critical = new Promise((r) => { resolveCritical = r; });
 
   // orden de carga: el primero, uno de cada 16 (alcanza para bajar), después se van llenando los huecos
   function order() {
@@ -25,28 +29,28 @@ export function createFlight(canvas, marks, { reduced = false } = {}) {
 
   function useSet(next) {
     set = next;
-    imgs = new Array(N);
-    ok = new Uint8Array(N);
+    // cada set tiene su propio estado: las cargas que siguen llegando del set anterior no cuentan
+    const g = ++gen, mine = new Array(N), okMine = new Uint8Array(N);
+    imgs = mine;
+    ok = okMine;
     const all = order();
-    const crit = all.slice(0, all.indexOf(8));
-    criticalTotal = crit.length;
+    const crit = new Set(all.slice(0, all.indexOf(8)));
+    criticalTotal = crit.size;
     criticalDone = 0;
-    queue = all.slice();
-    let resolveCritical;
-    critical = new Promise((r) => { resolveCritical = r; });
-    const critSet = new Set(crit);
+    const queue = all.slice();
     let active = 0;
     const pump = () => {
-      while (active < 6 && queue.length) {
+      while (g === gen && active < 6 && queue.length) {
         const i = queue.shift();
         const im = new Image();
         im.decoding = 'async';
-        im.src = `img/vuelo/${set}/${pad(i)}.webp`;
-        imgs[i] = im;
+        im.src = `img/vuelo/${next}/${pad(i)}.webp`;
+        mine[i] = im;
         active++;
-        im.decode().then(() => { ok[i] = 1; }).catch(() => {}).finally(() => {
+        im.decode().then(() => { okMine[i] = 1; }).catch(() => {}).finally(() => {
           active--;
-          if (critSet.has(i) && ++criticalDone === criticalTotal) resolveCritical();
+          if (g !== gen) return;
+          if (crit.has(i) && ++criticalDone === criticalTotal) resolveCritical();
           lastKey = '';
           pump();
         });
@@ -85,8 +89,8 @@ export function createFlight(canvas, marks, { reduced = false } = {}) {
   };
 
   return {
-    critical: Promise.resolve().then(() => critical),
-    ready: () => criticalDone / criticalTotal,
+    critical,
+    ready: () => Math.min(1, criticalDone / criticalTotal),
     intro() {
       if (!reduced) canvas.animate([{ transform: 'scale(1.08)', filter: 'blur(10px)' }, { transform: 'none', filter: 'none' }], { duration: 2400, easing: 'cubic-bezier(.2,.8,.2,1)' });
     },
