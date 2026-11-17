@@ -48,6 +48,8 @@ document.addEventListener('click', (e) => {
   if (!a || document.body.classList.contains('in-level')) return;
   e.preventDefault();
   if (a.getAttribute('href') === '#top') scrollTo(0);
+  // el atajo de teclado salta directo y lleva el foco; el resto vuela despacio hasta el edificio
+  else if (a.classList.contains('skip')) { lenis ? lenis.scrollTo(endY(), { immediate: true }) : window.scrollTo(0, endY()); $('#edificio').focus({ preventScroll: true }); }
   else { scrollTo(endY(), true); setTimeout(() => $('#edificio').focus({ preventScroll: true }), lenis ? 6100 : 0); }
 });
 

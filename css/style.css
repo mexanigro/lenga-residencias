@@ -136,16 +136,17 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 @media (max-aspect-ratio: 2752/1536) { .frame { -webkit-mask-image: none; mask-image: none; } }
 .frame > img, .frame > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 
-.copy { position: absolute; z-index: 2; pointer-events: none; text-shadow: 0 2px 30px rgba(0, 0, 0, .35); }
+/* sombra corta + difusa: el texto se lee sobre cualquier cuadro del vuelo */
+.copy { position: absolute; z-index: 2; pointer-events: none; text-shadow: 0 1px 3px rgba(0, 0, 0, .55), 0 2px 30px rgba(0, 0, 0, .45); }
 .copy--hero { left: var(--gutter); bottom: clamp(70px, 13vh, 130px); max-width: min(92vw, 780px); }
 .copy--hero h1 { font: 300 clamp(5.5rem, 16vw, 14rem)/.8 var(--serif); letter-spacing: -.05em; margin-left: -.04em; }
-.copy--hero p { margin-top: 1.4rem; max-width: 30ch; font: 300 clamp(1.15rem, 1.6vw, 1.45rem)/1.4 var(--serif); color: var(--piedra-2); }
+.copy--hero p { margin-top: 1.4rem; max-width: 30ch; font: 300 clamp(1.15rem, 1.6vw, 1.45rem)/1.4 var(--serif); color: var(--piedra); }
 .copy--side { right: var(--gutter); top: 50%; translate: 0 -50%; width: min(26rem, 86vw); padding: 1.7rem 1.8rem; text-shadow: none; }
 .copy--side h2 { font: 300 clamp(1.9rem, 3vw, 2.6rem)/1.04 var(--serif); letter-spacing: -.02em; margin: .5rem 0 .8rem; }
 .copy--side p { color: var(--piedra-2); }
 .copy--left { left: var(--gutter); bottom: clamp(70px, 13vh, 130px); max-width: min(30rem, 42vw); }
 .copy--left h2 { font: 300 clamp(2.2rem, 4.4vw, 4.2rem)/1 var(--serif); letter-spacing: -.03em; margin-top: .4rem; }
-.copy--left p { margin-top: 1rem; color: var(--piedra-2); max-width: 38ch; }
+.copy--left p { margin-top: 1rem; color: var(--piedra); max-width: 38ch; }
 .hint { position: absolute; z-index: 2; left: 50%; bottom: 24px; translate: -50% 0; display: grid; justify-items: center; gap: .55rem; font-size: .8rem; color: var(--piedra-2); pointer-events: none; }
 .hint i { width: 22px; height: 34px; border-radius: 12px; border: 1px solid rgba(239, 233, 223, .5); position: relative; }
 .hint i::after { content: ''; position: absolute; left: 50%; top: 7px; width: 3px; height: 7px; margin-left: -1.5px; border-radius: 2px; background: var(--piedra); animation: wheel 1.8s var(--ease) infinite; }
@@ -184,8 +185,8 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .tip__go .btn { width: 100%; }
 
 /* ascensor */
-.elevator { position: fixed; right: var(--gutter); top: 50%; translate: 0 -50%; z-index: 70; width: 64px; height: min(76vh, 640px); padding: 12px 8px; display: flex; flex-direction: column; border-radius: 999px; opacity: 0; pointer-events: none; transition: opacity .6s var(--ease); }
-body.show-elevator .elevator { opacity: 1; pointer-events: auto; }
+.elevator { position: fixed; right: var(--gutter); top: 50%; translate: 0 -50%; z-index: 70; width: 64px; height: min(76vh, 640px); padding: 12px 8px; display: flex; flex-direction: column; border-radius: 999px; opacity: 0; pointer-events: none; visibility: hidden; transition: opacity .6s var(--ease), visibility 0s .6s; }
+body.show-elevator .elevator { opacity: 1; pointer-events: auto; visibility: visible; transition-delay: 0s; }
 .elevator__rail { position: relative; flex: 1; display: flex; flex-direction: column; touch-action: none; }
 .elevator__rail li { flex: 1; display: flex; position: relative; min-height: 0; }
 .elevator__rail button { flex: 1; display: grid; place-items: center; border-radius: 999px; font: 500 .74rem/1 var(--sans); color: var(--niebla); font-variant-numeric: tabular-nums; min-height: 0; transition: color .2s, background-color .2s; }
@@ -305,14 +306,16 @@ body.in-level .elevator__rail li[data-zone]::before { opacity: 0; }
 .pano-hint { position: absolute; left: 50%; bottom: 92px; translate: -50% 0; display: flex; align-items: center; gap: .7rem; padding: .8rem 1.2rem; border-radius: 999px; font-size: .9rem; pointer-events: none; transition: opacity .6s; }
 .pano-hint.is-off { opacity: 0; }
 .pano-zoom { position: absolute; right: var(--gutter); bottom: 22px; display: grid; gap: 4px; padding: 5px; border-radius: 999px; }
-.pano-zoom button { width: 40px; height: 40px; border-radius: 50%; font: 300 1.4rem/1 var(--sans); color: var(--piedra); transition: background-color .2s; }
-.pano-zoom button:hover { background: rgba(239, 233, 223, .1); }
+.plan-zoom { position: absolute; right: 12px; bottom: 12px; display: grid; gap: 4px; padding: 5px; border-radius: 999px; }
+#planView { place-items: stretch; }
+.pano-zoom button, .plan-zoom button { width: 40px; height: 40px; border-radius: 50%; font: 300 1.4rem/1 var(--sans); color: var(--piedra); transition: background-color .2s; }
+.plan-zoom button:hover, .pano-zoom button:hover { background: rgba(239, 233, 223, .1); }
 .pano-fade { position: absolute; inset: 0; background: #000; pointer-events: none; opacity: 0; }
 
 .wa { position: fixed; right: 18px; bottom: 18px; z-index: 40; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: #25D366; color: #fff; box-shadow: 0 10px 26px -8px rgba(0, 0, 0, .5); transition: transform .25s var(--ease), opacity .3s; }
 .wa:hover { transform: scale(1.06); }
 .wa svg { width: 26px; height: 26px; fill: currentColor; }
-body.at-end .wa, body.in-level .wa { opacity: 0; pointer-events: none; }
+body.at-end .wa, body.in-level .wa { opacity: 0; pointer-events: none; visibility: hidden; transition: opacity .3s, visibility 0s .3s; }
 .credit { position: fixed; left: 50%; bottom: 10px; translate: -50% 0; z-index: 4; font-size: .7rem; color: rgba(239, 233, 223, .5); pointer-events: none; opacity: 0; transition: opacity .5s; }
 body.at-end:not(.in-level) .credit { opacity: 1; }
 
@@ -337,6 +340,8 @@ body.at-end:not(.in-level) .credit { opacity: 1; }
   .crumbs { position: fixed; left: 12px; right: auto; max-width: calc(100vw - 24px); top: 64px; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
   .crumbs button, .crumbs span { padding: 0 .7rem; font-size: .8rem; }
   .copy--left { top: 84px; bottom: auto; }
+  /* en vertical el texto va arriba, sobre la torre iluminada: más sombra arriba */
+  .shade { background: linear-gradient(rgba(11, 21, 27, .75), rgba(11, 21, 27, .45) 30%, transparent 48%, transparent 70%, rgba(11, 21, 27, .6)); }
   .copy--left h2 { font-size: 1.85rem; }
   .copy--left p { font-size: .9rem; }
   /* en vertical la torre ocupa el centro: la tarjeta va arriba, sobre la cordillera */

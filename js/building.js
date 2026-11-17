@@ -59,6 +59,16 @@ function planZoom(svg) {
     zoomAt(e.clientX, e.clientY, Math.exp(Math.max(-1, Math.min(1, d / 100)) * 0.2));
   }, { passive: false });
   svg.addEventListener('dblclick', () => set(...base()));
+  // teclado: + y − acercan, las flechas mueven, 0 vuelve al plano entero
+  svg.addEventListener('keydown', (e) => {
+    const v = vb(), mv = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+    if (mv) set(v.x + mv[0] * v.width * 0.12, v.y + mv[1] * v.height * 0.12, v.width, v.height);
+    else if (e.key === '+' || e.key === '=') { const r = svg.getBoundingClientRect(); zoomAt(r.x + r.width / 2, r.y + r.height / 2, 0.75); }
+    else if (e.key === '-') { const r = svg.getBoundingClientRect(); zoomAt(r.x + r.width / 2, r.y + r.height / 2, 1 / 0.75); }
+    else if (e.key === '0') set(...base());
+    else return;
+    e.preventDefault();
+  });
   svg.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return; // clic derecho: no arrastra
     svg.setPointerCapture(e.pointerId);
@@ -197,7 +207,10 @@ export function initBuilding({ lockScroll }) {
   floorBtns[11].tabIndex = 0;
   function markFloor(n) {
     const i = n ? FLOORS.findIndex((f) => f.n === n) : -1;
-    floorBtns.forEach((b, k) => b.setAttribute('aria-current', k === i ? 'true' : 'false'));
+    floorBtns.forEach((b, k) => {
+      b.setAttribute('aria-current', k === i ? 'true' : 'false');
+      b.tabIndex = k === (i >= 0 ? i : 11) ? 0 : -1; // con Tab se llega al piso actual
+    });
     cab.hidden = i < 0;
     if (i < 0) return;
     const r = floorBtns[i].getBoundingClientRect(), nr = $('#elevator').getBoundingClientRect();
@@ -307,9 +320,11 @@ export function initBuilding({ lockScroll }) {
     $('#planView').hidden = which !== 'plan';
     $('.unit-hint').textContent = which === 'iso'
       ? 'Tocá un ambiente de la maqueta para recorrerlo en 360°.'
-      : (touchFirst ? 'Pellizcá para acercar y arrastrá para mover. Doble toque para volver.' : 'Usá la rueda para acercar y arrastrá para mover. Doble clic para volver.');
+      : (touchFirst ? 'Pellizcá o usá + y − para acercar, y arrastrá para mover.' : 'Acercá con + y − (o la rueda) y arrastrá para mover. Doble clic para volver.');
   }
-  planZoom($('#plan2d'));
+  const pz = planZoom($('#plan2d'));
+  $('#planIn').addEventListener('click', () => pz.zoom(0.75));
+  $('#planOut').addEventListener('click', () => pz.zoom(1 / 0.75));
   $('#tabIso').addEventListener('click', () => setTab('iso'));
   $('#tabPlan').addEventListener('click', () => setTab('plan'));
   $('#tourBtn').addEventListener('click', () => go({ ...state, level: 'pano', room: 'living' }));
@@ -468,6 +483,8 @@ export function initBuilding({ lockScroll }) {
       if (location.hash !== hashOf(next)) history.replaceState({ ...next, d }, '', hashOf(next));
     }
     setHover(null);
+    // con un nivel abierto, lo de atrás (vuelo, fachada, atajo) queda fuera del teclado y del lector
+    $('#top').inert = $('.skip').inert = next.level !== 'building';
     const order = ['building', 'floor', 'unit', 'pano'];
     const down = order.indexOf(next.level) > order.indexOf(prev.level);
     document.body.classList.toggle('in-level', next.level !== 'building');

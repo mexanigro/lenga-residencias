@@ -29,7 +29,7 @@
       <p class="loader__mark">Lenga</p>
       <p class="loader__sub">Residencias sobre el lago Ilén</p>
       <div class="loader__bar" aria-hidden="true"><i id="loaderBar"></i></div>
-      <p class="loader__pct"><span id="loaderPct">0</span> %</p>
+      <p class="loader__pct" aria-hidden="true"><span id="loaderPct">0</span> %</p>
     </div>
   </div>
 
@@ -116,7 +116,7 @@
   </nav>
 
   <!-- Piso -->
-  <section class="level level--floor" id="floorLevel" data-lenis-prevent role="dialog" aria-labelledby="fTitle" hidden>
+  <section class="level level--floor" id="floorLevel" data-lenis-prevent role="dialog" aria-modal="true" aria-labelledby="fTitle" hidden>
     <aside class="panel glass">
       <p class="kicker" id="fZone">Lago</p>
       <h2 class="display" id="fTitle" tabindex="-1">Piso 12</h2>
@@ -150,7 +150,7 @@
   </section>
 
   <!-- Unidad -->
-  <section class="level level--unit" id="unitLevel" data-lenis-prevent role="dialog" aria-labelledby="uTitle" hidden>
+  <section class="level level--unit" id="unitLevel" data-lenis-prevent role="dialog" aria-modal="true" aria-labelledby="uTitle" hidden>
     <div class="unit-stage">
       <div class="seg glass" role="tablist" aria-label="Vista de la unidad">
         <button role="tab" id="tabIso" aria-selected="true" aria-controls="isoView">Maqueta 3D</button>
@@ -158,7 +158,10 @@
       </div>
       <div class="sheet">
         <div id="isoView" role="tabpanel" aria-labelledby="tabIso"><div class="iso"><img id="isoImg" alt=""><div id="isoSpots"></div></div></div>
-        <div id="planView" role="tabpanel" aria-labelledby="tabPlan" hidden><div class="planv"><svg id="plan2d" role="img" aria-label="Plano de la unidad"></svg></div></div>
+        <div id="planView" role="tabpanel" aria-labelledby="tabPlan" hidden>
+          <div class="planv"><svg id="plan2d" role="img" tabindex="0" aria-label="Plano de la unidad. Con el foco acá: más y menos acercan, las flechas mueven."></svg></div>
+          <div class="plan-zoom glass"><button type="button" id="planIn" aria-label="Acercar el plano">+</button><button type="button" id="planOut" aria-label="Alejar el plano">−</button></div>
+        </div>
       </div>
       <p class="unit-hint">Tocá un ambiente de la maqueta para recorrerlo en 360°.</p>
     </div>
@@ -180,7 +183,7 @@
   </section>
 
   <!-- 360 -->
-  <section class="level level--pano" id="panoLevel" role="dialog" aria-labelledby="pTitle" hidden>
+  <section class="level level--pano" id="panoLevel" role="dialog" aria-modal="true" aria-labelledby="pTitle" hidden>
     <div class="pano-canvas" id="panoCanvas" aria-label="Vista 360°, arrastrá para mirar alrededor"></div>
     <div class="pano-spots" id="panoSpots"></div>
     <div class="pano-title glass">
