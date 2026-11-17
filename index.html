@@ -16,8 +16,9 @@
   <link rel="preload" as="image" href="img/vuelo/m/000.webp" fetchpriority="high" media="(max-aspect-ratio: 4/5)">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/plan.css">
-  <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js" } }</script>
-  <script src="https://unpkg.com/lenis@1.1.20/dist/lenis.min.js" defer></script>
+  <!-- Three.js 0.170 y Lenis 1.1.20 van en el repo: el sitio no depende de que un CDN externo responda -->
+  <script type="importmap">{ "imports": { "three": "./js/vendor/three.module.min.js" } }</script>
+  <script src="js/vendor/lenis.min.js" defer></script>
   <script type="module" src="js/main.js"></script>
 </head>
 <body class="is-loading">

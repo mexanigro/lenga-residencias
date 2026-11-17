@@ -20,7 +20,9 @@ export function createFlight(canvas, marks, { reduced = false } = {}) {
     const out = [], seen = new Set();
     const add = (i) => { if (!seen.has(i)) { seen.add(i); out.push(i); } };
     add(0);
-    for (const s of [16, 8, 4, 2, 1]) {
+    // con ahorro de datos o conexión lenta, uno de cada dos cuadros (el fundido entre vecinos disimula el resto)
+    const c = navigator.connection, lite = c && (c.saveData || /(^|-)2g|3g/.test(c.effectiveType || ''));
+    for (const s of lite ? [16, 8, 4, 2] : [16, 8, 4, 2, 1]) {
       for (let i = 0; i < N; i += s) add(i);
       add(N - 1);
     }

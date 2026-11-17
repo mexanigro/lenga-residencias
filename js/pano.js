@@ -57,6 +57,7 @@ export function createPano(host, spotsLayer, { reduced = false } = {}) {
         t.minFilter = THREE.LinearFilter;
         t.needsUpdate = true;
         renderer.initTexture(t);
+        bmp.close?.(); // ya está en la placa: la copia decodificada en memoria sobra (6 × 72 MB en escritorio)
         return t;
       }).catch((err) => { cache.delete(key); throw err; })); // si falla la descarga, se reintenta la próxima vez
     }
@@ -332,11 +333,23 @@ export function createPano(host, spotsLayer, { reduced = false } = {}) {
       running = false;
       target = null;
       gen++;
+      // al salir del 360° se libera la placa: recorrer varias unidades no acumula panoramas
+      clearTimeout(preloadTimer);
+      front.material.map = back.material.map = null;
+      front.material.needsUpdate = back.material.needsUpdate = true;
+      for (const p of cache.values()) p.then((t) => t.dispose(), () => {});
+      cache.clear();
       video.pause();
       if (tween) { const r = tween.res; tween = null; r(); }
       cancelWait?.();
     },
-    reset() { current = null; fade = null; front.material.opacity = back.material.opacity = 0; },
+    reset() {
+      current = null;
+      fade = null;
+      front.material.opacity = back.material.opacity = 0;
+      front.material.map = back.material.map = null; // nada de la visita anterior (ya liberado) vuelve a dibujarse
+      front.material.needsUpdate = back.material.needsUpdate = true;
+    },
     zoom,
   };
 }
