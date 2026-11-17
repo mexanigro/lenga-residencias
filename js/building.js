@@ -279,6 +279,7 @@ export function initBuilding({ lockScroll }) {
 
   /* ---------------- unidad ---------------- */
   const iso = $('#isoImg'), isoSpots = $('#isoSpots');
+  let isModel = true;
   function renderUnit(n, id) {
     const f = FLOORS.find((x) => x.n === n), u = f.units.find((x) => x.id === id), t = TYPES[u.type];
     const b = bearingInfo(u.bearing);
@@ -309,6 +310,12 @@ export function initBuilding({ lockScroll }) {
       s.addEventListener('click', () => go({ level: 'pano', floor: f.n, unit: u.id, room: key }));
       isoSpots.appendChild(s);
     }
+    // el 360° es el del departamento modelo (2 suites): en las otras tipologías se aclara antes de entrar
+    isModel = u.type === DEPTO.type;
+    $('#tourLabel').textContent = isModel ? 'Recorrer en 360°' : 'Recorrer el modelo en 360°';
+    $('#uNote').textContent = isModel
+      ? 'Imágenes ilustrativas generadas para este proyecto.'
+      : `El recorrido 360° muestra el departamento modelo de 2 suites (${TYPES[DEPTO.type].name}). Imágenes ilustrativas.`;
     drawPlan($('#plan2d'), t, { bearing: u.bearing });
     $('#plan2d').dataset.base = $('#plan2d').getAttribute('viewBox');
     setTab('iso');
@@ -319,7 +326,7 @@ export function initBuilding({ lockScroll }) {
     $('#isoView').hidden = which !== 'iso';
     $('#planView').hidden = which !== 'plan';
     $('.unit-hint').textContent = which === 'iso'
-      ? 'Tocá un ambiente de la maqueta para recorrerlo en 360°.'
+      ? (isModel ? 'Tocá un ambiente de la maqueta para recorrerlo en 360°.' : 'Tocá un ambiente para recorrer el departamento modelo en 360°.')
       : (touchFirst ? 'Pellizcá o usá + y − para acercar, y arrastrá para mover.' : 'Acercá con + y − (o la rueda) y arrastrá para mover. Doble clic para volver.');
   }
   const pz = planZoom($('#plan2d'));
@@ -339,7 +346,7 @@ export function initBuilding({ lockScroll }) {
     const bar = $('#panoRooms');
     if (fresh) {
       const u = FLOORS.find((x) => x.n === st.floor).units.find((x) => x.id === st.unit);
-      $('#pKicker').textContent = `Unidad ${u.id}, departamento modelo`;
+      $('#pKicker').textContent = u.type === DEPTO.type ? `Unidad ${u.id}, departamento modelo` : `Departamento modelo de 2 suites`;
       $('#pTitle').textContent = views[st.room].label;
       bar.innerHTML = '';
       for (const [key, v] of Object.entries(views)) {
