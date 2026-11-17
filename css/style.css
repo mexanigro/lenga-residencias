@@ -198,6 +198,8 @@ body.show-elevator .elevator { opacity: 1; pointer-events: auto; }
 /* ---------- niveles (piso, unidad, 360) ---------- */
 .level { position: fixed; inset: 0; z-index: 50; background: radial-gradient(120% 90% at 65% 45%, var(--hora), var(--noche) 62%); opacity: 0; transition: opacity .5s var(--ease); }
 .level.is-in { opacity: 1; }
+/* mientras aparece o se desvanece no recibe clics (un doble clic no cae en lo que todavía no se ve) */
+.level:not(.is-in) { pointer-events: none; }
 .level .panel, .level .plate-box, .level .unit-stage { transition: transform .8s var(--ease), opacity .8s var(--ease); }
 .level:not(.is-in) .panel { transform: translateX(-24px); opacity: 0; }
 .level:not(.is-in) .plate-box, .level:not(.is-in) .unit-stage { transform: scale(.94); opacity: 0; }

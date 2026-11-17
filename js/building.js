@@ -104,13 +104,13 @@ export function initBuilding({ lockScroll }) {
   const stage = $('#stage'), frame = $('#frame'), zonesSvg = $('#zones');
   const tip = $('#tip'), crumbs = $('#crumbs');
   const levels = { floor: $('#floorLevel'), unit: $('#unitLevel'), pano: $('#panoLevel') };
-  let state = { level: 'building' }, live = false, hover = null, busy = false, pano = null;
+  let state = { level: 'building' }, live = false, hover = null, busy = false, pano = null, settling = false;
 
   /* ---------------- edificio ---------------- */
   const lit = $('#litImg'), litPoly = $('#litClip'), edge = $('#litEdge'), hole = $('#hole');
   const zoneEls = FLOORS.map((f, i) => {
     const p = svgEl('polygon', { points: pts(FLOOR_ZONES[f.n]), class: `zone${f.zone === 'club' ? ' is-club' : ''}` }, $('#zonePolys'));
-    p.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch') setHover(i, e); });
+    p.addEventListener('pointerenter', (e) => { if (e.pointerType !== 'touch' && !settling) setHover(i, e); });
     p.addEventListener('pointermove', (e) => { if (e.pointerType !== 'touch') placeTip(e.clientX, e.clientY); });
     p.addEventListener('pointerleave', (e) => { if (e.pointerType !== 'touch') setHover(null); });
     p.addEventListener('click', (e) => {
@@ -314,33 +314,51 @@ export function initBuilding({ lockScroll }) {
   /* ---------------- 360 ----------------
      El recorrido es el del departamento modelo (tipo L2), renderizado en 3D: el mismo para todas las
      unidades, con su plano en el mini mapa para que la posición y la mirada sean exactas. */
+  // fresh: se entra al 360° (se arma todo y se espera el primer panorama).
+  // Si no, es un cambio de ambiente: se marca el destino y el recorrido sigue solo, sin bloquear la navegación.
   async function renderPano(st, fresh) {
-    const u = FLOORS.find((x) => x.n === st.floor).units.find((x) => x.id === st.unit);
     const views = DEPTO.views;
-    $('#pKicker').textContent = `Unidad ${u.id}, departamento modelo`;
-    $('#pTitle').textContent = views[st.room].label;
     const bar = $('#panoRooms');
-    bar.innerHTML = '';
-    for (const [key, v] of Object.entries(views)) {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.textContent = v.label;
-      b.setAttribute('aria-current', String(key === st.room));
-      b.addEventListener('click', () => go({ ...st, room: key }, { replace: true }));
-      bar.appendChild(b);
+    if (fresh) {
+      const u = FLOORS.find((x) => x.n === st.floor).units.find((x) => x.id === st.unit);
+      $('#pKicker').textContent = `Unidad ${u.id}, departamento modelo`;
+      $('#pTitle').textContent = views[st.room].label;
+      bar.innerHTML = '';
+      for (const [key, v] of Object.entries(views)) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = v.label;
+        b.dataset.room = key;
+        b.addEventListener('click', () => go({ ...state, room: key }, { replace: true }));
+        bar.appendChild(b);
+      }
+      drawPlan($('#panoMap'), TYPES[DEPTO.type], { areas: false });
+      placeMe(st.room, views[st.room].start);
+      if (!pano) {
+        const { createPano } = await import('./pano.js');
+        pano = createPano($('#panoCanvas'), $('#panoSpots'), { reduced });
+      }
+      pano.reset();
     }
+    // la barra marca adónde se va; el título dice dónde se está (en un salto largo se cruzan otros ambientes)
+    bar.querySelectorAll('button').forEach((b) => b.setAttribute('aria-current', String(b.dataset.room === st.room)));
     bar.querySelector('[aria-current="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
-    drawPlan($('#panoMap'), TYPES[DEPTO.type], { areas: false });
-    if (!pano) {
-      const { createPano } = await import('./pano.js');
-      pano = createPano($('#panoCanvas'), $('#panoSpots'), { reduced });
-    }
-    if (fresh) pano.reset();
-    placeMe(st.room, views[st.room].start);
-    await pano.show(st.room, {
-      onGo: (key) => go({ ...st, room: key }, { replace: true }),
-      onLook: (yaw) => placeMe(state.room, yaw),
+    const shown = pano.show(st.room, {
+      onGo: (key) => go({ ...state, room: key }, { replace: true }),
+      onLook: (yaw, room) => placeMe(room, yaw),
+      onRoom: (room) => {
+        $('#pTitle').textContent = views[room].label;
+        // el punto tocado desaparece al llegar: el foco pasa al título para no perderse
+        if (!document.activeElement || document.activeElement === document.body) $('#pTitle').focus({ preventScroll: true });
+      },
     });
+    if (fresh) await shown;
+    else shown.catch(panoFailed);
+  }
+  function panoFailed(err) {
+    console.error(err);
+    if (state.level !== 'pano') return;
+    go({ level: 'unit', floor: state.floor, unit: state.unit }, { replace: true, failed: true });
   }
   function placeMe(room, yaw) {
     const map = $('#panoMap');
@@ -367,7 +385,7 @@ export function initBuilding({ lockScroll }) {
       const el = document.createElement(last ? 'span' : 'button');
       el.textContent = label;
       if (last) el.setAttribute('aria-current', 'page');
-      else { el.type = 'button'; el.addEventListener('click', () => go(to)); }
+      else { el.type = 'button'; el.addEventListener('click', () => goUp(to)); }
       crumbs.appendChild(el);
     });
     crumbs.classList.toggle('is-on', live || state.level !== 'building');
@@ -382,12 +400,13 @@ export function initBuilding({ lockScroll }) {
     if (!f || f.zone === 'club') return { level: 'building' };
     const u = m[2] && f.units.find((x) => x.id === m[2]);
     if (!u) return { level: 'floor', floor: f.n };
-    if (m[3] && DEPTO.views[m[3]]) return { level: 'pano', floor: f.n, unit: u.id, room: m[3] };
+    if (m[3] && Object.hasOwn(DEPTO.views, m[3])) return { level: 'pano', floor: f.n, unit: u.id, room: m[3] };
     return { level: 'unit', floor: f.n, unit: u.id };
   }
 
-  function show(el) { el.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('is-in'))); }
-  async function hide(el) { if (el.hidden) return; el.classList.remove('is-in'); await wait(380); el.hidden = true; }
+  // _on: lo último que se pidió para ese nivel (mostrar u ocultar); las transiciones viejas no lo pisan
+  function show(el) { el._on = true; el.hidden = false; requestAnimationFrame(() => requestAnimationFrame(() => { if (el._on) el.classList.add('is-in'); })); }
+  async function hide(el) { el._on = false; if (el.hidden) return; el.classList.remove('is-in'); await wait(380); if (!el._on) el.hidden = true; }
 
   // acerca el render al piso elegido antes de abrir su planta
   function zoomTo(n, on) {
@@ -403,12 +422,47 @@ export function initBuilding({ lockScroll }) {
     frame.style.filter = on ? 'blur(2px) brightness(.7)' : '';
   }
 
-  async function go(next, { push = true, replace = false } = {}) {
-    if (busy) return;
+  // Navegación. Si llega otro pedido durante una transición (atrás, Escape, un clic) se guarda el último
+  // y se ejecuta al terminar, así la URL y lo que se ve nunca quedan distintos.
+  let pending = null;
+  async function go(next, opts = {}) {
+    if (busy) { pending = [next, opts]; return; }
     busy = true;
+    try { await step(next, opts); }
+    catch (err) {
+      console.error(err);
+      // el 360° no pudo abrir (sin WebGL, sin conexión con la librería, panorama que no baja): volver a la unidad
+      if (next.level === 'pano') pending ??= [{ level: 'unit', floor: next.floor, unit: next.unit }, { replace: true, failed: true }];
+    } finally {
+      busy = false;
+      if (pending) { const [n, o] = pending; pending = null; go(n, o); }
+    }
+  }
+
+  // historial propio: subir con Escape o con las migas vuelve atrás en el navegador si ese nivel está justo detrás,
+  // así "atrás" después de subir no reabre lo que se acaba de cerrar
+  const trail = [parse(location.hash)];
+  const depth = () => history.state?.d ?? 0;
+  function goUp(to) {
+    const d = depth(), k = trail.findLastIndex((s, i) => i < d && s && hashOf(s) === hashOf(to));
+    if (k >= 0) history.go(k - d);
+    else go(to);
+  }
+
+  async function step(next, { push = true, replace = false, failed = false } = {}) {
     const prev = state;
     state = next;
-    if (push) history[replace ? 'replaceState' : 'pushState'](next, '', hashOf(next));
+    const d = depth();
+    if (push) {
+      const nd = replace ? d : d + 1;
+      history[replace ? 'replaceState' : 'pushState']({ ...next, d: nd }, '', hashOf(next));
+      trail[nd] = next;
+      trail.length = nd + 1;
+    } else {
+      trail[d] = next;
+      // enlace inválido (#/piso/99, #/piso/10/ZZ): la URL se corrige a lo que se muestra
+      if (location.hash !== hashOf(next)) history.replaceState({ ...next, d }, '', hashOf(next));
+    }
     setHover(null);
     const order = ['building', 'floor', 'unit', 'pano'];
     const down = order.indexOf(next.level) > order.indexOf(prev.level);
@@ -417,10 +471,14 @@ export function initBuilding({ lockScroll }) {
     lockScroll(next.level !== 'building');
 
     if (next.level === 'building') {
+      // si la pantalla giró mientras se miraba un piso, el final del recorrido cambió: volver a él
+      const end = $('#top').offsetHeight - innerHeight;
+      if (Math.abs(scrollY - end) > 2) window.scrollTo(0, end);
+      settling = true; // mientras la foto se aleja, los pisos que pasan bajo el mouse no abren el cartel
       await Promise.all(Object.values(levels).map(hide));
       pano?.pause();
       zoomTo(prev.floor || 12, false);
-      setTimeout(() => { frame.style.transition = ''; frame.style.filter = ''; }, 850);
+      setTimeout(() => { frame.style.transition = ''; frame.style.filter = ''; settling = false; }, 850);
       markFloor(null);
     } else {
       if (prev.level === 'building') { zoomTo(next.floor, true); await wait(down ? 520 : 0); }
@@ -448,14 +506,14 @@ export function initBuilding({ lockScroll }) {
     renderCrumbs();
     const focusTarget = { floor: '#fTitle', unit: '#uTitle', pano: '#pTitle' }[next.level];
     if (focusTarget && prev.level !== next.level) $(focusTarget).focus({ preventScroll: true });
-    busy = false;
+    if (failed) $('.unit-hint').textContent = 'No se pudo abrir el recorrido 360° en este navegador.';
   }
 
   window.addEventListener('popstate', () => go(parse(location.hash), { push: false }));
   document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape' || busy) return;
+    if (e.key !== 'Escape') return;
     const up = { floor: { level: 'building' }, unit: { level: 'floor', floor: state.floor }, pano: { level: 'unit', floor: state.floor, unit: state.unit } }[state.level];
-    if (up) go(up);
+    if (up) goUp(up);
   });
   window.addEventListener('resize', () => { if (state.floor) markFloor(state.floor); if (state.level !== 'building') zoomTo(state.floor, true); });
 
@@ -470,7 +528,11 @@ export function initBuilding({ lockScroll }) {
       if (v && state.level === 'building') scan();
       if (!v) setHover(null);
     },
-    openFromHash() { const s = parse(location.hash); if (s.level !== 'building') go(s, { push: false }); },
+    openFromHash() {
+      const s = parse(location.hash);
+      if (s.level !== 'building') go(s, { push: false });
+      else if (location.hash !== '#edificio') history.replaceState({ ...s, d: 0 }, '', '#edificio'); // #/piso/99 → #edificio
+    },
   };
 
   // recorrido de luz por las losas, de abajo hacia arriba, para invitar a tocar

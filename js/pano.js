@@ -58,7 +58,7 @@ export function createPano(host, spotsLayer, { reduced = false } = {}) {
         t.needsUpdate = true;
         renderer.initTexture(t);
         return t;
-      }));
+      }).catch((err) => { cache.delete(key); throw err; })); // si falla la descarga, se reintenta la próxima vez
     }
     return cache.get(key);
   };
@@ -109,19 +109,32 @@ export function createPano(host, spotsLayer, { reduced = false } = {}) {
   }
 
   /* mirar alrededor */
-  let drag = null, vx = 0, vy = 0, dragged = false;
+  let drag = null, vx = 0, vy = 0, dragged = false, pinch = null;
+  const ptrs = new Map();
+  const spread = () => { const [a, b] = [...ptrs.values()]; return Math.hypot(a[0] - b[0], a[1] - b[1]); };
   const hint = document.getElementById('panoHint');
   host.addEventListener('pointerdown', (e) => {
-    if (busy) return;
-    drag = { x: e.clientX, y: e.clientY, t: performance.now() };
-    vx = vy = 0;
+    if (busy || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    host.setPointerCapture(e.pointerId);
     idle = -1;
     dragged = true;
-    host.setPointerCapture(e.pointerId);
-    host.classList.add('is-drag');
     hint?.classList.add('is-off');
+    // dos dedos: pellizco para acercar o alejar
+    if (ptrs.size === 2) { pinch = spread(); drag = null; return; }
+    drag = { x: e.clientX, y: e.clientY, t: performance.now() };
+    vx = vy = 0;
+    host.classList.add('is-drag');
   });
   host.addEventListener('pointermove', (e) => {
+    if (!ptrs.has(e.pointerId)) return;
+    ptrs.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pinch && ptrs.size >= 2) {
+      const d = spread();
+      fov = fovTarget = Math.min(95, Math.max(35, fovTarget * (pinch / d)));
+      pinch = d;
+      return;
+    }
     if (!drag) return;
     const k = (fov / 70) / Math.max(W, 1) * 0.32;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
@@ -132,10 +145,22 @@ export function createPano(host, spotsLayer, { reduced = false } = {}) {
     vy = (-dy * k * 1.6) / dt * 16;
     drag = { x: e.clientX, y: e.clientY, t: performance.now() };
   });
-  const end = () => { if (!drag) return; drag = null; host.classList.remove('is-drag'); idle = 0; };
+  const end = (e) => {
+    if (!ptrs.delete(e.pointerId)) return;
+    if (ptrs.size < 2) pinch = null;
+    if (ptrs.size === 1) { const [p] = ptrs.values(); drag = { x: p[0], y: p[1], t: performance.now() }; return; } // sigue con el dedo que queda
+    drag = null;
+    host.classList.remove('is-drag');
+    idle = 0;
+  };
   host.addEventListener('pointerup', end);
   host.addEventListener('pointercancel', end);
-  host.addEventListener('wheel', (e) => { e.preventDefault(); zoom(Math.sign(e.deltaY) * 6); }, { passive: false });
+  host.addEventListener('lostpointercapture', end);
+  host.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const d = e.deltaY * (e.deltaMode === 1 ? 33 : 1); // un clic de rueda ≈ 6°, el trackpad avanza suave
+    zoom(Math.max(-6, Math.min(6, d * 0.06)));
+  }, { passive: false });
   document.addEventListener('keydown', (e) => {
     if (!running || busy || e.target.closest('input, textarea, .pano-bar')) return;
     const m = { ArrowLeft: [-0.02, 0], ArrowRight: [0.02, 0], ArrowUp: [0, -0.03], ArrowDown: [0, 0.03] }[e.key];
@@ -198,7 +223,7 @@ export function createPano(host, spotsLayer, { reduced = false } = {}) {
       s.el.style.pointerEvents = vis ? 'auto' : 'none';
       if (vis) s.el.style.transform = `translate(${(tmp.x * 0.5 + 0.5) * W}px, ${(-tmp.y * 0.5 + 0.5) * H}px) translate(-50%, -50%)`;
     }
-    opts.onLook?.(uToYaw(u));
+    opts.onLook?.(uToYaw(u), current);
   }
 
   async function setRoom(key, t, { ms = 0, yaw = null } = {}) {
@@ -221,59 +246,94 @@ export function createPano(host, spotsLayer, { reduced = false } = {}) {
   let preloadTimer = 0;
 
   // camina de un ambiente al otro con el video del trayecto
-  async function walk(to, { settle = true } = {}) {
+  // gen cambia al salir del 360°: todo lo que estaba en curso se corta en el próximo paso
+  let target = null, gen = 0, routingGen = -1, cancelWait = null;
+  async function walk(to, { settle = true, g = gen } = {}) {
     const name = `${current}-${to}`, m = MOVES[name];
-    const target = tex(to);
-    if (!m || reduced) { await setRoom(to, await target, { ms: reduced ? 1 : 700 }); return; }
+    const arrival = tex(to);
+    if (!m || reduced) { await setRoom(to, await arrival, { ms: reduced ? 1 : 700 }); return; }
     busy = true;
     host.classList.add('is-moving');
-    video.src = `img/pano/move/${name}.mp4`;
-    const ready = new Promise((r) => { video.oncanplaythrough = r; video.onerror = r; setTimeout(r, 2500); });
-    video.load();
-    // 1. girar hacia la puerta con el encuadre del video
-    await turnTo(yawToU(m.from), 0.5, moveFov(), 650);
-    await ready;
-    // 2. el video toma el lugar del panorama (son el mismo cuadro) y camina
-    video.currentTime = 0;
-    video.classList.add('is-on');
-    await video.play().catch(() => {});
-    await new Promise((r) => { video.onended = r; setTimeout(r, (m.n / m.fps) * 1000 + 1500); });
-    // 3. el panorama de llegada queda mirando hacia donde terminó el video
-    await setRoom(to, await target, { yaw: m.to });
-    fov = fovTarget = moveFov();
-    draw(); // el panorama de llegada ya está dibujado debajo del último cuadro del video
-    video.classList.remove('is-on');
-    host.classList.remove('is-moving');
-    busy = false;
+    try {
+      video.src = `img/pano/move/${name}.mp4`;
+      const ready = new Promise((r) => { video.oncanplaythrough = r; video.onerror = r; setTimeout(r, 2500); });
+      video.load();
+      // 1. girar hacia la puerta con el encuadre del video
+      await turnTo(yawToU(m.from), 0.5, moveFov(), 650);
+      await ready;
+      if (g !== gen) return; // se salió del 360° a mitad de camino
+      // 2. el video toma el lugar del panorama (son el mismo cuadro) y camina
+      video.currentTime = 0;
+      video.classList.add('is-on');
+      const played = await video.play().then(() => true, () => false);
+      // sin video (ahorro de energía en iPhone, por ejemplo): fundido directo al ambiente
+      if (!played) { video.classList.remove('is-on'); await setRoom(to, await arrival, { ms: 700 }); return; }
+      await new Promise((r) => { cancelWait = r; video.onended = r; setTimeout(r, (m.n / m.fps) * 1000 + 1500); });
+      if (g !== gen) return;
+      // 3. el panorama de llegada queda mirando hacia donde terminó el video
+      await setRoom(to, await arrival, { yaw: m.to });
+      fov = fovTarget = moveFov();
+      draw(); // el panorama de llegada ya está dibujado debajo del último cuadro del video
+    } finally {
+      video.classList.remove('is-on');
+      host.classList.remove('is-moving');
+      busy = false;
+      cancelWait = null;
+    }
     // entre tramos seguidos no se vuelve a abrir el encuadre: el próximo giro sale de acá
     // al llegar, la mirada se abre y gira hacia el encuadre principal del ambiente (como al entrar a un cuarto)
-    if (settle) await turnTo(yawToU(VIEWS[to].start), 0.5, baseFov(), 1400);
+    if (settle && g === gen && target === to) await turnTo(yawToU(VIEWS[to].start), 0.5, baseFov(), 1400);
+  }
+
+  // primer paso del camino más corto por los ambientes conectados (living → suite → baño, por ejemplo)
+  function nextStep(from, to) {
+    const prev = { [from]: null }, queue = [from];
+    while (queue.length && !(to in prev)) {
+      const at = queue.shift();
+      for (const [n] of VIEWS[at].spots) if (!(n in prev)) { prev[n] = at; queue.push(n); }
+    }
+    if (!(to in prev)) return null;
+    let k = to;
+    while (prev[k] !== from) k = prev[k];
+    return k;
   }
 
   return {
+    // Ir a un ambiente. Si ya hay un recorrido en curso, cambia el destino: termina el tramo actual y sigue hacia el nuevo.
     async show(key, o) {
       opts = o;
-      if (busy) return;
-      if (!running) { running = true; last = performance.now(); resize(); requestAnimationFrame(frame); }
-      if (current === null || !VIEWS[current]) {
-        await setRoom(key, await tex(key), { ms: reduced ? 1 : 600 });
-        fov = fovTarget = baseFov();
-      } else if (key !== current) {
-        // camino más corto por los ambientes conectados (living → suite → baño, por ejemplo)
-        const prev = { [current]: null }, queue = [current];
-        while (queue.length && !(key in prev)) {
-          const at = queue.shift();
-          for (const [to] of VIEWS[at].spots) if (!(to in prev)) { prev[to] = at; queue.push(to); }
+      target = key;
+      if (routingGen === gen) return;
+      const g = gen;
+      routingGen = g;
+      try {
+        if (!running) { running = true; last = performance.now(); resize(); requestAnimationFrame(frame); }
+        if (current === null || !VIEWS[current]) {
+          await setRoom(key, await tex(key), { ms: reduced ? 1 : 600 });
+          fov = fovTarget = baseFov();
+          opts.onRoom?.(current);
         }
-        const route = [];
-        for (let k = key; k && k !== current; k = prev[k]) route.unshift(k);
-        if (route.length && key in prev) for (const [i, step] of route.entries()) await walk(step, { settle: i === route.length - 1 });
-        else await setRoom(key, await tex(key), { ms: reduced ? 1 : 700 });
+        while (g === gen && target && current !== target) {
+          const goal = target, step = nextStep(current, goal);
+          if (step) await walk(step, { settle: step === goal, g });
+          else await setRoom(goal, await tex(goal), { ms: reduced ? 1 : 700 });
+          if (g === gen) opts.onRoom?.(current);
+        }
+      } finally {
+        if (routingGen === g) routingGen = -1;
       }
       if (!dragged) hint?.classList.remove('is-off');
     },
-    pause() { running = false; video.pause(); },
-    reset() { current = null; },
+    // al salir del 360°: corta el trayecto en curso sin esperar al video
+    pause() {
+      running = false;
+      target = null;
+      gen++;
+      video.pause();
+      if (tween) { const r = tween.res; tween = null; r(); }
+      cancelWait?.();
+    },
+    reset() { current = null; fade = null; front.material.opacity = back.material.opacity = 0; },
     zoom,
   };
 }

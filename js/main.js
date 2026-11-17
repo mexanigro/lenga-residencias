@@ -95,14 +95,17 @@ function render() {
   hint.style.opacity = 1 - seg(p, 0.01, 0.04);
 
   // final del scroll: el edificio se vuelve interactivo
-  const atEnd = p > 0.985;
-  building.setLive(atEnd);
-  document.body.classList.toggle('at-end', atEnd);
+  // dentro de un nivel no se toca: si la pantalla gira, el final del recorrido cambia y el edificio se apagaría
+  if (!document.body.classList.contains('in-level')) {
+    const atEnd = p > 0.985;
+    building.setLive(atEnd);
+    document.body.classList.toggle('at-end', atEnd);
+  }
 }
 requestAnimationFrame(render);
 
 // enlace directo a un piso o unidad: saltar al edificio y abrirlo
-if (location.hash.startsWith('#/piso')) {
+if (location.hash.startsWith('#/piso') || location.hash === '#edificio') {
   window.scrollTo(0, endY());
   lenis?.scrollTo(endY(), { immediate: true });
   setTimeout(() => building.openFromHash(), 60);
