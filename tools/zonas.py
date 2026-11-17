@@ -1,5 +1,7 @@
 """Calibra el contorno de cada piso sobre la foto final de la torre (img/originales/torre-16x9.jpg).
-Busca las losas (bandas claras) en varias columnas, ajusta una recta por losa y arma un polígono por piso.
+Cada losa de la torre se sigue de punta a punta como el camino más marcado de una banda clara entre
+ventanas oscuras (programación dinámica), así se respetan la perspectiva y las puntas redondeadas.
+Las losas del podio son horizontales. Un piso es la franja entre su losa y la de arriba.
 Escribe js/zones.js y un control visual en img/originales/zonas-control.jpg.
 Uso: python -I tools/zonas.py"""
 import json
@@ -7,6 +9,7 @@ import pathlib
 
 import numpy as np
 from PIL import Image, ImageDraw
+from scipy.ndimage import uniform_filter1d
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC = ROOT / 'img' / 'originales' / 'torre-16x9.jpg'
@@ -16,102 +19,100 @@ a = np.asarray(im).astype(float)
 H, W, _ = a.shape
 lum = a.mean(axis=2)
 sat = a.max(axis=2) - a.min(axis=2)
-bright = (lum > 150) & (sat < 70)
+lum = np.where(sat < 80, lum, lum * 0.6)  # la losa es gris claro: la madera y el cielo saturados cuentan menos
+band = uniform_filter1d(lum, 9, axis=0)
+score = band - 0.5 * (np.roll(band, 12, axis=0) + np.roll(band, -12, axis=0))  # claro con oscuro arriba y abajo
 
-COLS = [1105, 1135, 1170, 1205, 1240, 1275, 1310, 1350, 1385, 1420, 1460, 1495, 1530, 1565, 1600, 1635]
-X0 = 1385
-# losas a lo largo de la columna central, de arriba (techo) hacia abajo (piso 3), + podio
-EXPECTED = [173, 238, 292, 352, 410, 464, 520, 576, 636, 695, 754, 817, 878, 938, 998, 1056, 1114, 1190, 1282]
-
-
-def runs(x, y0=140, y1=1320):
-    col = bright[y0:y1, x - 8:x + 8].mean(axis=1) > 0.45
-    out, s = [], None
-    for i, v in enumerate(col):
-        if v and s is None:
-            s = i
-        if not v and s is not None:
-            if i - s >= 3:
-                out.append(y0 + (s + i - 1) / 2)
-            s = None
-    return out
+X0 = 1385  # columna de referencia, sobre el frente de la torre
+# altura de cada losa de la torre en X0, del techo (0) a la losa del piso 3 sobre el podio (16)
+SLABS = [173, 238, 292, 352, 410, 464, 520, 576, 636, 695, 754, 817, 878, 938, 998, 1056, 1114]
+PODIUM = [1114.7, 1190.5, 1282.5]  # losas del podio: techo del piso 2, techo de planta baja, vereda
+ks = np.arange(len(SLABS))
+LEFT = np.interp(ks, [0, 16], [1138, 1090])   # bordes aproximados de la torre (se recortan solos)
+RIGHT = np.interp(ks, [0, 16], [1650, 1688])
+STEP, WIN, DMAX = 2, 16, 3
 
 
-found = {x: runs(x) for x in COLS}
-lines = []
-prev = np.array([0.0, 0.08, 0.0])  # c2, c1, c0 relativos a X0 (c0 se reemplaza)
-for k, ye in enumerate(EXPECTED):
-    pts = []
-    for x in COLS:
-        guess = ye + np.polyval([prev[0], prev[1], 0], x - X0)
-        c = [y for y in found[x] if abs(y - guess) < 13]
-        if c:
-            pts.append((x, min(c, key=lambda y: abs(y - guess))))
-    # arriba las losas se curvan (cuadrática); de la losa 11 para abajo son casi rectas; el podio es horizontal
-    deg = 2 if k < 11 else (1 if k < 16 else 0)
-    if len(pts) >= deg + 4:
-        xs, ys = np.array(pts, float).T
-        keep = np.ones(len(xs), bool)
-        for _ in range(4):
-            c = np.polyfit(xs[keep] - X0, ys[keep], deg)
-            r = np.abs(np.polyval(c, xs - X0) - ys)
-            keep = r < max(3, np.percentile(r[keep], 75) * 1.6)
-        coef = np.polyfit(xs[keep] - X0, ys[keep], deg)
-        coef = np.concatenate([np.zeros(3 - len(coef)), coef])
-    else:
-        off = np.median([p[1] for p in pts if abs(p[0] - X0) < 120]) if any(abs(p[0] - X0) < 120 for p in pts) else ye
-        coef = np.array([0.0, 0.0 if k >= 16 else lines[-1][1], off])
-    if k < 16:
-        prev = coef
-    lines.append(coef)
-    print(k, f'y@centro {coef[2]:6.1f}  puntos {len(pts)}')
+def trace(xs, prior):
+    """camino de máximo puntaje dentro de prior ± WIN, con saltos de hasta DMAX px por paso
+    y castigo por apartarse de la forma de la losa de arriba"""
+    offs = np.arange(-WIN, WIN + 1)
+    n, m = len(xs), len(offs)
+    S = np.full((n, m), -1e9)
+    B = np.zeros((n, m), int)
+    for i, (x, py) in enumerate(zip(xs, prior)):
+        ys = np.clip(np.round(py + offs).astype(int), 0, H - 1)
+        s = score[ys, int(x)]
+        if i == 0:
+            S[0] = s
+            continue
+        jump = (py + offs[:, None]) - (prior[i - 1] + offs[None, :])  # [j actual, jj anterior]
+        cand = np.where(np.abs(jump) <= DMAX, S[i - 1][None, :] - 0.8 * np.abs(jump - (py - prior[i - 1])), -1e9)
+        B[i] = cand.argmax(axis=1)
+        S[i] = cand.max(axis=1) + s
+    j = int(S[-1].argmax())
+    path = [j]
+    for i in range(n - 1, 0, -1):
+        j = B[i, j]
+        path.append(j)
+    ys = prior + offs[np.array(path[::-1])]
+    return uniform_filter1d(ys.astype(float), 5)
 
 
-def y_at(k, x):
-    return float(np.polyval(lines[k], x - X0))
+def trim(xs, ys, thr=10, run=4):
+    """corta las puntas donde el camino ya no va por una losa (cielo, árboles)"""
+    s = uniform_filter1d(score[np.round(ys).astype(int), xs.astype(int)], 5)
+    c = int(np.argmin(np.abs(xs - X0)))
+    lo, hi = 0, len(xs) - 1
+    for i in range(c, -1, -1):
+        if (s[max(0, i - run + 1):i + 1] < thr).all():
+            lo = i + run
+            break
+    for i in range(c, len(xs)):
+        if (s[i:i + run] < thr).all():
+            hi = i - 1
+            break
+    return xs[lo:hi + 1], ys[lo:hi + 1]
 
 
-def edges(k):
-    """Bordes izquierdo y derecho de la losa k: recorre la banda clara desde el centro."""
-    lo, hi = (1060, 1700) if k < 16 else (930, 1820)
-    out = []
-    for direction in (-1, 1):
-        x, gap, last = X0, 0, X0
-        while lo < x < hi:
-            y = int(round(y_at(k, x)))
-            on = bright[y - 3:y + 4, x].any()
-            gap = 0 if on else gap + 1
-            if on:
-                last = x
-            if gap > 18:
-                break
-            x += direction
-        out.append(last)
-    return out
+slabs, prev = [], None
+for k, ye in enumerate(SLABS):
+    xs = np.arange(int(LEFT[k]) - 6, int(RIGHT[k]) + 7, STEP).astype(float)
+    prior = np.full(len(xs), float(ye)) if prev is None else np.interp(xs, *prev) + (ye - np.interp(X0, *prev))
+    ys = trace(xs, prior)
+    xs_t, ys_t = trim(xs, ys)
+    slabs.append((xs_t, ys_t))
+    prev = (xs, ys)  # la forma completa guía a la losa de abajo
+    print(k, f'y en X0 {np.interp(X0, xs_t, ys_t):6.1f}  x {xs_t[0]:.0f}..{xs_t[-1]:.0f}')
 
+def along(x, sl, other):
+    """altura de la losa sl en x; pasada su punta copia la forma de la otra losa del piso (paralela),
+    así la franja sigue la esquina redondeada en vez de salirse al cielo"""
+    xs, ys = sl
+    for end in (0, -1):
+        if (x < xs[0]) if end == 0 else (x > xs[-1]):
+            off = ys[end] - np.interp(xs[end], *other)
+            return float(np.interp(x, *other) + off)
+    return float(np.interp(x, xs, ys))
 
-# bordes de la torre medidos sobre la foto (techo -> losa del piso 3); las losas se curvan en las puntas,
-# así que el recorrido automático corta antes y se usa una recta entre estos dos extremos
-ks = np.arange(16 + 1)
-Lf = np.interp(ks, [0, 16], [1138, 1090])
-Rf = np.interp(ks, [0, 16], [1650, 1688])
 
 zones = {}
-N = 8
+N = 24
 for n in range(3, 19):
-    top, bot = 18 - n, 19 - n
-    xl = min(Lf[top], Lf[bot]) - 4
-    xr = max(Rf[top], Rf[bot]) + 4
+    top, bot = slabs[18 - n], slabs[19 - n]
+    # a la izquierda manda la losa más larga (las de arriba se redondean antes); a la derecha la más corta,
+    # así el piso no se sale de la fachada
+    xl, xr = min(top[0][0], bot[0][0]), min(top[0][-1], bot[0][-1])
+    if abs(top[0][0] - bot[0][0]) > 25:  # una losa termina mucho antes (esquina redondeada): no inventar la punta
+        xl = max(top[0][0], bot[0][0])
     xs = np.linspace(xl, xr, N)
-    poly = [[round(float(x), 1), round(float(y_at(top, x)), 1)] for x in xs]
-    poly += [[round(float(x), 1), round(float(y_at(bot, x)), 1)] for x in xs[::-1]]
+    poly = [[round(float(x), 1), round(along(x, top, bot), 1)] for x in xs]
+    poly += [[round(float(x), 1), round(along(x, bot, top), 1)] for x in xs[::-1]]
     zones[n] = poly
-# podio: piso 2 (losa 16 a 17) y planta baja (17 a 18)
-for n, (top, bot) in {2: (16, 17), 1: (17, 18)}.items():
-    xl, xr = 950, 1800
-    xs = np.linspace(xl, xr, N)
-    zones[n] = [[round(float(x), 1), round(float(y_at(top, x)), 1)] for x in xs] + \
-               [[round(float(x), 1), round(float(y_at(bot, x)), 1)] for x in xs[::-1]]
+# podio: piso 2 y planta baja, horizontales y más anchos que la torre
+for n, (top, bot) in {2: (PODIUM[0], PODIUM[1]), 1: (PODIUM[1], PODIUM[2])}.items():
+    xs = np.linspace(950, 1800, 8)
+    zones[n] = [[round(float(x), 1), top] for x in xs] + [[round(float(x), 1), bot] for x in xs[::-1]]
 
 (ROOT / 'js' / 'zones.js').write_text(
     '// Generado por tools/zonas.py\n'
