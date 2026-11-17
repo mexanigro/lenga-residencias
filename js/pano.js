@@ -218,10 +218,13 @@ export function createPano(host, spotsLayer, { reduced = false } = {}) {
     renderer.render(scene, camera);
     for (const s of spotEls) {
       tmp.copy(s.p).project(camera);
-      const vis = !busy && tmp.z < 1 && Math.abs(tmp.x) < 1.1 && Math.abs(tmp.y) < 1.1;
+      // contra el borde el punto se corre hacia adentro lo justo para verse entero y poder tocarlo
+      const hw = (s.w ||= s.el.offsetWidth || 120) / 2;
+      const x = Math.min(W - hw - 6, Math.max(hw + 6, (tmp.x * 0.5 + 0.5) * W)), y = (-tmp.y * 0.5 + 0.5) * H;
+      const vis = !busy && tmp.z < 1 && Math.abs(tmp.x) < 1 && Math.abs(tmp.y) < 1;
       s.el.style.opacity = vis ? 1 : 0;
       s.el.style.pointerEvents = vis ? 'auto' : 'none';
-      if (vis) s.el.style.transform = `translate(${(tmp.x * 0.5 + 0.5) * W}px, ${(-tmp.y * 0.5 + 0.5) * H}px) translate(-50%, -50%)`;
+      if (vis) s.el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
     }
     opts.onLook?.(uToYaw(u), current);
   }

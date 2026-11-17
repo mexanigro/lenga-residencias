@@ -323,6 +323,9 @@ body.at-end:not(.in-level) .credit { opacity: 1; }
   .sheet { height: 52svh; }
   .copy--side { top: auto; bottom: 90px; translate: 0; right: auto; left: var(--gutter); }
   .copy--left { max-width: min(30rem, 84vw); }
+  /* el + y − suben sobre la barra de ambientes para no taparla */
+  .pano-zoom { bottom: 88px; }
+  .pano-hint { bottom: 92px; max-width: calc(100vw - 160px); }
 }
 @media (max-width: 640px) {
   .hud { height: 64px; gap: .6rem; }
@@ -348,8 +351,21 @@ body.at-end:not(.in-level) .credit { opacity: 1; }
   .pano-title { top: 112px; left: 12px; padding: .7rem .9rem; }
   .pano-title h2 { font-size: 1.5rem; }
   .pano-map { top: 112px; right: 12px; width: 110px; padding: 6px; }
-  .pano-zoom { display: none; }
+  .pano-zoom { display: none; } /* en el celular se acerca pellizcando */
+  .pano-hint { max-width: calc(100vw - 48px); text-align: center; }
+  /* la barra se desliza: los bordes se desvanecen para que se note que sigue */
+  .pano-bar { mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent); }
   .credit { display: none; }
+}
+/* celular apaisado: poco alto, el 360° necesita la pantalla */
+@media (max-height: 500px) {
+  .pano-title { top: 70px; padding: .55rem .85rem; }
+  .pano-title h2 { font-size: 1.35rem; }
+  .pano-map { top: 70px; width: 104px; padding: 6px; }
+  .pano-zoom { display: none; }
+  .pano-hint { bottom: 64px; padding: .5rem .9rem; font-size: .8rem; }
+  .pano-bar { bottom: 10px; }
+  .pano-bar button { height: 34px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0s !important; transition-duration: .01ms !important; }

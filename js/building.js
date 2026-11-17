@@ -334,6 +334,7 @@ export function initBuilding({ lockScroll }) {
       }
       drawPlan($('#panoMap'), TYPES[DEPTO.type], { areas: false });
       placeMe(st.room, views[st.room].start);
+      $('#panoHint').textContent = touchFirst ? 'Arrastrá para mirar, pellizcá para acercar' : 'Arrastrá o usá las flechas para mirar en 360°';
       if (!pano) {
         const { createPano } = await import('./pano.js');
         pano = createPano($('#panoCanvas'), $('#panoSpots'), { reduced });
