@@ -221,6 +221,9 @@ export function drawPlan(svg, t, { bearing = 0, areas = true } = {}) {
       door({ v: true, x, s: c - 0.5, e: c + 0.5 }, r, 0.95);
       el('path', { d: `M${x + k * 1.15} ${c - 0.35} L${x + k * 0.55} ${c} L${x + k * 1.15} ${c + 0.35}`, class: 'entry' }, svg);
       el('text', { x: x + k * 1.25, y: c + 0.95, class: 'entry-t' }, svg).textContent = 'Acceso';
+      // el rótulo queda fuera del margen: se agranda el encuadre de ese lado para que no se corte
+      const [vx, vy, vw, vh] = svg.getAttribute('viewBox').split(' ').map(Number);
+      svg.setAttribute('viewBox', `${side === 'l' ? vx - 0.8 : vx} ${vy} ${vw + 0.8} ${vh}`);
     }
   }
 

@@ -203,6 +203,9 @@ export function initBuilding({ lockScroll }) {
     const r = floorBtns[i].getBoundingClientRect(), nr = $('#elevator').getBoundingClientRect();
     cab.style.top = `${r.top - nr.top + 1}px`;
     cab.style.height = `${r.height - 2}px`;
+    cab.style.left = `${r.left - nr.left + 1}px`; // también horizontal: en pantallas bajas el ascensor tiene dos columnas
+    cab.style.width = `${r.width - 2}px`;
+    cab.style.right = 'auto';
   }
 
   /* ---------------- planta del piso ---------------- */

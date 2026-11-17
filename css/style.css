@@ -192,7 +192,9 @@ body.show-elevator .elevator { opacity: 1; pointer-events: auto; }
 .elevator__rail button:hover, .elevator__rail button.is-hot { color: var(--piedra); background: rgba(239, 233, 223, .08); }
 .elevator__rail button[aria-current="true"] { color: var(--brasa-ink); }
 .elevator__rail button.is-club { color: rgba(147, 164, 170, .55); }
-.elevator__rail li[data-zone]::before { content: attr(data-zone); position: absolute; right: calc(100% + 18px); top: 50%; translate: 0 -50%; font: italic 300 .9rem/1 var(--serif); color: var(--piedra-2); white-space: nowrap; pointer-events: none; text-shadow: 0 1px 10px rgba(0, 0, 0, .6); }
+/* dentro de un piso los nombres de zona se apagan: ya están en el panel y tapaban la rosa de la planta */
+body.in-level .elevator__rail li[data-zone]::before { opacity: 0; }
+.elevator__rail li[data-zone]::before { transition: opacity .4s; content: attr(data-zone); position: absolute; right: calc(100% + 18px); top: 50%; translate: 0 -50%; font: italic 300 .9rem/1 var(--serif); color: var(--piedra-2); white-space: nowrap; pointer-events: none; text-shadow: 0 1px 10px rgba(0, 0, 0, .6); }
 .elevator__cab { position: absolute; left: 8px; right: 8px; border-radius: 999px; background: var(--brasa); box-shadow: 0 6px 20px -6px rgba(242, 182, 109, .7); z-index: -1; transition: top .55s var(--ease), height .3s; pointer-events: none; }
 
 /* ---------- niveles (piso, unidad, 360) ---------- */
@@ -236,6 +238,8 @@ body.show-elevator .elevator { opacity: 1; pointer-events: auto; }
 .plate .u--vendida:hover .u-veil, .plate .u--vendida.is-hot .u-veil { fill: rgba(11, 21, 27, .4); stroke: var(--niebla); }
 .utag { position: absolute; translate: -50% -50%; display: grid; justify-items: center; gap: .3rem; pointer-events: none; transition: rotate .9s var(--ease); }
 .utag b { font: 400 1.5rem/1 var(--serif); text-shadow: 0 2px 14px rgba(0, 0, 0, .7); }
+/* sobre la foto de la planta el estado necesita fondo propio para leerse */
+.utag .chip { background: rgba(11, 21, 27, .78); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
 .ring { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
 .ring circle { fill: none; stroke: rgba(239, 233, 223, .14); stroke-width: .06; }
 .ring line { stroke: rgba(239, 233, 223, .3); stroke-width: .06; }
@@ -330,7 +334,7 @@ body.at-end:not(.in-level) .credit { opacity: 1; }
 @media (max-width: 640px) {
   .hud { height: 64px; gap: .6rem; }
   .wordmark { font-size: 1.45rem; }
-  .crumbs { position: fixed; left: 12px; right: 12px; top: 64px; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
+  .crumbs { position: fixed; left: 12px; right: auto; max-width: calc(100vw - 24px); top: 64px; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
   .crumbs button, .crumbs span { padding: 0 .7rem; font-size: .8rem; }
   .copy--left { top: 84px; bottom: auto; }
   .copy--left h2 { font-size: 1.85rem; }
@@ -342,8 +346,7 @@ body.at-end:not(.in-level) .credit { opacity: 1; }
   .bcard { left: 12px; bottom: 12px; width: calc(100vw - 24px - 62px); padding: .85rem 1rem .9rem; }
   .bcard .display { font-size: 1.55rem; }
   .bcard p.muted { font-size: .8rem; margin-top: .4rem; }
-  .bcard .facts { margin-top: .55rem; padding-top: .55rem; gap: .5rem 1rem; }
-  .bcard .facts dd { font-size: 1.05rem; }
+  .bcard .facts { display: none; } /* en el celular la tarjeta queda corta para no tapar la torre */
   .elevator { right: 8px; width: 46px; padding: 8px 4px; height: min(70svh, 560px); }
   .elevator__rail li[data-zone]::before { display: none; }
   .elevator__rail button { font-size: .68rem; }
@@ -357,8 +360,16 @@ body.at-end:not(.in-level) .credit { opacity: 1; }
   .pano-bar { mask-image: linear-gradient(90deg, transparent, #000 18px, #000 calc(100% - 18px), transparent); }
   .credit { display: none; }
 }
-/* celular apaisado: poco alto, el 360° necesita la pantalla */
+/* celular apaisado: poco alto */
 @media (max-height: 500px) {
+  .hint { display: none; }
+  .bcard p.muted, .bcard .facts { display: none; }
+  .bcard { padding: .8rem 1rem; width: auto; }
+  /* el ascensor en dos columnas: con 18 pisos en una sola los botones quedaban de 14 px */
+  .elevator { top: 64px; translate: 0 0; height: calc(100svh - 76px); width: 96px; padding: 6px; border-radius: 22px; }
+  .elevator__rail { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(9, 1fr); grid-auto-flow: column; }
+  .elevator__rail li[data-zone]::before { display: none; }
+  .level--floor { padding-right: calc(var(--gutter) + 108px); }
   .pano-title { top: 70px; padding: .55rem .85rem; }
   .pano-title h2 { font-size: 1.35rem; }
   .pano-map { top: 70px; width: 104px; padding: 6px; }
