@@ -30,17 +30,18 @@ y abrir http://localhost:5173.
 - `js/plan.js` dibujo de planos; `js/data.js` pisos, tipologías y unidades
 - `js/zones.js` contorno de cada piso sobre la foto final (generado por `tools/zonas.py`)
 - `js/assets.js` cajas de las plantas y placeholder del loader (generado por `tools/assets.py`)
+- `js/vendor/` Three.js 0.170 y Lenis 1.1.20, alojados en el repo para no depender de un CDN
 
 ### Herramientas
 
 - `tools/vuelo.py` arma el vuelo a partir de los clips de video (los reparte por cantidad de movimiento para que el scroll avance parejo)
-- `tools/zonas.py` detecta las losas en la foto final y genera los polígonos de cada piso
+- `tools/zonas.py` sigue cada losa sobre la foto final y genera los polígonos de cada piso (deja un control en `img/originales/zonas-control.jpg`)
 - `tools/depto.py` arma el departamento en Blender 4.5 (`blender -b --factory-startup -P tools/depto.py -- --pano all --move all`)
 - `tools/polyhaven.py` baja las texturas y modelos CC0 que usa el departamento (fuera del repo, en `%LOCALAPPDATA%/lenga3d`)
-- `tools/assets.py` convierte originales y renders a los `.webp`/`.mp4` del sitio
+- `tools/assets.py` convierte originales y renders a los `.webp`/`.mp4` del sitio y arma `img/og.jpg`
 
 Los originales (`img/originales/`) y los renders crudos (`3d/out/`) no se versionan.
 
 ## Créditos
 
-Vuelo y fotos de la torre generados con Google Flow (Veo y Omni) a partir del render del proyecto. Departamento modelado y renderizado en Blender con texturas y modelos CC0 de Poly Haven. Plantas y maquetas generadas con ChatGPT. Librerías: Three.js y Lenis.
+Vuelo y fotos de la torre generados con Google Flow (Veo y Omni) a partir del render del proyecto. Departamento modelado y renderizado en Blender con texturas y modelos CC0 de Poly Haven. Plantas y maquetas generadas con ChatGPT. Librerías: Three.js y Lenis (en `js/vendor`).

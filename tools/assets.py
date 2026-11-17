@@ -1,5 +1,6 @@
 """Procesa los originales y deja los .webp del sitio en img/.
 - img/originales/torre-16x9.jpg      -> img/torre.webp (foto final del vuelo, donde se calibran los pisos)
+                                       y img/og.jpg (vista previa al compartir, 1200x630)
 - img/originales/planta-<zona>.png   -> img/plate-<zona>.webp (fondo transparente) + caja de la losa
 - img/originales/iso-*.png           -> img/iso-*.webp
 - 3d/out/pano-<ambiente>.png         -> img/pano/<ambiente>.webp (desktop) y <ambiente>-m.webp (celular)
@@ -26,7 +27,11 @@ def save(im, path, q=82):
 
 
 if (SRC / 'torre-16x9.jpg').exists():
-    save(Image.open(SRC / 'torre-16x9.jpg'), OUT / 'torre.webp', 84)
+    torre = Image.open(SRC / 'torre-16x9.jpg').convert('RGB')
+    save(torre, OUT / 'torre.webp', 84)
+    h = round(torre.width / 1.905)
+    top = max(0, (torre.height - h) // 2 - 40)
+    torre.crop((0, top, torre.width, top + h)).resize((1200, 630), Image.LANCZOS).save(OUT / 'og.jpg', quality=84, optimize=True, progressive=True)
 
 for p in sorted(SRC.glob('iso-*.png')):
     save(Image.open(p), OUT / f'{p.stem}.webp')

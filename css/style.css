@@ -67,8 +67,6 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .btn--light:hover { background: #fff; }
 .btn--accent { background: var(--brasa); color: var(--brasa-ink); box-shadow: 0 12px 30px -12px rgba(242, 182, 109, .55); }
 .btn--accent:hover { background: #F7C687; }
-.btn--ghost { border: 1px solid var(--hair-2); color: var(--piedra); }
-.btn--ghost:hover { background: rgba(239, 233, 223, .08); border-color: rgba(239, 233, 223, .4); }
 .btn--sm { min-height: 40px; padding: 0 1.05rem; font-size: .86rem; }
 .btn svg { width: 18px; height: 18px; flex: none; }
 .chip { display: inline-flex; align-items: center; gap: .4rem; height: 26px; padding: 0 .7rem; border-radius: 999px; font: 500 .74rem/1 var(--sans); letter-spacing: .01em; white-space: nowrap; }
@@ -82,7 +80,6 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .facts { display: grid; grid-template-columns: repeat(3, auto); gap: .9rem 1.4rem; }
 .facts dt { font-size: .74rem; color: var(--niebla); margin-bottom: .15rem; }
 .facts dd { font: 400 1.2rem/1.1 var(--serif); font-variant-numeric: tabular-nums; }
-.divider { height: 1px; background: var(--hair); border: 0; margin: 1.2rem 0; }
 
 /* ---------- carga inicial ---------- */
 .loader { position: fixed; inset: 0; z-index: 150; display: grid; place-items: center; background: var(--noche); overflow: hidden; transition: opacity 1.2s var(--ease-io), visibility 1.2s; }
@@ -172,7 +169,6 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .bcard h2 { margin-top: .45rem; }
 .bcard p.muted { margin-top: .7rem; font-size: .94rem; }
 .bcard .facts { margin-top: 1.3rem; padding-top: 1.1rem; border-top: 1px solid var(--hair); }
-.legend { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: 1rem; }
 
 .tip { position: fixed; left: 0; top: 0; z-index: 60; width: 230px; padding: .95rem 1.05rem 1rem; pointer-events: none; opacity: 0; visibility: hidden; transform: translateY(6px); transition: opacity .2s, transform .25s var(--ease), visibility 0s .2s; }
 .tip.is-on { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
@@ -310,7 +306,6 @@ body.in-level .elevator__rail li[data-zone]::before { opacity: 0; }
 #planView { place-items: stretch; }
 .pano-zoom button, .plan-zoom button { width: 40px; height: 40px; border-radius: 50%; font: 300 1.4rem/1 var(--sans); color: var(--piedra); transition: background-color .2s; }
 .plan-zoom button:hover, .pano-zoom button:hover { background: rgba(239, 233, 223, .1); }
-.pano-fade { position: absolute; inset: 0; background: #000; pointer-events: none; opacity: 0; }
 
 .wa { position: fixed; right: 18px; bottom: 18px; z-index: 40; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: #25D366; color: #fff; box-shadow: 0 10px 26px -8px rgba(0, 0, 0, .5); transition: transform .25s var(--ease), opacity .3s; }
 .wa:hover { transform: scale(1.06); }

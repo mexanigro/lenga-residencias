@@ -1,8 +1,6 @@
 // Lenga — datos del edificio (locación ficticia: Puerto Ilén, lago Ilén)
 
 export const TWIST_DEG = 4; // cada planta gira 4° sobre la de abajo (desde el piso 3)
-export const FLOOR_H = 3.3;
-export const PODIUM_H = 3.6;
 
 // Polígonos de planta en metros. Cuadrado ±11.8, núcleo ±4.3.
 // y negativo = norte (lago) cuando el piso no está rotado.
