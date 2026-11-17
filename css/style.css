@@ -111,12 +111,14 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .crumbs i { width: 5px; height: 5px; border-top: 1px solid var(--niebla); border-right: 1px solid var(--niebla); rotate: 45deg; margin: 0 .1rem; }
 .hud__end { margin-left: auto; display: flex; gap: .5rem; }
 
-/* ---------- recorrido por scroll ---------- */
-.story { height: 760vh; position: relative; }
+/* ---------- recorrido por scroll: una sola toma de dron ---------- */
+.story { height: 720vh; position: relative; }
 .stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: clip; background: var(--noche); }
-.shot { position: absolute; inset: 0; overflow: clip; will-change: opacity; }
-.shot__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; will-change: transform; }
-.shot::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(rgba(11, 21, 27, .4), transparent 26%, transparent 58%, rgba(11, 21, 27, .72)), linear-gradient(90deg, rgba(11, 21, 27, .6), transparent 48%); }
+.flight { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* los rótulos viven en coordenadas del cuadro (JS ajusta esta caja al área dibujada) */
+.marks { position: absolute; left: 0; top: 0; pointer-events: none; will-change: opacity; }
+.shade { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(rgba(11, 21, 27, .42), transparent 24%, transparent 55%, rgba(11, 21, 27, .7)), linear-gradient(90deg, rgba(11, 21, 27, .55), transparent 46%); transition: opacity .6s var(--ease); }
+.is-live .shade { opacity: .55; }
 .pin { position: absolute; translate: -50% -100%; display: grid; justify-items: center; gap: 6px; pointer-events: none; z-index: 1; }
 .pin__label { padding: .4rem .8rem; border-radius: 999px; font: 500 .8rem/1 var(--sans); white-space: nowrap; background: rgba(11, 21, 27, .55); border: 1px solid var(--hair-2); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
 .pin__label--site { background: var(--brasa); color: var(--brasa-ink); border-color: transparent; font-weight: 600; }
@@ -126,16 +128,13 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .pin--site .pin__dot { background: var(--brasa); box-shadow: 0 0 0 6px rgba(242, 182, 109, .25), 0 0 24px 6px rgba(242, 182, 109, .45); }
 .place { position: absolute; translate: -50% -50%; font: italic 300 clamp(1.2rem, 2.2vw, 1.8rem)/1 var(--serif); letter-spacing: .06em; color: rgba(239, 233, 223, .85); text-shadow: 0 2px 18px rgba(0, 0, 0, .5); pointer-events: none; white-space: nowrap; z-index: 1; }
 
-/* el render se encuadra por altura: la torre nunca se recorta */
+/* la foto final de la torre se encuadra por altura: la torre nunca se recorta */
 .frame-wrap { position: absolute; inset: 0; overflow: clip; opacity: 0; }
 .frame-wrap__bg { position: absolute; inset: -60px; background-size: cover; background-position: center; filter: blur(34px) brightness(.6); }
-.frame { position: absolute; left: 50%; top: 0; height: 100%; aspect-ratio: 3 / 2; translate: -50% 0; transform-origin: 50% 50%; will-change: transform, filter;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 11%, #000 89%, transparent); mask-image: linear-gradient(90deg, transparent, #000 11%, #000 89%, transparent); }
-@media (max-aspect-ratio: 3/2) { .frame { -webkit-mask-image: none; mask-image: none; } }
+.frame { position: absolute; left: 50%; top: 0; height: 100%; aspect-ratio: 2752 / 1536; translate: -50% 0; transform-origin: 50% 50%; will-change: transform;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent); mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent); }
+@media (max-aspect-ratio: 2752/1536) { .frame { -webkit-mask-image: none; mask-image: none; } }
 .frame > img, .frame > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.frame__torre { opacity: 0; }
-.frame-wrap::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, rgba(11, 21, 27, .55), transparent 30%, transparent 70%, rgba(11, 21, 27, .55)), linear-gradient(rgba(11, 21, 27, .45), transparent 20%, transparent 75%, rgba(11, 21, 27, .5)); }
-.rise-floor { will-change: opacity, transform; }
 
 .copy { position: absolute; z-index: 2; pointer-events: none; text-shadow: 0 2px 30px rgba(0, 0, 0, .35); }
 .copy--hero { left: var(--gutter); bottom: clamp(70px, 13vh, 130px); max-width: min(92vw, 780px); }
@@ -147,8 +146,6 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .copy--left { left: var(--gutter); bottom: clamp(70px, 13vh, 130px); max-width: min(30rem, 42vw); }
 .copy--left h2 { font: 300 clamp(2.2rem, 4.4vw, 4.2rem)/1 var(--serif); letter-spacing: -.03em; margin-top: .4rem; }
 .copy--left p { margin-top: 1rem; color: var(--piedra-2); max-width: 38ch; }
-.counter { position: absolute; z-index: 2; right: var(--gutter); bottom: clamp(70px, 13vh, 130px); font: 300 1.1rem/1 var(--serif); color: var(--piedra-2); pointer-events: none; }
-.counter b { font: 300 3.6rem/1 var(--serif); color: var(--brasa); font-variant-numeric: tabular-nums; margin: 0 .15em; }
 .hint { position: absolute; z-index: 2; left: 50%; bottom: 24px; translate: -50% 0; display: grid; justify-items: center; gap: .55rem; font-size: .8rem; color: var(--piedra-2); pointer-events: none; }
 .hint i { width: 22px; height: 34px; border-radius: 12px; border: 1px solid rgba(239, 233, 223, .5); position: relative; }
 .hint i::after { content: ''; position: absolute; left: 50%; top: 7px; width: 3px; height: 7px; margin-left: -1.5px; border-radius: 2px; background: var(--piedra); animation: wheel 1.8s var(--ease) infinite; }
@@ -160,7 +157,8 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .zones .hole { fill: #03090C; opacity: 0; pointer-events: none; transition: opacity .3s; }
 .zones .lit { opacity: 0; pointer-events: none; transition: opacity .3s; }
 .zones .lit-edge { fill: none; stroke: var(--brasa); stroke-width: 2.6; vector-effect: non-scaling-stroke; }
-.zones .zone { fill: transparent; cursor: pointer; }
+.zones .zone { fill: transparent; cursor: pointer; pointer-events: none; }
+.is-live .zones .zone { pointer-events: auto; } /* los pisos solo se tocan cuando el edificio ya está en pantalla */
 .zones .zone.is-club { cursor: default; }
 .is-live .zones.has-hover .dim { opacity: .38; }
 .is-live .zones.has-hover .hole, .is-live .zones.has-hover .lit { opacity: 1; }
@@ -259,8 +257,10 @@ body.show-elevator .elevator { opacity: 1; pointer-events: auto; }
   .spot { padding: 5px; height: auto; }
   .spot span { display: none; }
 }
-.planv { width: 100%; height: 100%; padding: clamp(10px, 2vw, 28px); }
-.planv svg { width: 100%; height: 100%; }
+.planv { position: absolute; inset: 0; padding: clamp(10px, 2vw, 28px); }
+.planv svg { width: 100%; height: 100%; touch-action: none; cursor: zoom-in; }
+.planv svg.is-zoomed { cursor: grab; }
+.planv svg.is-zoomed:active { cursor: grabbing; }
 .unit-hint { font-size: .84rem; color: var(--niebla); }
 .status-row { display: flex; align-items: center; gap: .6rem; margin-top: .9rem; }
 .actions { display: grid; gap: .6rem; margin-top: 1.4rem; }
@@ -270,6 +270,11 @@ body.show-elevator .elevator { opacity: 1; pointer-events: auto; }
 .level--pano { background: #000; }
 .pano-canvas { position: absolute; inset: 0; touch-action: none; cursor: grab; }
 .pano-canvas.is-drag { cursor: grabbing; }
+.pano-canvas.is-moving { cursor: progress; }
+/* el video del trayecto se superpone al panorama: empieza y termina en el mismo cuadro */
+.pano-move { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; pointer-events: none; transition: opacity .16s linear; }
+.pano-move.is-on { opacity: 1; }
+.level--pano:has(.is-moving) .pano-hint { opacity: 0; }
 .pano-canvas canvas { display: block; width: 100%; height: 100%; }
 .pano-spots { position: absolute; inset: 0; pointer-events: none; overflow: clip; }
 .pspot { position: absolute; left: 0; top: 0; display: grid; justify-items: center; gap: .55rem; pointer-events: auto; will-change: transform; }
@@ -319,12 +324,17 @@ body.at-end:not(.in-level) .credit { opacity: 1; }
   .crumbs { position: fixed; left: 12px; right: 12px; top: 64px; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; }
   .crumbs button, .crumbs span { padding: 0 .7rem; font-size: .8rem; }
   .copy--left { top: 84px; bottom: auto; }
-  .copy--left h2 { font-size: 2rem; }
-  .counter b { font-size: 2.6rem; }
-  .bcard { left: 12px; bottom: 12px; width: calc(100vw - 24px - 62px); padding: 1rem 1.1rem 1.1rem; }
-  .bcard .display { font-size: 1.9rem; }
-  .bcard p.muted { font-size: .85rem; }
-  .bcard .facts { margin-top: .8rem; padding-top: .8rem; }
+  .copy--left h2 { font-size: 1.85rem; }
+  .copy--left p { font-size: .9rem; }
+  /* en vertical la torre ocupa el centro: la tarjeta va arriba, sobre la cordillera */
+  .copy--side { top: 76px; bottom: auto; width: calc(100vw - 24px); left: 12px; padding: 1rem 1.1rem; }
+  .copy--side h2 { font-size: 1.55rem; margin: .35rem 0 .45rem; }
+  .copy--side p:not(.kicker) { font-size: .86rem; }
+  .bcard { left: 12px; bottom: 12px; width: calc(100vw - 24px - 62px); padding: .85rem 1rem .9rem; }
+  .bcard .display { font-size: 1.55rem; }
+  .bcard p.muted { font-size: .8rem; margin-top: .4rem; }
+  .bcard .facts { margin-top: .55rem; padding-top: .55rem; gap: .5rem 1rem; }
+  .bcard .facts dd { font-size: 1.05rem; }
   .elevator { right: 8px; width: 46px; padding: 8px 4px; height: min(70svh, 560px); }
   .elevator__rail li[data-zone]::before { display: none; }
   .elevator__rail button { font-size: .68rem; }

@@ -4,6 +4,7 @@ import { FLOORS, TYPES, ZONES, bearingInfo } from './data.js';
 import { FLOOR_ZONES, RENDER } from './zones.js';
 import { PLATES } from './assets.js';
 import { drawPlan } from './plan.js';
+import { DEPTO } from './depto.js';
 
 const $ = (s) => document.querySelector(s);
 const NS = 'http://www.w3.org/2000/svg';
@@ -24,17 +25,57 @@ const SPOTS = {
   C3: [['living', 'Living', 30, 38], ['kitchen', 'Cocina', 75, 30], ['balcony', 'Galería', 50, 10], ['suite', 'Suite', 22, 72], ['bedroom', 'Dormitorio', 68, 75], ['bath', 'Baño', 37, 65]],
   PH: [['living', 'Living', 28, 40], ['kitchen', 'Cocina', 75, 40], ['balcony', 'Terraza', 50, 15], ['suite', 'Suite', 20, 72], ['bedroom', 'Dormitorio', 68, 75], ['bath', 'Baño', 40, 72]],
 };
-// Ambiente del plano que corresponde a cada vista (para el mini plano del 360°)
-function roomFor(t, key) {
-  const p = t.plan, beds = p.filter((r) => /^(suite|dormitorio)/i.test(r[0]));
-  return {
-    living: () => p.find((r) => /^(estar|comedor)/i.test(r[0])),
-    kitchen: () => p.find((r) => /^cocina/i.test(r[0])),
-    suite: () => beds[0],
-    bedroom: () => beds[1] || p.find((r) => /^(estudio|biblioteca)/i.test(r[0])),
-    bath: () => p.find((r) => r[0] === 'Baño'),
-    balcony: () => p.find((r) => r[5] === 'balcony'),
-  }[key]?.();
+function planZoom(svg) {
+  const pointers = new Map();
+  let pinch = null;
+  const vb = () => svg.viewBox.baseVal;
+  const base = () => svg.dataset.base.split(' ').map(Number);
+  const set = (x, y, w, h) => {
+    const [bx, by, bw, bh] = base();
+    w = Math.min(bw, Math.max(bw / 5, w));
+    h = w * (bh / bw);
+    x = Math.min(bx + bw - w, Math.max(bx, x));
+    y = Math.min(by + bh - h, Math.max(by, y));
+    svg.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
+    svg.classList.toggle('is-zoomed', w < bw * 0.98);
+  };
+  // de pantalla a coordenadas del plano (el svg se ajusta "meet", centrado)
+  const toPlan = (cx, cy) => {
+    const r = svg.getBoundingClientRect(), v = vb();
+    const k = Math.min(r.width / v.width, r.height / v.height);
+    return [v.x + (cx - r.left - (r.width - v.width * k) / 2) / k, v.y + (cy - r.top - (r.height - v.height * k) / 2) / k, k];
+  };
+  const zoomAt = (cx, cy, f) => {
+    const [px, py] = toPlan(cx, cy), v = vb();
+    set(px - (px - v.x) * f, py - (py - v.y) * f, v.width * f, v.height * f);
+  };
+  svg.addEventListener('wheel', (e) => { e.preventDefault(); zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 0.82 : 1 / 0.82); }, { passive: false });
+  svg.addEventListener('dblclick', () => set(...base()));
+  svg.addEventListener('pointerdown', (e) => {
+    svg.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      pinch = Math.hypot(a[0] - b[0], a[1] - b[1]);
+    }
+  });
+  svg.addEventListener('pointermove', (e) => {
+    if (!pointers.has(e.pointerId)) return;
+    const prev = pointers.get(e.pointerId);
+    pointers.set(e.pointerId, [e.clientX, e.clientY]);
+    if (pointers.size === 1) {
+      const k = toPlan(0, 0)[2], v = vb();
+      set(v.x - (e.clientX - prev[0]) / k, v.y - (e.clientY - prev[1]) / k, v.width, v.height);
+    } else if (pointers.size === 2 && pinch) {
+      const [a, b] = [...pointers.values()];
+      const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      zoomAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, pinch / d);
+      pinch = d;
+    }
+  });
+  const up = (e) => { pointers.delete(e.pointerId); if (pointers.size < 2) pinch = null; };
+  svg.addEventListener('pointerup', up);
+  svg.addEventListener('pointercancel', up);
 }
 
 function zoneRange(zone) {
@@ -238,6 +279,7 @@ export function initBuilding({ lockScroll }) {
       isoSpots.appendChild(s);
     }
     drawPlan($('#plan2d'), t, { bearing: u.bearing });
+    $('#plan2d').dataset.base = $('#plan2d').getAttribute('viewBox');
     setTab('iso');
   }
   function setTab(which) {
@@ -245,49 +287,54 @@ export function initBuilding({ lockScroll }) {
     $('#tabPlan').setAttribute('aria-selected', String(which === 'plan'));
     $('#isoView').hidden = which !== 'iso';
     $('#planView').hidden = which !== 'plan';
+    $('.unit-hint').textContent = which === 'iso'
+      ? 'Tocá un ambiente de la maqueta para recorrerlo en 360°.'
+      : (touchFirst ? 'Pellizcá para acercar y arrastrá para mover. Doble toque para volver.' : 'Usá la rueda para acercar y arrastrá para mover. Doble clic para volver.');
   }
+  planZoom($('#plan2d'));
   $('#tabIso').addEventListener('click', () => setTab('iso'));
   $('#tabPlan').addEventListener('click', () => setTab('plan'));
   $('#tourBtn').addEventListener('click', () => go({ ...state, level: 'pano', room: 'living' }));
 
-  /* ---------------- 360 ---------------- */
-  async function renderPano(st) {
-    const f = FLOORS.find((x) => x.n === st.floor), u = f.units.find((x) => x.id === st.unit), t = TYPES[u.type];
-    const spots = SPOTS[u.type];
-    const label = (k) => spots.find((s) => s[0] === k)?.[1] || k;
-    $('#pKicker').textContent = `Unidad ${u.id}, ${t.name}`;
-    $('#pTitle').textContent = label(st.room);
+  /* ---------------- 360 ----------------
+     El recorrido es el del departamento modelo (tipo L2), renderizado en 3D: el mismo para todas las
+     unidades, con su plano en el mini mapa para que la posición y la mirada sean exactas. */
+  async function renderPano(st, fresh) {
+    const u = FLOORS.find((x) => x.n === st.floor).units.find((x) => x.id === st.unit);
+    const views = DEPTO.views;
+    $('#pKicker').textContent = `Unidad ${u.id}, departamento modelo`;
+    $('#pTitle').textContent = views[st.room].label;
     const bar = $('#panoRooms');
     bar.innerHTML = '';
-    for (const [key, lab] of spots) {
+    for (const [key, v] of Object.entries(views)) {
       const b = document.createElement('button');
       b.type = 'button';
-      b.textContent = lab;
+      b.textContent = v.label;
       b.setAttribute('aria-current', String(key === st.room));
       b.addEventListener('click', () => go({ ...st, room: key }, { replace: true }));
       bar.appendChild(b);
     }
-    drawPlan($('#panoMap'), t, { areas: false });
+    bar.querySelector('[aria-current="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+    drawPlan($('#panoMap'), TYPES[DEPTO.type], { areas: false });
     if (!pano) {
       const { createPano } = await import('./pano.js');
       pano = createPano($('#panoCanvas'), $('#panoSpots'), { reduced });
     }
-    const room = roomFor(t, st.room);
-    pano.show(st.room, {
-      available: spots.map((s) => s[0]),
-      label,
+    if (fresh) pano.reset();
+    placeMe(st.room, views[st.room].start);
+    await pano.show(st.room, {
       onGo: (key) => go({ ...st, room: key }, { replace: true }),
-      onLook: (deg) => placeMe(room, deg),
+      onLook: (yaw) => placeMe(state.room, yaw),
     });
-    placeMe(room, 0);
   }
-  function placeMe(room, deg) {
+  function placeMe(room, yaw) {
     const map = $('#panoMap');
     let g = map.querySelector('.me-g');
     if (!g) g = svgEl('g', { class: 'me-g' }, map);
-    if (!room) { g.innerHTML = ''; return; }
-    const [, x, y, w, h] = room;
-    g.innerHTML = `<path class="cone" d="M0 0 L-2.4 -4.4 A5 5 0 0 1 2.4 -4.4 Z" transform="translate(${x + w / 2} ${y + h / 2}) rotate(${deg})"/><circle class="me" cx="${x + w / 2}" cy="${y + h / 2}" r=".6"/>`;
+    const v = DEPTO.views[room];
+    if (!v) { g.innerHTML = ''; return; }
+    const [x, y] = v.pos;
+    g.innerHTML = `<path class="cone" d="M0 0 L-2.6 -4.6 A5.2 5.2 0 0 1 2.6 -4.6 Z" transform="translate(${x} ${y}) rotate(${yaw.toFixed(1)})"/><circle class="me" cx="${x}" cy="${y}" r=".55"/>`;
   }
   $('#zoomIn').addEventListener('click', () => pano?.zoom(-10));
   $('#zoomOut').addEventListener('click', () => pano?.zoom(10));
@@ -320,7 +367,7 @@ export function initBuilding({ lockScroll }) {
     if (!f || f.zone === 'club') return { level: 'building' };
     const u = m[2] && f.units.find((x) => x.id === m[2]);
     if (!u) return { level: 'floor', floor: f.n };
-    if (m[3] && SPOTS[u.type].some((s) => s[0] === m[3])) return { level: 'pano', floor: f.n, unit: u.id, room: m[3] };
+    if (m[3] && DEPTO.views[m[3]]) return { level: 'pano', floor: f.n, unit: u.id, room: m[3] };
     return { level: 'unit', floor: f.n, unit: u.id };
   }
 
@@ -379,7 +426,7 @@ export function initBuilding({ lockScroll }) {
       if (next.level === 'pano') {
         if (prev.level !== 'unit' && prev.level !== 'pano') renderUnit(next.floor, next.unit);
         show(levels.pano);
-        await renderPano(next);
+        await renderPano(next, prev.level !== 'pano');
         if (prev.level !== 'pano') { hide(levels.unit); hide(levels.floor); }
       }
     }

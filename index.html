@@ -12,7 +12,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&family=Schibsted+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="preload" as="image" href="img/aerea-1.webp" fetchpriority="high">
+  <link rel="preload" as="image" href="img/vuelo/d/000.webp" fetchpriority="high" media="(min-aspect-ratio: 4/5)">
+  <link rel="preload" as="image" href="img/vuelo/m/000.webp" fetchpriority="high" media="(max-aspect-ratio: 4/5)">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/plan.css">
   <script type="importmap">{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js" } }</script>
@@ -43,37 +44,32 @@
   <main>
     <section class="story" id="top" aria-label="Lenga">
       <div class="stage" id="stage">
-        <div class="shot" id="shot1" style="--x: 53%; --y: 56%">
-          <img class="shot__img" src="img/aerea-1.webp" alt="Vista aérea del lago Ilén y Puerto Ilén al atardecer, con la cordillera detrás" fetchpriority="high">
-          <span class="place" style="left: 62%; top: 84%">Lago Ilén</span>
-          <span class="place" style="left: 47%; top: 26%">Cordillera de los Andes</span>
-          <div class="pin" style="left: 85%; top: 51%"><span class="pin__label">Puerto Ilén</span><i class="pin__stem"></i><i class="pin__dot"></i></div>
-          <div class="pin pin--site" style="left: 53%; top: 56%"><span class="pin__label pin__label--site">Lenga</span><i class="pin__stem"></i><i class="pin__dot"></i></div>
-        </div>
-        <div class="shot" id="shot2" style="--x: 52%; --y: 50%">
-          <img class="shot__img" src="img/aerea-2.webp" alt="El lote frente a la costanera, al atardecer" loading="lazy">
-          <div class="pin pin--site" style="left: 52%; top: 50%"><span class="pin__label pin__label--site">El lote</span><i class="pin__stem"></i><i class="pin__dot"></i></div>
+        <!-- una sola toma de dron, de la aérea alta hasta la torre: cada posición del scroll es un cuadro -->
+        <canvas class="flight" id="flight" role="img" aria-label="Vuelo de dron sobre el lago Ilén hasta la torre Lenga, al atardecer"></canvas>
+        <div class="marks" id="marks" aria-hidden="true">
+          <span class="place" style="left: 27%; top: 84%">Lago Ilén</span>
+          <span class="place" style="left: 50%; top: 33%">Cordillera de los Andes</span>
+          <div class="pin" style="left: 83%; top: 57%"><span class="pin__label">Puerto Ilén</span><i class="pin__stem"></i><i class="pin__dot"></i></div>
+          <div class="pin pin--site" style="left: 50%; top: 46.5%"><span class="pin__label pin__label--site">Lenga</span><i class="pin__stem"></i><i class="pin__dot"></i></div>
         </div>
 
         <div class="frame-wrap" id="frameWrap">
-          <div class="frame-wrap__bg" style="background-image: url(img/lote.webp)"></div>
-          <div class="frame-wrap__bg" id="bgTorre" style="background-image: url(img/torre.webp); opacity: 0"></div>
+          <div class="frame-wrap__bg" style="background-image: url(img/torre.webp)"></div>
           <div class="frame" id="frame">
-            <img src="img/lote.webp" alt="" loading="lazy">
-            <svg id="rise" viewBox="0 0 1536 1024" preserveAspectRatio="none" aria-hidden="true"><defs id="riseDefs"></defs></svg>
-            <img class="frame__torre" id="torre" src="img/torre.webp" alt="Render de Lenga al atardecer, frente al lago Ilén" loading="lazy">
-            <svg class="zones" id="zones" viewBox="0 0 1536 1024" preserveAspectRatio="none" aria-hidden="true">
+            <img class="frame__torre" id="torre" src="img/torre.webp" alt="Lenga al atardecer, frente al lago Ilén">
+            <svg class="zones" id="zones" viewBox="0 0 2752 1536" preserveAspectRatio="none" aria-hidden="true">
               <defs><clipPath id="litClipPath"><polygon id="litClip" points="0,0" /></clipPath></defs>
-              <rect class="dim" width="1536" height="1024" />
+              <rect class="dim" width="2752" height="1536" />
               <polygon class="hole" id="hole" points="0,0" />
               <g class="lit">
-                <image id="litImg" href="img/torre.webp" width="1536" height="1024" clip-path="url(#litClipPath)" style="filter: brightness(1.32) saturate(1.1)" />
+                <image id="litImg" href="img/torre.webp" width="2752" height="1536" clip-path="url(#litClipPath)" style="filter: brightness(1.32) saturate(1.1)" />
                 <polygon class="lit-edge" id="litEdge" points="0,0" />
               </g>
               <g id="zonePolys"></g>
             </svg>
           </div>
         </div>
+        <div class="shade" id="shade" aria-hidden="true"></div>
 
         <div class="copy copy--hero" id="cHero">
           <h1>Lenga</h1>
@@ -85,16 +81,16 @@
           <p>Nueve mil habitantes y cuarenta kilómetros de agua. Las pistas quedan a doce minutos, el aeropuerto a veinticinco y no hay un solo semáforo.</p>
         </div>
         <div class="copy copy--left" id="cPlot">
-          <p class="kicker">El lote</p>
-          <h2>Sobre la costanera, a cuarenta metros del agua.</h2>
+          <p class="kicker">La costanera</p>
+          <h2>Sobre el agua, de cara a la cordillera.</h2>
+          <p>A cuarenta metros de la orilla, entre lengas y coihues, con el muelle del pueblo a diez minutos caminando.</p>
         </div>
         <div class="copy copy--left" id="cRise">
           <p class="kicker">La torre</p>
           <h2>Dieciocho pisos que giran hacia el lago.</h2>
           <p>Cada planta rota 4° sobre la de abajo, así todas las unidades miran al agua sin taparse entre sí.</p>
         </div>
-        <p class="counter" id="counter" aria-hidden="true">Piso <b id="riseN">01</b> de 18</p>
-        <p class="hint" id="hint"><i aria-hidden="true"></i><span>Deslizá para descender</span></p>
+        <p class="hint" id="hint"><i aria-hidden="true"></i><span>Deslizá para volar hasta la torre</span></p>
 
         <div class="bui" id="bui">
           <aside class="bcard glass" id="edificio" tabindex="-1" aria-labelledby="bTitle">

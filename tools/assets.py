@@ -1,34 +1,35 @@
-"""Procesa los originales de img/originales/ y deja los .webp del sitio en img/.
-- aerea-*.png, torre-src.png, lote-alineado.png  -> webp
-- planta-<zona>.png  -> plate-<zona>.webp + caja de la losa (para ubicar las unidades)
-- pano-<ambiente>.png -> pano-<ambiente>.webp (costura fundida, 2048x1024, enfoque)
-- iso-*.png -> webp
-Escribe js/assets.js con las cajas de las plantas y el placeholder borroso del loader.
+"""Procesa los originales y deja los .webp del sitio en img/.
+- img/originales/torre-16x9.jpg      -> img/torre.webp (foto final del vuelo, donde se calibran los pisos)
+- img/originales/planta-<zona>.png   -> img/plate-<zona>.webp (fondo transparente) + caja de la losa
+- img/originales/iso-*.png           -> img/iso-*.webp
+- 3d/out/pano-<ambiente>.png         -> img/pano/<ambiente>.webp (desktop) y <ambiente>-m.webp (celular)
+- 3d/out/move/<a>-<b>/*.png          -> img/pano/move/<a>-<b>.mp4 (trayecto caminando entre ambientes)
+Escribe js/assets.js con las cajas de las plantas y el placeholder borroso del loader (primer cuadro del vuelo).
 Uso: python -I tools/assets.py"""
 import base64
 import io
 import json
 import pathlib
+
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC, OUT = ROOT / 'img' / 'originales', ROOT / 'img'
+Image.MAX_IMAGE_PIXELS = None
 
 
-def save(im, name, q=82):
-    p = OUT / name
-    im.convert('RGB').save(p, 'WEBP', quality=q, method=6)
-    print(f'{name:28s} {im.size[0]}x{im.size[1]}  {p.stat().st_size // 1024} KB')
+def save(im, path, q=82):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    im.convert('RGB').save(path, 'WEBP', quality=q, method=6)
+    print(f'{path.relative_to(ROOT)!s:32s} {im.size[0]}x{im.size[1]}  {path.stat().st_size // 1024} KB')
 
 
-for name, out in [('aerea-1.png', 'aerea-1.webp'), ('aerea-2.png', 'aerea-2.webp'),
-                  ('torre-src.png', 'torre.webp'), ('lote-alineado.png', 'lote.webp')]:
-    if (SRC / name).exists():
-        save(Image.open(SRC / name), out)
+if (SRC / 'torre-16x9.jpg').exists():
+    save(Image.open(SRC / 'torre-16x9.jpg'), OUT / 'torre.webp', 84)
 
 for p in sorted(SRC.glob('iso-*.png')):
-    save(Image.open(p), p.stem + '.webp')
+    save(Image.open(p), OUT / f'{p.stem}.webp')
 
 plates = {}
 for p in sorted(SRC.glob('planta-*.png')):
@@ -40,31 +41,38 @@ for p in sorted(SRC.glob('planta-*.png')):
     box = [int(cols[0]), int(rows[0]), int(cols[-1]), int(rows[-1])]
     zone = p.stem.split('-', 1)[1]
     plates[zone] = {'w': im.size[0], 'h': im.size[1], 'box': box}
-    # fondo azul noche → transparente, para que solo quede la losa (con borde suave)
+    # fondo azul noche -> transparente, para que solo quede la losa (con borde suave)
     bg = np.median(np.concatenate([a[:20, :20].reshape(-1, 3), a[-20:, -20:].reshape(-1, 3)]), axis=0)
     dist = np.sqrt(((a - bg) ** 2).sum(axis=2))
     alpha = np.clip((dist - 14) / 26, 0, 1)
-    rgba = np.dstack([a, alpha * 255]).astype('uint8')
     out = OUT / f'plate-{zone}.webp'
-    Image.fromarray(rgba, 'RGBA').save(out, 'WEBP', quality=85, method=6)
+    Image.fromarray(np.dstack([a, alpha * 255]).astype('uint8'), 'RGBA').save(out, 'WEBP', quality=85, method=6)
     print(f'plate-{zone}.webp (alfa)  {out.stat().st_size // 1024} KB')
 
-for p in sorted(SRC.glob('pano-*.png')):
-    a = np.asarray(Image.open(p).convert('RGB')).astype(float)
-    n = 28  # funde los bordes izquierdo y derecho para que la vuelta completa no tenga costura
-    for i in range(n):
-        w = 0.5 * (1 - i / n)
-        left, right = a[:, i].copy(), a[:, -1 - i].copy()
-        a[:, i] = (1 - w) * left + w * right
-        a[:, -1 - i] = (1 - w) * right + w * left
-    im = Image.fromarray(a.clip(0, 255).astype('uint8')).resize((2048, 1024), Image.LANCZOS)
-    im = im.filter(ImageFilter.UnsharpMask(radius=1.6, percent=70, threshold=2))
-    save(im, p.stem + '.webp', 86)
+# panoramas 360° renderizados en Blender (tools/depto.py)
+for p in sorted((ROOT / '3d' / 'out').glob('pano-*.png')):
+    view = p.stem.split('-', 1)[1]
+    im = Image.open(p).convert('RGB')
+    save(im.resize((6144, 3072), Image.LANCZOS) if im.size[0] > 6144 else im, OUT / 'pano' / f'{view}.webp', 84)
+    save(im.resize((4096, 2048), Image.LANCZOS), OUT / 'pano' / f'{view}-m.webp', 82)
 
-# placeholder borroso de la primera toma, embebido para que el loader tenga imagen al instante
+# trayectos entre ambientes: cuadros de Blender -> video H.264 liviano
+import subprocess
+for d in sorted((ROOT / '3d' / 'out' / 'move').glob('*-*')):
+    frames = sorted(d.glob('*.png'))
+    if not frames:
+        continue
+    out = OUT / 'pano' / 'move' / f'{d.name}.mp4'
+    out.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-framerate', '24', '-i', str(d / '%03d.png'), '-c:v', 'libx264',
+                    '-pix_fmt', 'yuv420p', '-crf', '20', '-preset', 'slow', '-movflags', '+faststart', '-an', str(out)], check=True)
+    print(f'{out.relative_to(ROOT)!s:32s} {len(frames)} cuadros  {out.stat().st_size // 1024} KB')
+
+# placeholder borroso del primer cuadro del vuelo, embebido para que el loader tenga imagen al instante
 lqip = ''
-if (SRC / 'aerea-1.png').exists():
-    t = Image.open(SRC / 'aerea-1.png').convert('RGB').resize((48, 32), Image.LANCZOS)
+first = OUT / 'vuelo' / 'd' / '000.webp'
+if first.exists():
+    t = Image.open(first).convert('RGB').resize((48, 27), Image.LANCZOS)
     buf = io.BytesIO()
     t.save(buf, 'WEBP', quality=60)
     lqip = 'data:image/webp;base64,' + base64.b64encode(buf.getvalue()).decode()

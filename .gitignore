@@ -3,3 +3,6 @@ img/originales/
 .claude/
 __pycache__/
 ruvector.db
+
+3d/out/
+*.blend1
