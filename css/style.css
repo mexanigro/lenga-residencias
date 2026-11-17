@@ -173,9 +173,10 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .bcard .facts { margin-top: 1.3rem; padding-top: 1.1rem; border-top: 1px solid var(--hair); }
 .legend { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: 1rem; }
 
-.tip { position: fixed; left: 0; top: 0; z-index: 60; width: 230px; padding: .95rem 1.05rem 1rem; pointer-events: none; opacity: 0; transform: translateY(6px); transition: opacity .2s, transform .25s var(--ease); }
-.tip.is-on { opacity: 1; transform: none; }
-.tip.is-touch { pointer-events: auto; }
+.tip { position: fixed; left: 0; top: 0; z-index: 60; width: 230px; padding: .95rem 1.05rem 1rem; pointer-events: none; opacity: 0; visibility: hidden; transform: translateY(6px); transition: opacity .2s, transform .25s var(--ease), visibility 0s .2s; }
+.tip.is-on { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+/* solo se puede tocar mientras se ve (antes quedaba invisible capturando toques) */
+.tip.is-on.is-touch { pointer-events: auto; }
 .tip__floor { font: 300 1.9rem/1 var(--serif); letter-spacing: -.02em; }
 .tip__zone { margin-top: .3rem; }
 .tip__avail { margin-top: .55rem; font-size: .84rem; color: var(--piedra-2); }

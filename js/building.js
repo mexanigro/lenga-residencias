@@ -111,7 +111,7 @@ export function initBuilding({ lockScroll }) {
     hover = i;
     zonesSvg.classList.toggle('has-hover', i != null);
     floorBtns.forEach((b, k) => b.classList.toggle('is-hot', k === i));
-    if (i == null) { tip.classList.remove('is-on'); return; }
+    if (i == null) { tip.classList.remove('is-on', 'is-touch'); return; }
     const f = FLOORS[i], z = FLOOR_ZONES[f.n];
     litPoly.setAttribute('points', pts(z));
     edge.setAttribute('points', pts(z));
