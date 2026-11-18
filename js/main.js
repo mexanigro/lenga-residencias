@@ -19,7 +19,7 @@ const torreImg = new Image();
 torreImg.src = 'img/torre.webp';
 // ponytail: tope de 12 s; con una conexión muy lenta se entra igual y los cuadros siguen llegando
 await Promise.race([
-  Promise.all([document.fonts.ready, flight.critical, torreImg.decode().catch(() => {})]),
+  Promise.all([document.fonts.ready, flight.critical, Promise.race([torreImg.decode(), new Promise((r) => { torreImg.onload = r; })]).catch(() => {})]),
   new Promise((r) => setTimeout(r, 12000)),
 ]);
 clearInterval(prog);

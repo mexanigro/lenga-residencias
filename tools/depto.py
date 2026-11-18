@@ -785,7 +785,7 @@ def build():
         downlight(xx, yy, 5)
 
     # suite principal
-    bed(2.6, -9.94, 0, w=1.8)
+    bed(2.6, -9.94, 180, w=1.8)  # el respaldo contra el muro del fondo; la cama hacia la habitación
     rug(2.6, -8.4, 2.8, 2.4)
     box('Banco', 1.75, -7.62, 0.0, 3.45, -7.2, 0.44, M['roble_osc'], bevel=0.006)
     ph_model('modern_arm_chair_01', 0.8, -6.45, rot=-60, height=0.8)
@@ -825,10 +825,10 @@ def build():
     box('Vanitory 2', 7.5, -9.94, 0.3, 8.94, -9.45, 0.86, M['roble_osc'], bevel=0.004)
 
     # suite 2
-    bed(11.0, -9.94, 0, w=1.6)
+    bed(11.0, -9.94, 180, w=1.6)
     rug(11.0, -8.4, 2.5, 2.2, mat=M['alfombra'])
     wardrobe(9.08, -9.94, 9.65, -7.4)
-    ph_model('mid_century_lounge_chair', 12.3, -6.6, rot=-130, height=0.82)
+    ph_model('mid_century_lounge_chair', 12.33, -8.35, rot=15, height=0.82)  # junto a la ventana, sin tapar la puerta
     ph_model('potted_plant_04', 12.6, -9.55, height=0.9)
     curtain('Cortina suite 2 a', (12.88, -6.05), (12.88, -6.9))
     curtain('Cortina suite 2 b', (12.88, -8.8), (12.88, -9.6))

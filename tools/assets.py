@@ -3,8 +3,7 @@
                                        y img/og.jpg (vista previa al compartir, 1200x630)
 - img/originales/planta-<zona>.png   -> img/plate-<zona>.webp (fondo transparente) + caja de la losa
 - img/originales/iso-*.png           -> img/iso-*.webp
-- 3d/out/pano-<ambiente>.png         -> img/pano/<ambiente>.webp (desktop) y <ambiente>-m.webp (celular)
-- 3d/out/move/<a>-<b>/*.png          -> img/pano/move/<a>-<b>.mp4 (trayecto caminando entre ambientes)
+(el recorrido 3D del departamento sale de tools/hornear.py, directo a img/depto3d/)
 Escribe js/assets.js con las cajas de las plantas y el placeholder borroso del loader (primer cuadro del vuelo).
 Uso: python -I tools/assets.py"""
 import base64
@@ -53,25 +52,6 @@ for p in sorted(SRC.glob('planta-*.png')):
     out = OUT / f'plate-{zone}.webp'
     Image.fromarray(np.dstack([a, alpha * 255]).astype('uint8'), 'RGBA').save(out, 'WEBP', quality=85, method=6)
     print(f'plate-{zone}.webp (alfa)  {out.stat().st_size // 1024} KB')
-
-# panoramas 360° renderizados en Blender (tools/depto.py)
-for p in sorted((ROOT / '3d' / 'out').glob('pano-*.png')):
-    view = p.stem.split('-', 1)[1]
-    im = Image.open(p).convert('RGB')
-    save(im.resize((6144, 3072), Image.LANCZOS) if im.size[0] > 6144 else im, OUT / 'pano' / f'{view}.webp', 84)
-    save(im.resize((4096, 2048), Image.LANCZOS), OUT / 'pano' / f'{view}-m.webp', 82)
-
-# trayectos entre ambientes: cuadros de Blender -> video H.264 liviano
-import subprocess
-for d in sorted((ROOT / '3d' / 'out' / 'move').glob('*-*')):
-    frames = sorted(d.glob('*.png'))
-    if not frames:
-        continue
-    out = OUT / 'pano' / 'move' / f'{d.name}.mp4'
-    out.parent.mkdir(parents=True, exist_ok=True)
-    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-framerate', '24', '-i', str(d / '%03d.png'), '-c:v', 'libx264',
-                    '-pix_fmt', 'yuv420p', '-crf', '20', '-preset', 'slow', '-movflags', '+faststart', '-an', str(out)], check=True)
-    print(f'{out.relative_to(ROOT)!s:32s} {len(frames)} cuadros  {out.stat().st_size // 1024} KB')
 
 # placeholder borroso del primer cuadro del vuelo, embebido para que el loader tenga imagen al instante
 lqip = ''

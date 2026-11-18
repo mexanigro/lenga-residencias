@@ -144,6 +144,11 @@ button { font: inherit; color: inherit; background: none; border: 0; padding: 0;
 .copy--left { left: var(--gutter); bottom: clamp(70px, 13vh, 130px); max-width: min(30rem, 42vw); }
 .copy--left h2 { font: 300 clamp(2.2rem, 4.4vw, 4.2rem)/1 var(--serif); letter-spacing: -.03em; margin-top: .4rem; }
 .copy--left p { margin-top: 1rem; color: var(--piedra); max-width: 38ch; }
+/* en pantallas anchas el texto queda a la izquierda de la obra, que ocupa el centro de la toma */
+@media (min-width: 1100px) and (min-aspect-ratio: 3/2) {
+  .copy--left { max-width: min(27rem, 29vw); }
+  .copy--left h2 { font-size: clamp(2.2rem, 3.3vw, 3.6rem); }
+}
 .hint { position: absolute; z-index: 2; left: 50%; bottom: 24px; translate: -50% 0; display: grid; justify-items: center; gap: .55rem; font-size: .8rem; color: var(--piedra-2); pointer-events: none; }
 .hint i { width: 22px; height: 34px; border-radius: 12px; border: 1px solid rgba(239, 233, 223, .5); position: relative; }
 .hint i::after { content: ''; position: absolute; left: 50%; top: 7px; width: 3px; height: 7px; margin-left: -1.5px; border-radius: 2px; background: var(--piedra); animation: wheel 1.8s var(--ease) infinite; }
@@ -276,14 +281,10 @@ body.in-level .elevator__rail li[data-zone]::before { opacity: 0; }
 .level--pano { background: #000; }
 .pano-canvas { position: absolute; inset: 0; touch-action: none; cursor: grab; }
 .pano-canvas.is-drag { cursor: grabbing; }
-.pano-canvas.is-moving { cursor: progress; }
 /* el video del trayecto se superpone al panorama: empieza y termina en el mismo cuadro */
-.pano-move { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; pointer-events: none; transition: opacity .16s linear; }
-.pano-move.is-on { opacity: 1; }
-.level--pano:has(.is-moving) .pano-hint { opacity: 0; }
 .pano-canvas canvas { display: block; width: 100%; height: 100%; }
 .pano-spots { position: absolute; inset: 0; pointer-events: none; overflow: clip; }
-.pspot { position: absolute; left: 0; top: 0; display: grid; justify-items: center; gap: .55rem; pointer-events: auto; will-change: transform; }
+.pspot { position: absolute; left: 0; top: 0; display: grid; justify-items: center; gap: .55rem; pointer-events: auto; will-change: transform; transition: opacity .35s var(--ease); }
 .pspot i { width: 54px; height: 54px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .9); background: rgba(255, 255, 255, .14); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); display: grid; place-items: center; box-shadow: 0 8px 30px rgba(0, 0, 0, .35); transition: transform .3s var(--ease), background-color .3s; }
 .pspot i::after { content: ''; width: 13px; height: 13px; border-top: 2px solid #fff; border-right: 2px solid #fff; rotate: -45deg; translate: 0 3px; }
 .pspot span { padding: .35rem .75rem; border-radius: 999px; background: rgba(11, 21, 27, .62); font: 500 .8rem/1 var(--sans); white-space: nowrap; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }

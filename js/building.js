@@ -359,7 +359,9 @@ export function initBuilding({ lockScroll }) {
       }
       drawPlan($('#panoMap'), TYPES[DEPTO.type], { areas: false });
       placeMe(st.room, views[st.room].start);
-      $('#panoHint').textContent = touchFirst ? 'Arrastrá para mirar, pellizcá para acercar' : 'Arrastrá o usá las flechas para mirar en 360°';
+      $('#panoHint').textContent = touchFirst
+        ? 'Arrastrá para mirar y tocá el piso para caminar'
+        : 'Arrastrá para mirar · caminá con W A S D o las flechas · o hacé clic en el piso';
       if (!pano) {
         const { createPano } = await import('./pano.js');
         pano = createPano($('#panoCanvas'), $('#panoSpots'), { reduced });
@@ -371,9 +373,11 @@ export function initBuilding({ lockScroll }) {
     bar.querySelector('[aria-current="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
     const shown = pano.show(st.room, {
       onGo: (key) => go({ ...state, room: key }, { replace: true }),
-      onLook: (yaw, room) => placeMe(room, yaw),
+      onLook: (yaw, room, pos) => placeMe(room, yaw, pos),
       onRoom: (room) => {
         $('#pTitle').textContent = views[room].label;
+        // caminando libre se cruza de un ambiente a otro: la barra marca dónde se está
+        bar.querySelectorAll('button').forEach((b) => b.setAttribute('aria-current', String(b.dataset.room === room)));
         // el punto tocado desaparece al llegar: el foco pasa al título para no perderse
         if (!document.activeElement || document.activeElement === document.body) $('#pTitle').focus({ preventScroll: true });
       },
@@ -386,13 +390,14 @@ export function initBuilding({ lockScroll }) {
     if (state.level !== 'pano') return;
     go({ level: 'unit', floor: state.floor, unit: state.unit }, { replace: true, failed: true });
   }
-  function placeMe(room, yaw) {
+  // pos: dónde está parado en el plano (x, −y); sin pos, en el punto de vista del ambiente
+  function placeMe(room, yaw, pos) {
     const map = $('#panoMap');
     let g = map.querySelector('.me-g');
     if (!g) g = svgEl('g', { class: 'me-g' }, map);
     const v = DEPTO.views[room];
-    if (!v) { g.innerHTML = ''; return; }
-    const [x, y] = v.pos;
+    if (!v && !pos) { g.innerHTML = ''; return; }
+    const [x, y] = pos || v.pos;
     g.innerHTML = `<path class="cone" d="M0 0 L-2.6 -4.6 A5.2 5.2 0 0 1 2.6 -4.6 Z" transform="translate(${x} ${y}) rotate(${yaw.toFixed(1)})"/><circle class="me" cx="${x}" cy="${y}" r=".55"/>`;
   }
   $('#zoomIn').addEventListener('click', () => pano?.zoom(-10));
