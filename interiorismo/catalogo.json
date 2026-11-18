@@ -1,0 +1,2817 @@
+{
+ "version": 1,
+ "generated": "2026-11-18",
+ "conventions": {
+  "assets_root": "%LOCALAPPDATA%/lenga3d/assets",
+  "dims_m": "[width X, depth Y, height Z] in metres as measured after Blender 4.5 glTF import / .blend append (Z up).",
+  "front": "ABO GLBs: front faces -Y in Blender (= glTF +Z); verified with 3/4 renders of every downloaded model.",
+  "tris": "triangle count of the evaluated meshes.",
+  "mb": "file size on disk (GLB, or whole Poly Haven model folder with 2k textures).",
+  "pick_lists": "cushions, decor, bath_accessories use lists for pick/runner_up (sets of items).",
+  "material_maps": "tex/<name>/Diffuse.jpg (sRGB), Rough.jpg, nor_gl.jpg (OpenGL), arm.jpg (AO/rough/metal) when AO exists, disp.jpg (height, extra). Tile sizes added to tex/dims.json.",
+  "licenses": "Only CC0 (Poly Haven, ambientCG) and CC BY 4.0 (ABO, credit \"Amazon.com\") assets. CC BY items must be credited on the site (credits page/footer) with a link to the license and a note that they were modified.",
+  "contact_sheets": "C:\\Users\\liama\\AppData\\Local\\Temp\\claude\\c2c916f2e92f0e6f\\0da49765-1b74-4b22-8547-2c45e3c9b856\\scratchpad\\catalogo",
+  "web_note": "Several picks are heavy (B0857JWWWS 412k, B082JH9VVD 217k, B07BMTXJ1V 199k, B07HK85JV8 170k, B0857JQ3BZ 161k tris): fine in Cycles, decimate before the GLB/web export."
+ },
+ "credits_cc_by": [
+  "\"Alkove - Hayes - Banco de madera maciza con asiento tapizado (roble salvaje)\" 3D model (B07K7NQR23) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Alkove Hayes Rectangular Solid Wood Coffee Table with 1-Shelf, 115 x 70 x 45cm, Core Beech\" 3D model (B07K8F2WHK) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Alkove Hayes Solid Wood Table with A-shaped Metal Legs\" 3D model (B07KV3HBMR) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"AmazonBasics 2-Drawer Beside Table, 45 x 38 x 46 cm, Light Brown with Black Legs/Handles\" 3D model (B07RMZ83ZY) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Movian Ems- Mobile con 3 cassetti e 2 ante, 180 x 39,5 x 76,2 cm, effetto quercia invecchiata\" 3D model (B07TQ8WK61) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Aiden Tufted Mid-Century Modern Leather Accent Chair, 35.4\"W, Cognac\" 3D model (B075X2WN27) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Axel Lid Storage Wood and Metal Side End Table Nightstand, Walnut\" 3D model (B072ZLCB32) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Bristol Natural Edge Black Metal Side Table, Walnut\" 3D model (B072ZLCB3M) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Industrial Throw Pillow - 24 x 12 Inch, Flax/Cognac\" 3D model (B07JL5PYZH) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Industrial Throw Pillow - 24 x 12 Inch, Flax/Hunter Green\" 3D model (B07JM1VM9Q) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Lakeside Snow-Capped Mountains Printed on Wood Wall Art, 16\" x 20\"\" 3D model (B073P5V2LX) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Mid Century Modern Tripod Living Room Floor Lamp With Light Bulb And Linen Shade - 64 Inches , Black\" 3D model (B073P484RR) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Mid-Century Modern Wood Dining Chair, 30\"H, Natural\" 3D model (B07B83KVGK) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Modern Braided Stripe Round Basket Set - Set of 3, Natural\" 3D model (B07HSMVFKY) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Modern Cylindrical Stoneware Candle Holder Lantern Home Decor Set - Set of 2, Gray and Cream\" 3D model (B07HSPJ11F) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Modern Stone and Birch Natural Edge Serving Decor Tray - 15.5 x 9 x 2.5 Inch, Black and Wood\" 3D model (B078JMXRGC) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Modern Stoneware Vases, 2-Piece Set, 5.2\"H, White and Blue-Green\" 3D model (B07QHL8W81) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Rustic Industrial Wood and Metal Dining Room Kitchen Table, 86.6\"L, Fir\" 3D model (B075Z9QB8P) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Rustic Natural Material Construction Pendant Light with Bulb, 60\"H, Brown\" 3D model (B07HK85JV8) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Rustic Reclaimed Fir Wood Side End Table, 16.5\"W, Natural\" 3D model (B07B7H9VMM) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Spear Mid-Century Modern Channel Tufted Accent Chair with Wood Arms, 29.1\"W, Ivory\" 3D model (B082QDSXMN) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Summit Mid-Century Modern Top-Grain Leather Steel Armed Accent Chair 27\"W, Cognac\" 3D model (B071J7Q9WN) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Rivet Wooden Dock at The Lake Canvas Print Wall Art, 45\" x 30\"\" 3D model (B073P1RD5Z) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Alderman Mid-Century Modern Accent Chair, 29.9\"W, Dark Brown Leather\" 3D model (B07B4M6B3B) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Andover Modern Living Room Accent Chair, 38\"W, Sand\" 3D model (B07B4MTFRH) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Andover Modern Sofa Couch, 93\"W, Linen\" 3D model (B07B4MD59G) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Calhoun Sofa Couch, 91\"W, Ecru\" 3D model (B07HZ5PF5S) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Casual Pom-Pom Throw Pillow - 24 x 12 Inch, Terracotta\" 3D model (B07JLZC7FK) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Classic Leather Throw Pillow - 18 x 18 Inch, Camel\" 3D model (B07JLGCKPV) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Classic Plaid Outdoor Throw Pillow, 20\" x 20\", Garden\" 3D model (B07JLZJ9JM) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Clifton Modern Upholstered King Bed with Headboard, 84.25\"W, Cream\" 3D model (B075QBL1V8) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Contemporary Metal Bedroom Bench with Cushion, 58\"W, Oatmeal\" 3D model (B07B4SC9RP) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Elden Leather Nailhead-Trim Kitchen Counter Backless Bar Stool, 30\"H, Cognac\" 3D model (B07QFRRLG1) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Industrial Coffee Table, 53\"W, Antique Natural and Black\" 3D model (B07QF9Y71V) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Jane Wood-Framed Classic Woven Dining Chair, 34\" H, Set of 2, Brown\" 3D model (B0857JQ3BZ) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Leland Modern Textured Table Lamp With Bulb, 24.5\"H, Grey\" 3D model (B075X1T517) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Mid-Century 2-Drawer File Cabinet, 21.7\"W, Pine Finish\" 3D model (B082JH6LSF) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Modern Arc Living Room Floor Lamp With Light Bulb And White Shade - 10 x 56 x 76 Inches, Black\" 3D model (B073755HVS) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Modern Faux Fur Decorative Throw Pillow, Soft and Luxurious, 20\" x 20\", Ivory\" 3D model (B07BMTXJ1V) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Modern Ombre Stoneware Home Decor Flower Vase - 10 Inch, Dark Brown Red White\" 3D model (B07B8PXTSY) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Parson 6-Drawer Wood Bedroom Dresser, 60\"W, Natural\" 3D model (B071P9WJBT) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Reclaimed Wood Farmhouse Console Table, 70.9\"W, Natural Finish\" 3D model (B075ZF4SF1) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Rustic Farmhouse Stoneware Jug Home Decor Vase - 14 x 6.5 x 7.5 Inches, Antique Finish\" 3D model (B07HSJVP5C) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Rylee Modern Acacia Wood 6-Drawer Bedroom Dresser, 61\"W, Gray-Wash Acacia\" 3D model (B07HSNQW37) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Rylee Modern Acacia Wood King Bed, 83.27\"W, Gray-Wash Acacia\" 3D model (B07HSL882C) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Table Lamp, 18\"H, Cream\" 3D model (B07QJLF9XP) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Textured Modern Vase, 9.05\"H, Gray\" 3D model (B07QFB5MW6) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Traditional Woven Globe Pendant Light with White Cloth Cord, 18\"H, Natural Willow\" 3D model (B082JH9VVD) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+  "\"Stone & Beam Wishbone Counter-Height Barstool, 35.5\"H, Natural\" 3D model (B0857JWWWS) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted."
+ ],
+ "slots": {
+  "sofa_3": {
+   "pick": "B07B4MD59G",
+   "runner_up": "B07HZ5PF5S",
+   "notes": "",
+   "candidates": [
+    {
+     "id": "B07B4MD59G",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/G/B07B4MD59G.glb",
+     "attribution": "\"Stone & Beam Andover Modern Sofa Couch, 93\"W, Linen\" 3D model (B07B4MD59G) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Andover Modern Sofa Couch, 93\"W, Linen",
+     "path": "abo/B07B4MD59G.glb",
+     "dims_m": [
+      2.404,
+      0.988,
+      0.912
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 19496,
+     "mb": 56.6,
+     "tex_res": 4096,
+     "listing_color": "Linen",
+     "listing_material": "Linen | stone",
+     "albedo_colors": "#978a78(34%) #9a8d7b(31%) #988b79(28%) #816e5e(4%)",
+     "notes": "PICK. Stone & Beam Andover, 2.40 m, straight track arms, tapered wood legs, linen weave: cleanest modern line. Albedo is greige (#978a78): lift value/tint toward Lana #ECE4D6 in the material (Hue/Sat/Value V~1.5) or swap the fabric to wool_cream/linen_natural."
+    },
+    {
+     "id": "B07HZ5PF5S",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/S/B07HZ5PF5S.glb",
+     "attribution": "\"Stone & Beam Calhoun Sofa Couch, 91\"W, Ecru\" 3D model (B07HZ5PF5S) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Calhoun Sofa Couch, 91\"W, Ecru",
+     "path": "abo/B07HZ5PF5S.glb",
+     "dims_m": [
+      2.47,
+      1.009,
+      1.022
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 14368,
+     "mb": 3.2,
+     "tex_res": 2048,
+     "listing_color": "Handloom Ecru",
+     "listing_material": "Wood",
+     "albedo_colors": "#dfd9cb(46%) #e2dcce(18%) #e0dacc(18%) #82807a(16%)",
+     "notes": "RUNNER-UP. Stone & Beam Calhoun, 2.47 m, ecru handloom fabric already Lana-coloured (#dfd9cb); softer slope arms and loose pillows - more relaxed."
+    },
+    {
+     "id": "B07HYY8ZGY",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/Y/B07HYY8ZGY.glb",
+     "attribution": "\"Stone & Beam Westcott Contemporary 93\" Sofa, Fabric, 93\"W, Haze\" 3D model (B07HYY8ZGY) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Westcott Contemporary 93\" Sofa, Fabric, 93\"W, Haze",
+     "path": null,
+     "dims_m": [
+      2.415,
+      0.969,
+      0.867
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 15422,
+     "mb": null,
+     "tex_res": 2048,
+     "listing_color": "Haze",
+     "listing_material": "Wood",
+     "albedo_colors": null,
+     "notes": "Rejected: chrome/steel legs."
+    },
+    {
+     "id": "B07JW7MBZX",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/X/B07JW7MBZX.glb",
+     "attribution": "\"Rivet Thomas Modern Upholstered Sofa Couch, 101.2\"W, Grey\" 3D model (B07JW7MBZX) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Thomas Modern Upholstered Sofa Couch, 101.2\"W, Grey",
+     "path": null,
+     "dims_m": [
+      2.697,
+      1.038,
+      0.68
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 40278,
+     "mb": null,
+     "tex_res": 4096,
+     "listing_color": "Grey",
+     "listing_material": "Wood",
+     "albedo_colors": null,
+     "notes": "Rejected: grey, very low block (0.68 h), reads minimalist."
+    }
+   ]
+  },
+  "armchair_leather": {
+   "pick": "B075X2WN27",
+   "runner_up": "B071J7Q9WN",
+   "notes": "",
+   "candidates": [
+    {
+     "id": "B075X2WN27",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/7/B075X2WN27.glb",
+     "attribution": "\"Rivet Aiden Tufted Mid-Century Modern Leather Accent Chair, 35.4\"W, Cognac\" 3D model (B075X2WN27) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Aiden Tufted Mid-Century Modern Leather Accent Chair, 35.4\"W, Cognac",
+     "path": "abo/B075X2WN27.glb",
+     "dims_m": [
+      0.928,
+      0.798,
+      0.767
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 24266,
+     "mb": 2.6,
+     "tex_res": 2048,
+     "listing_color": "Cognac",
+     "listing_material": "Leather",
+     "albedo_colors": "#935e30(39%) #8d5a2d(27%) #9b673b(17%) #6e4423(15%)",
+     "notes": "PICK x2. Rivet Aiden, cognac top-grain leather, straight arms, wood legs, 0.93 w - the classic mountain-modern club chair."
+    },
+    {
+     "id": "B071J7Q9WN",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/N/B071J7Q9WN.glb",
+     "attribution": "\"Rivet Summit Mid-Century Modern Top-Grain Leather Steel Armed Accent Chair 27\"W, Cognac\" 3D model (B071J7Q9WN) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Summit Mid-Century Modern Top-Grain Leather Steel Armed Accent Chair 27\"W, Cognac",
+     "path": "abo/B071J7Q9WN.glb",
+     "dims_m": [
+      0.651,
+      0.801,
+      0.777
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 26216,
+     "mb": 2.6,
+     "tex_res": 2048,
+     "listing_color": "Cognac",
+     "listing_material": "Steel",
+     "albedo_colors": "#986033(39%) #965c2f(27%) #594e45(19%) #9d673b(13%)",
+     "notes": "RUNNER-UP. Rivet Summit, cognac leather on a black steel sled frame (cognac + black iron)."
+    },
+    {
+     "id": "B075X4F3R5",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/5/B075X4F3R5.glb",
+     "attribution": "\"Rivet Jamie Leather Mid-Century Modern Low Arm Accent Chair, 31\"W, Cognac\" 3D model (B075X4F3R5) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Jamie Leather Mid-Century Modern Low Arm Accent Chair, 31\"W, Cognac",
+     "path": null,
+     "dims_m": [
+      0.753,
+      0.851,
+      0.883
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 20582,
+     "mb": null,
+     "tex_res": 2048,
+     "listing_color": "Cognac",
+     "listing_material": "Leather; hardwood frame",
+     "albedo_colors": null,
+     "notes": "Cognac low-arm mid-century; more retro."
+    },
+    {
+     "id": "B07P6JTVZV",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/V/B07P6JTVZV.glb",
+     "attribution": "\"Rivet Cove Modern Tufted Accent Chair with Tapered Legs, Mid-Century, 32.7\"W, Caramel\" 3D model (B07P6JTVZV) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Cove Modern Tufted Accent Chair with Tapered Legs, Mid-Century, 32.7\"W, Caramel",
+     "path": null,
+     "dims_m": [
+      0.831,
+      0.868,
+      0.896
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 64512,
+     "mb": null,
+     "tex_res": 4096,
+     "listing_color": "Caramel",
+     "listing_material": "Leather",
+     "albedo_colors": null,
+     "notes": "Caramel tufted; heavier mesh (64k), tufting is busier."
+    }
+   ]
+  },
+  "coffee_table": {
+   "pick": "B07QF9Y71V",
+   "runner_up": "B07K8F2WHK",
+   "notes": "",
+   "candidates": [
+    {
+     "id": "B07QF9Y71V",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/V/B07QF9Y71V.glb",
+     "attribution": "\"Stone & Beam Industrial Coffee Table, 53\"W, Antique Natural and Black\" 3D model (B07QF9Y71V) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Industrial Coffee Table, 53\"W, Antique Natural and Black",
+     "path": "abo/B07QF9Y71V.glb",
+     "dims_m": [
+      1.35,
+      0.75,
+      0.4
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 5068,
+     "mb": 21.5,
+     "tex_res": 4096,
+     "listing_color": "Antique Natural/Black",
+     "listing_material": "Stone | Wood",
+     "albedo_colors": "#3a3a3a(68%) #806145(29%) #38393a(1%) #393a3a(0%)",
+     "notes": "PICK. 1.35 x 0.75 x 0.40, plank wood top on black iron U-frames: wood + black iron exactly as specified, low poly (5k)."
+    },
+    {
+     "id": "B07K8F2WHK",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/K/B07K8F2WHK.glb",
+     "attribution": "\"Alkove Hayes Rectangular Solid Wood Coffee Table with 1-Shelf, 115 x 70 x 45cm, Core Beech\" 3D model (B07K8F2WHK) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Alkove Hayes Rectangular Solid Wood Coffee Table with 1-Shelf, 115 x 70 x 45cm, Core Beech",
+     "path": "abo/B07K8F2WHK.glb",
+     "dims_m": [
+      1.146,
+      0.695,
+      0.457
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 1708,
+     "mb": 28.2,
+     "tex_res": 4096,
+     "listing_color": "Core Beech",
+     "listing_material": "Beech",
+     "albedo_colors": "#c78c5e(30%) #c98f61(27%) #cd9666(23%) #c38659(18%)",
+     "notes": "RUNNER-UP. Alkove Hayes solid beech 1.15 x 0.69 x 0.46 with shelf, chunky honey wood (slightly tall; scale Z 0.9)."
+    },
+    {
+     "id": "B07QC876Z6",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/6/B07QC876Z6.glb",
+     "attribution": "\"Rivet Modern Coffee Table, 39.37\"W, Pine Veneer and Natural Wood\" 3D model (B07QC876Z6) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Modern Coffee Table, 39.37\"W, Pine Veneer and Natural Wood",
+     "path": null,
+     "dims_m": [
+      1.0,
+      0.549,
+      0.419
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 252,
+     "mb": null,
+     "tex_res": 4096,
+     "listing_color": "Natural",
+     "listing_material": "Pine | Medium-density Fibreboard | Wood",
+     "albedo_colors": null,
+     "notes": "Waterfall veneer box 1.00 x 0.55 - too small."
+    },
+    {
+     "id": "modern_coffee_table_01",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/modern_coffee_table_01",
+     "attribution": "\"Modern Coffee Table 01\" by Amin, Poly Haven (https://polyhaven.com/a/modern_coffee_table_01), CC0 - credit not required, given as courtesy.",
+     "path": null,
+     "dims_m": [
+      1.202,
+      0.6,
+      0.39
+     ],
+     "dims_source": "Poly Haven API dimensions",
+     "front": "symmetric / n.a.",
+     "tris": 4504,
+     "mb": null,
+     "tex_res": null,
+     "notes": "Concrete/stone top with wood inlay; not downloaded (reads more urban)."
+    }
+   ]
+  },
+  "side_table": {
+   "pick": "B07B7H9VMM",
+   "runner_up": "B072ZLCB3M",
+   "notes": "",
+   "candidates": [
+    {
+     "id": "B07B7H9VMM",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/M/B07B7H9VMM.glb",
+     "attribution": "\"Rivet Rustic Reclaimed Fir Wood Side End Table, 16.5\"W, Natural\" 3D model (B07B7H9VMM) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Rustic Reclaimed Fir Wood Side End Table, 16.5\"W, Natural",
+     "path": "abo/B07B7H9VMM.glb",
+     "dims_m": [
+      0.425,
+      0.441,
+      0.604
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 20,
+     "mb": 1.0,
+     "tex_res": 2048,
+     "listing_color": "Natural",
+     "listing_material": "wood",
+     "albedo_colors": "#926c4e(37%) #866249(26%) #765540(20%) #a58366(16%)",
+     "notes": "PICK x2. Rivet reclaimed-fir faceted block, 0.44 x 0.42 x 0.60, 20 tris(!): chunky solid-wood \"stump\" look without being rustic."
+    },
+    {
+     "id": "B072ZLCB3M",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/M/B072ZLCB3M.glb",
+     "attribution": "\"Rivet Bristol Natural Edge Black Metal Side Table, Walnut\" 3D model (B072ZLCB3M) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Bristol Natural Edge Black Metal Side Table, Walnut",
+     "path": "abo/B072ZLCB3M.glb",
+     "dims_m": [
+      0.477,
+      0.494,
+      0.476
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 912,
+     "mb": 0.9,
+     "tex_res": 2048,
+     "listing_color": "Brown",
+     "listing_material": "Metal",
+     "albedo_colors": "#4c504c(44%) #50331e(24%) #472713(24%) #503b2a(7%)",
+     "notes": "RUNNER-UP. Natural-edge walnut top on black metal legs, 0.48 dia x 0.48 h."
+    },
+    {
+     "id": "side_table_01",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/side_table_01",
+     "attribution": "\"Side Table 01\" by James Ray Cock, Poly Haven (https://polyhaven.com/a/side_table_01), CC0 - credit not required, given as courtesy.",
+     "path": "models/side_table_01/side_table_01.blend",
+     "dims_m": [
+      0.55,
+      0.45,
+      0.551
+     ],
+     "dims_source": "Poly Haven API dimensions",
+     "front": "symmetric / n.a.",
+     "tris": 2756,
+     "mb": 3.4,
+     "tex_res": "2k",
+     "notes": "Already in assets/models; plain oak two-shelf, fine for second suite."
+    },
+    {
+     "id": "B075Z8TDQ6",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/6/B075Z8TDQ6.glb",
+     "attribution": "\"Stone & Beam Modern Rustic Reclaimed Elm Round Accent Side End Table, 16.9\"W, Natural\" 3D model (B075Z8TDQ6) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Modern Rustic Reclaimed Elm Round Accent Side End Table, 16.9\"W, Natural",
+     "path": null,
+     "dims_m": [
+      0.432,
+      0.431,
+      0.46
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 9248,
+     "mb": null,
+     "tex_res": 4096,
+     "listing_color": "Ash",
+     "listing_material": "Elm wood",
+     "albedo_colors": null,
+     "notes": "Round reclaimed pine drum; more farmhouse."
+    }
+   ]
+  },
+  "console_table": {
+   "pick": "B075ZF4SF1",
+   "runner_up": "B07TQ8WK61",
+   "notes": "",
+   "candidates": [
+    {
+     "id": "B075ZF4SF1",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/1/B075ZF4SF1.glb",
+     "attribution": "\"Stone & Beam Reclaimed Wood Farmhouse Console Table, 70.9\"W, Natural Finish\" 3D model (B075ZF4SF1) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Reclaimed Wood Farmhouse Console Table, 70.9\"W, Natural Finish",
+     "path": "abo/B075ZF4SF1.glb",
+     "dims_m": [
+      1.8,
+      0.465,
+      0.81
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 3160,
+     "mb": 3.8,
+     "tex_res": 2048,
+     "listing_color": "White and Bronze",
+     "listing_material": "wood",
+     "albedo_colors": "#9d7a5c(41%) #8e6446(25%) #977354(21%) #a7876c(11%)",
+     "notes": "PICK. Stone & Beam reclaimed-wood trestle, 1.80 x 0.47 x 0.81, honey wood, open base so it reads light behind the sofa."
+    },
+    {
+     "id": "B07TQ8WK61",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/1/B07TQ8WK61.glb",
+     "attribution": "\"Movian Ems- Mobile con 3 cassetti e 2 ante, 180 x 39,5 x 76,2 cm, effetto quercia invecchiata\" 3D model (B07TQ8WK61) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Movian Ems- Mobile con 3 cassetti e 2 ante, 180 x 39,5 x 76,2 cm, effetto quercia invecchiata",
+     "path": "abo/B07TQ8WK61.glb",
+     "dims_m": [
+      1.8,
+      0.395,
+      0.762
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 22190,
+     "mb": 51.1,
+     "tex_res": 4096,
+     "listing_color": null,
+     "listing_material": null,
+     "albedo_colors": "#705643(29%) #614838(28%) #816551(22%) #4b382c(19%)",
+     "notes": "RUNNER-UP. Movian Ems 1.80 x 0.39 x 0.76, aged-oak drawers on black iron legs (exact target size; closed front)."
+    },
+    {
+     "id": "B072ZRPFNM",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/M/B072ZRPFNM.glb",
+     "attribution": "\"Rivet Hairpin Wood and Metal Tall 29.5\" Console Bar Table, Walnut and Black\" 3D model (B072ZRPFNM) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Hairpin Wood and Metal Tall 29.5\" Console Bar Table, Walnut and Black",
+     "path": null,
+     "dims_m": [
+      1.57,
+      0.425,
+      0.834
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 2484,
+     "mb": null,
+     "tex_res": 2048,
+     "listing_color": "Brown",
+     "listing_material": "Metal",
+     "albedo_colors": null,
+     "notes": "Walnut + hairpin legs; 0.83 h bar-height."
+    },
+    {
+     "id": "B07QGG24Z2",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/2/B07QGG24Z2.glb",
+     "attribution": "\"Stone & Beam Industrial Table with Trestle-Style Base, 60.04\"W, Solid Honey-Finished Mango Wood\" 3D model (B07QGG24Z2) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Industrial Table with Trestle-Style Base, 60.04\"W, Solid Honey-Finished Mango Wood",
+     "path": null,
+     "dims_m": [
+      1.524,
+      0.405,
+      0.81
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 3632,
+     "mb": null,
+     "tex_res": 4096,
+     "listing_color": "Natural",
+     "listing_material": "Stone | Wood",
+     "albedo_colors": null,
+     "notes": "Solid wood trestle 1.52 x 0.40."
+    }
+   ]
+  },
+  "floor_lamp": {
+   "pick": "B073755HVS",
+   "runner_up": "B073P484RR",
+   "notes": "",
+   "candidates": [
+    {
+     "id": "B073755HVS",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/S/B073755HVS.glb",
+     "attribution": "\"Stone & Beam Modern Arc Living Room Floor Lamp With Light Bulb And White Shade - 10 x 56 x 76 Inches, Black\" 3D model (B073755HVS) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Modern Arc Living Room Floor Lamp With Light Bulb And White Shade - 10 x 56 x 76 Inches, Black",
+     "path": "abo/B073755HVS.glb",
+     "dims_m": [
+      0.493,
+      1.424,
+      1.927
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 6620,
+     "mb": 4.0,
+     "tex_res": 2048,
+     "listing_color": "Black",
+     "listing_material": "Metal",
+     "albedo_colors": "#9c9994(53%) #201b20(31%) #aca194(11%) #2e282a(3%)",
+     "notes": "PICK. Stone & Beam arc lamp, black, drum shade, 1.93 h / 1.42 reach: black-iron arc over the sofa corner. Shade has an emissive map (use for \"lit\" look)."
+    },
+    {
+     "id": "B073P484RR",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/R/B073P484RR.glb",
+     "attribution": "\"Rivet Mid Century Modern Tripod Living Room Floor Lamp With Light Bulb And Linen Shade - 64 Inches , Black\" 3D model (B073P484RR) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Mid Century Modern Tripod Living Room Floor Lamp With Light Bulb And Linen Shade - 64 Inches , Black",
+     "path": "abo/B073P484RR.glb",
+     "dims_m": [
+      0.667,
+      0.522,
+      1.624
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 23852,
+     "mb": 1.3,
+     "tex_res": 2048,
+     "listing_color": "Black",
+     "listing_material": "metal, fabric",
+     "albedo_colors": "#545454(60%) #afafaf(30%) #4c4545(4%) #545453(4%)",
+     "notes": "RUNNER-UP. Rivet black tripod with linen drum shade, 1.62 h - for the reading corner."
+    },
+    {
+     "id": "B07B51FDV8",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/8/B07B51FDV8.glb",
+     "attribution": "\"Stone & Beam - Trípode de iluminación, Lámpara de pie, Pino\" 3D model (B07B51FDV8) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam - Trípode de iluminación, Lámpara de pie, Pino",
+     "path": null,
+     "dims_m": [
+      0.587,
+      0.604,
+      1.51
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 58268,
+     "mb": null,
+     "tex_res": 2048,
+     "listing_color": null,
+     "listing_material": null,
+     "albedo_colors": null,
+     "notes": "Wood surveyor tripod + linen shade (wood alternative)."
+    },
+    {
+     "id": "B0742FPL25",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/5/B0742FPL25.glb",
+     "attribution": "\"Stone & Beam Lily Modern Arc Living Room Floor Lamp With Light Bulb And Taupe Shade - 83 x 15 x 53 - 60 Inches, Steel\" 3D model (B0742FPL25) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Lily Modern Arc Living Room Floor Lamp With Light Bulb And Taupe Shade - 83 x 15 x 53 - 60 Inches, Steel",
+     "path": null,
+     "dims_m": [
+      0.406,
+      1.445,
+      2.098
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 3820,
+     "mb": null,
+     "tex_res": 4096,
+     "listing_color": "Steel",
+     "listing_material": "Steel",
+     "albedo_colors": null,
+     "notes": "Steel arc, taupe shade - steel finish too bright."
+    }
+   ]
+  },
+  "table_lamp": {
+   "pick": "B075X1T517",
+   "runner_up": "B07QJLF9XP",
+   "notes": "",
+   "candidates": [
+    {
+     "id": "B075X1T517",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/7/B075X1T517.glb",
+     "attribution": "\"Stone & Beam Leland Modern Textured Table Lamp With Bulb, 24.5\"H, Grey\" 3D model (B075X1T517) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Leland Modern Textured Table Lamp With Bulb, 24.5\"H, Grey",
+     "path": "abo/B075X1T517.glb",
+     "dims_m": [
+      0.366,
+      0.367,
+      0.609
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 9640,
+     "mb": 3.2,
+     "tex_res": 2048,
+     "listing_color": "Grey",
+     "listing_material": "Ceramic Metal Fabric",
+     "albedo_colors": "#91897e(41%) #8a8177(37%) #aba196(13%) #7d756c(7%)",
+     "notes": "PICK x2. Stone & Beam Leland, textured stone-look grey ceramic base (Piedra) + taupe linen shade, 0.61 h. For the console and master nightstands."
+    },
+    {
+     "id": "B07QJLF9XP",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/P/B07QJLF9XP.glb",
+     "attribution": "\"Stone & Beam Table Lamp, 18\"H, Cream\" 3D model (B07QJLF9XP) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Table Lamp, 18\"H, Cream",
+     "path": "abo/B07QJLF9XP.glb",
+     "dims_m": [
+      0.217,
+      0.217,
+      0.453
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 12488,
+     "mb": 54.1,
+     "tex_res": 4096,
+     "listing_color": "Cream",
+     "listing_material": "ceramic",
+     "albedo_colors": "#c1c2c8(37%) #c0c1c6(25%) #cdc5bb(23%) #a5a098(12%)",
+     "notes": "RUNNER-UP. Cream textured ceramic, white drum shade, 0.45 h (Lana) - smaller, good for second-suite nightstands."
+    },
+    {
+     "id": "B07374P6MR",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/R/B07374P6MR.glb",
+     "attribution": "\"Stone & Beam Modern Bedroom Table Desk Lamp With Light Bulb - 8 x 8 x 20.5 Inches, Wood Grain\" 3D model (B07374P6MR) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Modern Bedroom Table Desk Lamp With Light Bulb - 8 x 8 x 20.5 Inches, Wood Grain",
+     "path": null,
+     "dims_m": [
+      0.244,
+      0.244,
+      0.536
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 9012,
+     "mb": null,
+     "tex_res": 2048,
+     "listing_color": "Wood Grain",
+     "listing_material": "Polyresin+Metal+Fabric",
+     "albedo_colors": null,
+     "notes": "Wood-grain resin gourd base (resin, not ceramic)."
+    },
+    {
+     "id": "B07QD5SLYJ",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/J/B07QD5SLYJ.glb",
+     "attribution": "\"Stone & Beam Glazed Ceramic Table Lamp, 19\"H, Dark Blue\" 3D model (B07QD5SLYJ) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Glazed Ceramic Table Lamp, 19\"H, Dark Blue",
+     "path": null,
+     "dims_m": [
+      0.22,
+      0.22,
+      0.475
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 16748,
+     "mb": null,
+     "tex_res": 4096,
+     "listing_color": "Dark Blue",
+     "listing_material": "ceramic",
+     "albedo_colors": null,
+     "notes": "Dark blue glazed ribbed ceramic: the single Lago accent option for the second suite (not downloaded)."
+    }
+   ]
+  },
+  "throw_blanket": {
+   "pick": "knit_rust",
+   "runner_up": "plaid_green",
+   "notes": "NO free throw-blanket MODEL exists in the allowed sources (Khronos SheenCloth is a test swatch). MODEL IT: (a) folded throw = bevelled box 0.50 x 0.35 x 0.06 with a soft fold on the sofa arm; (b) draped throw = Blender cloth sim of a 1.3 x 1.7 m plane over the arm/bed corner. Materials ready: knit_rust (Otono) for the living room, plaid_green (Bosque) for the bed runner.",
+   "candidates": []
+  },
+  "cushions": {
+   "pick": [
+    "B07JLGCKPV",
+    "B07JM1VM9Q",
+    "B07JLZC7FK",
+    "B07BMTXJ1V"
+   ],
+   "runner_up": [
+    "B07JL5PYZH",
+    "B07JLZJ9JM"
+   ],
+   "notes": "Lago accent pillow: none in blue that fits; re-texture one B07JLGCKPV/B07JM1VM9Q copy with the existing rough_linen (slate-blue) material.",
+   "candidates": [
+    {
+     "id": "B07JLGCKPV",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/V/B07JLGCKPV.glb",
+     "attribution": "\"Stone & Beam Classic Leather Throw Pillow - 18 x 18 Inch, Camel\" 3D model (B07JLGCKPV) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Classic Leather Throw Pillow - 18 x 18 Inch, Camel",
+     "path": "abo/B07JLGCKPV.glb",
+     "dims_m": [
+      0.501,
+      0.192,
+      0.477
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 8184,
+     "mb": 2.1,
+     "tex_res": 2048,
+     "listing_color": "Camel",
+     "listing_material": null,
+     "albedo_colors": "#7e4521(31%) #d0c5b3(31%) #bfae9b(20%) #8f6447(16%)",
+     "notes": "PICK. Cognac leather 4-panel 0.50 (Otono)."
+    },
+    {
+     "id": "B07JM1VM9Q",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/Q/B07JM1VM9Q.glb",
+     "attribution": "\"Rivet Industrial Throw Pillow - 24 x 12 Inch, Flax/Hunter Green\" 3D model (B07JM1VM9Q) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Industrial Throw Pillow - 24 x 12 Inch, Flax/Hunter Green",
+     "path": "abo/B07JM1VM9Q.glb",
+     "dims_m": [
+      0.859,
+      0.197,
+      0.429
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 5808,
+     "mb": 1.9,
+     "tex_res": 2048,
+     "listing_color": "Hunter Green",
+     "listing_material": null,
+     "albedo_colors": "#000000(58%) #bba98f(19%) #bdab91(15%) #7b7361(6%)",
+     "notes": "PICK. Flax lumbar 0.86 with hunter-green leather band (Bosque)."
+    },
+    {
+     "id": "B07JLZC7FK",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/K/B07JLZC7FK.glb",
+     "attribution": "\"Stone & Beam Casual Pom-Pom Throw Pillow - 24 x 12 Inch, Terracotta\" 3D model (B07JLZC7FK) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Casual Pom-Pom Throw Pillow - 24 x 12 Inch, Terracotta",
+     "path": "abo/B07JLZC7FK.glb",
+     "dims_m": [
+      0.709,
+      0.201,
+      0.322
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 29736,
+     "mb": 41.2,
+     "tex_res": 4096,
+     "listing_color": "Terracotta",
+     "listing_material": null,
+     "albedo_colors": "#b3452d(40%) #b2432c(28%) #c27967(15%) #b1412a(15%)",
+     "notes": "PICK. Terracotta lumbar 0.71 (Otono); pom-poms are small - can be deleted."
+    },
+    {
+     "id": "B07BMTXJ1V",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/V/B07BMTXJ1V.glb",
+     "attribution": "\"Stone & Beam Modern Faux Fur Decorative Throw Pillow, Soft and Luxurious, 20\" x 20\", Ivory\" 3D model (B07BMTXJ1V) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Modern Faux Fur Decorative Throw Pillow, Soft and Luxurious, 20\" x 20\", Ivory",
+     "path": "abo/B07BMTXJ1V.glb",
+     "dims_m": [
+      0.538,
+      0.216,
+      0.525
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 198975,
+     "mb": 51.5,
+     "tex_res": 4096,
+     "listing_color": "Ivory",
+     "listing_material": "Plush",
+     "albedo_colors": "#ddd6c3(36%) #ebe6d6(26%) #e5decc(24%) #d7ccb7(13%)",
+     "notes": "PICK. Cream faux-fur 0.54 for the reading chair/bed (199k tris - decimate for web)."
+    },
+    {
+     "id": "B07JL5PYZH",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/H/B07JL5PYZH.glb",
+     "attribution": "\"Rivet Industrial Throw Pillow - 24 x 12 Inch, Flax/Cognac\" 3D model (B07JL5PYZH) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Industrial Throw Pillow - 24 x 12 Inch, Flax/Cognac",
+     "path": "abo/B07JL5PYZH.glb",
+     "dims_m": [
+      0.612,
+      0.155,
+      0.282
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 10240,
+     "mb": 4.5,
+     "tex_res": 2048,
+     "listing_color": "Cognac",
+     "listing_material": null,
+     "albedo_colors": "#b7a68d(38%) #bbaa90(28%) #bead94(25%) #a28369(8%)",
+     "notes": "RUNNER-UP. Flax lumbar with cognac leather band."
+    },
+    {
+     "id": "B07JLZJ9JM",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/M/B07JLZJ9JM.glb",
+     "attribution": "\"Stone & Beam Classic Plaid Outdoor Throw Pillow, 20\" x 20\", Garden\" 3D model (B07JLZJ9JM) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Classic Plaid Outdoor Throw Pillow, 20\" x 20\", Garden",
+     "path": "abo/B07JLZJ9JM.glb",
+     "dims_m": [
+      0.453,
+      0.2,
+      0.43
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 10240,
+     "mb": 3.1,
+     "tex_res": 2048,
+     "listing_color": "Garden",
+     "listing_material": null,
+     "albedo_colors": "#da845c(42%) #b1a291(25%) #ad937a(24%) #c07d59(6%)",
+     "notes": "RUNNER-UP. Soft beige plaid (outdoor pillow) - balcony."
+    },
+    {
+     "id": "throw_pillows_01",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/throw_pillows_01",
+     "attribution": "\"Throw Pillows 01\" by Serhii Khromov, Poly Haven (https://polyhaven.com/a/throw_pillows_01), CC0 - credit not required, given as courtesy.",
+     "path": "models/throw_pillows_01/throw_pillows_01.blend",
+     "dims_m": [
+      1.022,
+      0.627,
+      0.45
+     ],
+     "dims_source": "Poly Haven API dimensions",
+     "front": "symmetric / n.a.",
+     "tris": 6362,
+     "mb": 13.4,
+     "tex_res": "2k",
+     "notes": "Already local; red/orange zigzag kilim reads ethnic/loud - use only re-textured (e.g. with linen_natural or plaid_green)."
+    },
+    {
+     "id": "B074VLRN76",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/6/B074VLRN76.glb",
+     "attribution": "\"Rivet Mudcloth-Inspired Decorative Throw Pillow, 17\" x 17\", Spice\" 3D model (B074VLRN76) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Mudcloth-Inspired Decorative Throw Pillow, 17\" x 17\", Spice",
+     "path": null,
+     "dims_m": [
+      0.438,
+      0.164,
+      0.429
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 131072,
+     "mb": null,
+     "tex_res": 2048,
+     "listing_color": "Spice",
+     "listing_material": "plush / fiber/polyester/cotton",
+     "albedo_colors": null,
+     "notes": "Spice mudcloth - boho, not downloaded."
+    }
+   ]
+  },
+  "firewood": {
+   "pick": "firewood_logs",
+   "runner_up": "dead_tree_trunk",
+   "notes": "No firewood-stack model exists in the allowed sources.",
+   "candidates": [
+    {
+     "id": "firewood_logs",
+     "source": "material (see materials)",
+     "license": "CC0 1.0",
+     "url": "https://ambientcg.com/a/Logs001",
+     "attribution": "Logs001 from ambientCG.com, CC0 (credit optional).",
+     "path": "tex/firewood_logs/",
+     "dims_m": null,
+     "front": null,
+     "tris": null,
+     "mb": 5.7,
+     "notes": "PICK. ambientCG Logs001 stacked split-log end grain on the niche fill box (with displacement) - photoreal, cheap."
+    },
+    {
+     "id": "dead_tree_trunk",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/dead_tree_trunk",
+     "attribution": "\"Dead Tree Trunk\" by Rob Tuytel, Poly Haven (https://polyhaven.com/a/dead_tree_trunk), CC0 - credit not required, given as courtesy.",
+     "path": "models/dead_tree_trunk/dead_tree_trunk.blend",
+     "dims_m": [
+      3.051,
+      0.278,
+      0.29
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "lies along X",
+     "tris": 101802,
+     "mb": 19.3,
+     "tex_res": "2k",
+     "notes": "RUNNER-UP. 3.05 m bark log (lies along X); cut into 0.40 m segments and instance-stack 8-12 in the niche (cap ends with a TreeEnd texture or the Logs001 crop)."
+    },
+    {
+     "id": "tree_stump_02",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/tree_stump_02",
+     "attribution": "\"Tree Stump 02\" by Rob Tuytel, Poly Haven (https://polyhaven.com/a/tree_stump_02), CC0 - credit not required, given as courtesy.",
+     "path": null,
+     "dims_m": [
+      1.522,
+      1.393,
+      0.522
+     ],
+     "dims_source": "Poly Haven API dimensions",
+     "front": "symmetric / n.a.",
+     "tris": 62345,
+     "mb": null,
+     "tex_res": null,
+     "notes": "Rejected: forest-floor stump with moss."
+    }
+   ]
+  },
+  "big_plant": {
+   "pick": "potted_plant_01",
+   "runner_up": "potted_plant_02",
+   "notes": "No 1.4-1.9 m indoor plant (fig/olive/palm) exists in Poly Haven, ABO or Khronos; outdoor trees (fir_sapling 1.3 m) do not read as house plants. Model or scale potted_plant_01.",
+   "candidates": [
+    {
+     "id": "potted_plant_01",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/potted_plant_01",
+     "attribution": "\"Potted Plant 01\" by Rico Cilliers, Poly Haven (https://polyhaven.com/a/potted_plant_01), CC0 - credit not required, given as courtesy.",
+     "path": "models/potted_plant_01/potted_plant_01.blend",
+     "dims_m": [
+      0.587,
+      0.634,
+      1.35
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "symmetric / n.a.",
+     "tris": 176226,
+     "mb": 76.1,
+     "tex_res": "2k",
+     "notes": "PICK (already local). 1.35 m leafy plant in terracotta urn - the only floor-height plant available. Scale x1.15 (~1.55 m) and re-material the urn to a Lana/Piedra matte ceramic."
+    },
+    {
+     "id": "potted_plant_02",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/potted_plant_02",
+     "attribution": "\"Potted Plant 02\" by Rico Cilliers, Poly Haven (https://polyhaven.com/a/potted_plant_02), CC0 - credit not required, given as courtesy.",
+     "path": "models/potted_plant_02/potted_plant_02.blend",
+     "dims_m": [
+      0.701,
+      0.657,
+      0.841
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "symmetric / n.a.",
+     "tris": 69806,
+     "mb": 84.0,
+     "tex_res": "2k",
+     "notes": "RUNNER-UP (already local). 0.84 m Syngonium in terracotta - put it on a wood stand or low stool by the glass."
+    },
+    {
+     "id": "khronos/DiffuseTransmissionPlant",
+     "source": "Khronos glTF-Sample-Assets",
+     "license": "CC0 original + CC BY 4.0 materials",
+     "url": "https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/DiffuseTransmissionPlant",
+     "attribution": "DiffuseTransmissionPlant, Khronos glTF-Sample-Assets (CC0 original + CC BY 4.0 materials; see metadata.json for artists)",
+     "path": null,
+     "dims_m": null,
+     "front": null,
+     "tris": null,
+     "mb": null,
+     "notes": "Same base asset as potted_plant_02 (Rico Cilliers) with transmission material; not needed."
+    }
+   ]
+  },
+  "decor": {
+   "pick": [
+    "wicker_basket_02",
+    "wooden_bowl_02",
+    "ceramic_vase_04",
+    "B07B8PXTSY",
+    "B07QHL8W81",
+    "B078JMXRGC",
+    "B07HSPJ11F",
+    "B07QFB5MW6",
+    "decorative_book_set_01"
+   ],
+   "runner_up": [
+    "B07HSJVP5C",
+    "ceramic_vase_01"
+   ],
+   "notes": "",
+   "candidates": [
+    {
+     "id": "wicker_basket_02",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/wicker_basket_02",
+     "attribution": "\"Wicker Basket 02\" by Kuutti Siitonen, Poly Haven (https://polyhaven.com/a/wicker_basket_02), CC0 - credit not required, given as courtesy.",
+     "path": "models/wicker_basket_02/wicker_basket_02.blend",
+     "dims_m": [
+      0.347,
+      0.254,
+      0.2
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "symmetric / n.a.",
+     "tris": 17850,
+     "mb": 14.6,
+     "tex_res": "2k",
+     "notes": "PICK. Handwoven rattan lidded basket (blankets/firewood side)."
+    },
+    {
+     "id": "wooden_bowl_02",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/wooden_bowl_02",
+     "attribution": "\"Wooden Bowl 02\" by Kuutti Siitonen, Poly Haven (https://polyhaven.com/a/wooden_bowl_02), CC0 - credit not required, given as courtesy.",
+     "path": "models/wooden_bowl_02/wooden_bowl_02.blend",
+     "dims_m": [
+      0.131,
+      0.125,
+      0.073
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "symmetric / n.a.",
+     "tris": 4666,
+     "mb": 11.6,
+     "tex_res": "2k",
+     "notes": "PICK. Rustic turned wood bowl for the coffee table."
+    },
+    {
+     "id": "ceramic_vase_04",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/ceramic_vase_04",
+     "attribution": "\"Ceramic Vase 04\" by James Ray Cock, Poly Haven (https://polyhaven.com/a/ceramic_vase_04), CC0 - credit not required, given as courtesy.",
+     "path": "models/ceramic_vase_04/ceramic_vase_04.blend",
+     "dims_m": [
+      0.181,
+      0.181,
+      0.342
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "symmetric / n.a.",
+     "tris": 9000,
+     "mb": 6.6,
+     "tex_res": "2k",
+     "notes": "PICK. Matte cream handmade-look jug vase (Lana)."
+    },
+    {
+     "id": "B07B8PXTSY",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/Y/B07B8PXTSY.glb",
+     "attribution": "\"Stone & Beam Modern Ombre Stoneware Home Decor Flower Vase - 10 Inch, Dark Brown Red White\" 3D model (B07B8PXTSY) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Modern Ombre Stoneware Home Decor Flower Vase - 10 Inch, Dark Brown Red White",
+     "path": "abo/B07B8PXTSY.glb",
+     "dims_m": [
+      0.111,
+      0.111,
+      0.261
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 4248,
+     "mb": 1.8,
+     "tex_res": 2048,
+     "listing_color": "Dark Brown",
+     "listing_material": "stoneware",
+     "albedo_colors": "#410908(34%) #9e793a(25%) #350706(22%) #5e2210(17%)",
+     "notes": "PICK. Ombre drip-glaze stoneware vase, dark red-brown (Otono accent)."
+    },
+    {
+     "id": "B07QHL8W81",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/1/B07QHL8W81.glb",
+     "attribution": "\"Rivet Modern Stoneware Vases, 2-Piece Set, 5.2\"H, White and Blue-Green\" 3D model (B07QHL8W81) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Modern Stoneware Vases, 2-Piece Set, 5.2\"H, White and Blue-Green",
+     "path": "abo/B07QHL8W81.glb",
+     "dims_m": [
+      0.187,
+      0.089,
+      0.131
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 12032,
+     "mb": 12.0,
+     "tex_res": 4096,
+     "listing_color": null,
+     "listing_material": "stoneware",
+     "albedo_colors": "#e8e6e0(47%) #9aa2a4(47%) #98a0a2(2%) #d1d2cf(1%)",
+     "notes": "PICK. Pair of pebble stoneware vases, cream + slate blue-green (the Lago touch)."
+    },
+    {
+     "id": "B078JMXRGC",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/C/B078JMXRGC.glb",
+     "attribution": "\"Rivet Modern Stone and Birch Natural Edge Serving Decor Tray - 15.5 x 9 x 2.5 Inch, Black and Wood\" 3D model (B078JMXRGC) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Modern Stone and Birch Natural Edge Serving Decor Tray - 15.5 x 9 x 2.5 Inch, Black and Wood",
+     "path": "abo/B078JMXRGC.glb",
+     "dims_m": [
+      0.387,
+      0.231,
+      0.062
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 22528,
+     "mb": 48.8,
+     "tex_res": 4096,
+     "listing_color": null,
+     "listing_material": null,
+     "albedo_colors": "#5b5a5a(42%) #66605b(21%) #977b5b(21%) #3b3a3a(14%)",
+     "notes": "PICK. Slate + birch serving tray (stone + wood) for the coffee table or the bath (soap tray)."
+    },
+    {
+     "id": "B07HSPJ11F",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/F/B07HSPJ11F.glb",
+     "attribution": "\"Rivet Modern Cylindrical Stoneware Candle Holder Lantern Home Decor Set - Set of 2, Gray and Cream\" 3D model (B07HSPJ11F) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Modern Cylindrical Stoneware Candle Holder Lantern Home Decor Set - Set of 2, Gray and Cream",
+     "path": "abo/B07HSPJ11F.glb",
+     "dims_m": [
+      0.347,
+      0.184,
+      0.255
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 96128,
+     "mb": 3.8,
+     "tex_res": 2048,
+     "listing_color": null,
+     "listing_material": null,
+     "albedo_colors": "#8e734b(29%) #b3a999(27%) #9d9586(22%) #94805c(20%)",
+     "notes": "PICK. Pair of cut-out stoneware candle lanterns with rope handles."
+    },
+    {
+     "id": "B07QFB5MW6",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/6/B07QFB5MW6.glb",
+     "attribution": "\"Stone & Beam Textured Modern Vase, 9.05\"H, Gray\" 3D model (B07QFB5MW6) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Textured Modern Vase, 9.05\"H, Gray",
+     "path": "abo/B07QFB5MW6.glb",
+     "dims_m": [
+      0.297,
+      0.297,
+      0.499
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 6336,
+     "mb": 37.1,
+     "tex_res": 4096,
+     "listing_color": "Gray",
+     "listing_material": "stoneware",
+     "albedo_colors": "#646464(40%) #767572(27%) #686767(20%) #636262(12%)",
+     "notes": "PICK. 0.50 m grey striped stoneware floor/console vase (Piedra) - add dry branches."
+    },
+    {
+     "id": "decorative_book_set_01",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/decorative_book_set_01",
+     "attribution": "\"Decorative Book Set 01\" by James Ray Cock, Poly Haven (https://polyhaven.com/a/decorative_book_set_01), CC0 - credit not required, given as courtesy.",
+     "path": "models/decorative_book_set_01/decorative_book_set_01.blend",
+     "dims_m": [
+      2.505,
+      0.321,
+      0.286
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "symmetric / n.a.",
+     "tris": 397856,
+     "mb": 207.6,
+     "tex_res": "2k",
+     "notes": "PICK (already local). Book row - split into 2-3 stacks for console and coffee table."
+    },
+    {
+     "id": "B07HSJVP5C",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/C/B07HSJVP5C.glb",
+     "attribution": "\"Stone & Beam Rustic Farmhouse Stoneware Jug Home Decor Vase - 14 x 6.5 x 7.5 Inches, Antique Finish\" 3D model (B07HSJVP5C) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Rustic Farmhouse Stoneware Jug Home Decor Vase - 14 x 6.5 x 7.5 Inches, Antique Finish",
+     "path": "abo/B07HSJVP5C.glb",
+     "dims_m": [
+      0.203,
+      0.186,
+      0.382
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 11952,
+     "mb": 1.1,
+     "tex_res": 2048,
+     "listing_color": null,
+     "listing_material": "stoneware",
+     "albedo_colors": "#d9d8d4(42%) #aaa697(30%) #b9b6ab(14%) #d4d3cf(12%)",
+     "notes": "RUNNER-UP. Rustic whitewashed stoneware jug (a bit farmhouse)."
+    },
+    {
+     "id": "ceramic_vase_01",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/ceramic_vase_01",
+     "attribution": "\"Ceramic Vase 01\" by James Ray Cock, Poly Haven (https://polyhaven.com/a/ceramic_vase_01), CC0 - credit not required, given as courtesy.",
+     "path": "models/ceramic_vase_01/ceramic_vase_01.blend",
+     "dims_m": [
+      0.204,
+      0.204,
+      0.4
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "symmetric / n.a.",
+     "tris": 10296,
+     "mb": 1.3,
+     "tex_res": "2k",
+     "notes": "RUNNER-UP. Tall white vase - glossy, lower roughness to ~0.45."
+    },
+    {
+     "id": "jug_01",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/jug_01",
+     "attribution": "\"Jug 01\" by Kuutti Siitonen, Poly Haven (https://polyhaven.com/a/jug_01), CC0 - credit not required, given as courtesy.",
+     "path": null,
+     "dims_m": [
+      0.275,
+      0.168,
+      0.211
+     ],
+     "dims_source": "Poly Haven API dimensions",
+     "front": "symmetric / n.a.",
+     "tris": 5770,
+     "mb": null,
+     "tex_res": null,
+     "notes": "Rejected: floral transfer print."
+    },
+    {
+     "id": "book_encyclopedia_set_01",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/book_encyclopedia_set_01",
+     "attribution": "\"Book Encyclopedia Set 01\" by John Malcolm, Poly Haven (https://polyhaven.com/a/book_encyclopedia_set_01), CC0 - credit not required, given as courtesy.",
+     "path": null,
+     "dims_m": [
+      0.551,
+      0.163,
+      0.237
+     ],
+     "dims_source": "Poly Haven API dimensions",
+     "front": "symmetric / n.a.",
+     "tris": 67306,
+     "mb": null,
+     "tex_res": null,
+     "notes": "Rejected: old encyclopedia spines."
+    }
+   ]
+  },
+  "dining_table": {
+   "pick": "B07KV3HBMR",
+   "runner_up": "B075Z9QB8P",
+   "notes": "",
+   "candidates": [
+    {
+     "id": "B07KV3HBMR",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/R/B07KV3HBMR.glb",
+     "attribution": "\"Alkove Hayes Solid Wood Table with A-shaped Metal Legs\" 3D model (B07KV3HBMR) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Alkove Hayes Solid Wood Table with A-shaped Metal Legs",
+     "path": "abo/B07KV3HBMR.glb",
+     "dims_m": [
+      2.0,
+      1.0,
+      0.77
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 6988,
+     "mb": 19.1,
+     "tex_res": 4096,
+     "listing_color": "Natural",
+     "listing_material": null,
+     "albedo_colors": "#bd8f5d(29%) #1a1a1b(26%) #cea36d(23%) #a17549(21%)",
+     "notes": "PICK. Alkove Hayes solid wood 2.00 x 1.00 x 0.77, natural live-edge-ish top on black metal X legs: seats 6, rustic-modern, 7k tris."
+    },
+    {
+     "id": "B075Z9QB8P",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/P/B075Z9QB8P.glb",
+     "attribution": "\"Rivet Rustic Industrial Wood and Metal Dining Room Kitchen Table, 86.6\"L, Fir\" 3D model (B075Z9QB8P) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Rustic Industrial Wood and Metal Dining Room Kitchen Table, 86.6\"L, Fir",
+     "path": "abo/B075Z9QB8P.glb",
+     "dims_m": [
+      2.2,
+      1.0,
+      0.757
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 6908,
+     "mb": 3.1,
+     "tex_res": 2048,
+     "listing_color": "Natural+black Iron",
+     "listing_material": "Wood",
+     "albedo_colors": "#99704f(38%) #494a4b(37%) #a27a58(24%) #5b524b(0%)",
+     "notes": "RUNNER-UP. Rivet fir plank top 2.20 x 1.00 on black iron A-frames - slightly more industrial."
+    },
+    {
+     "id": "B07K7TRF5F",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/F/B07K7TRF5F.glb",
+     "attribution": "\"Alkove - Hayes - Tavolo da pranzo in legno massello con gambe ad A in metallo, 200 cm, quercia selvatica\" 3D model (B07K7TRF5F) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Alkove - Hayes - Tavolo da pranzo in legno massello con gambe ad A in metallo, 200 cm, quercia selvatica",
+     "path": null,
+     "dims_m": [
+      2.0,
+      1.0,
+      0.77
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 1808,
+     "mb": null,
+     "tex_res": 4096,
+     "listing_color": null,
+     "listing_material": null,
+     "albedo_colors": null,
+     "notes": "Same Hayes top on splayed black legs (1.8k tris)."
+    },
+    {
+     "id": "B07B7BM55W",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/W/B07B7BM55W.glb",
+     "attribution": "\"Stone & Beam Reclaimed Fir Rustic Wood Dining Kitchen Table, 78.8\"L, Brown\" 3D model (B07B7BM55W) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Reclaimed Fir Rustic Wood Dining Kitchen Table, 78.8\"L, Brown",
+     "path": null,
+     "dims_m": [
+      2.003,
+      0.952,
+      0.76
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 1524,
+     "mb": null,
+     "tex_res": 2048,
+     "listing_color": "Brown",
+     "listing_material": "wood",
+     "albedo_colors": null,
+     "notes": "Rustic slatted trestle - leans farmhouse."
+    }
+   ]
+  },
+  "dining_chair": {
+   "pick": "B0857JQ3BZ",
+   "runner_up": "B07B83KVGK",
+   "notes": "",
+   "candidates": [
+    {
+     "id": "B0857JQ3BZ",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/Z/B0857JQ3BZ.glb",
+     "attribution": "\"Stone & Beam Jane Wood-Framed Classic Woven Dining Chair, 34\" H, Set of 2, Brown\" 3D model (B0857JQ3BZ) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Jane Wood-Framed Classic Woven Dining Chair, 34\" H, Set of 2, Brown",
+     "path": "abo/B0857JQ3BZ.glb",
+     "dims_m": [
+      0.495,
+      0.569,
+      0.851
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 161088,
+     "mb": 40.7,
+     "tex_res": 4096,
+     "listing_color": "Brown",
+     "listing_material": null,
+     "albedo_colors": "#8b4318(35%) #843e17(30%) #bf8e6c(18%) #763111(15%)",
+     "notes": "PICK x6. Stone & Beam Jane, walnut-stained frame with natural woven cord seat (wood + woven seat as in the concept). 161k tris each - decimate to ~20k for the web build (6 chairs)."
+    },
+    {
+     "id": "B07B83KVGK",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/K/B07B83KVGK.glb",
+     "attribution": "\"Rivet Mid-Century Modern Wood Dining Chair, 30\"H, Natural\" 3D model (B07B83KVGK) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Mid-Century Modern Wood Dining Chair, 30\"H, Natural",
+     "path": "abo/B07B83KVGK.glb",
+     "dims_m": [
+      0.512,
+      0.499,
+      0.792
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 7230,
+     "mb": 2.7,
+     "tex_res": 2048,
+     "listing_color": "Natural",
+     "listing_material": "Wood",
+     "albedo_colors": "#a17648(30%) #8f6235(29%) #a8885e(22%) #966839(17%)",
+     "notes": "RUNNER-UP. Rivet mid-century curved-back honey oak chair, all wood, 7k tris - very light for the web."
+    },
+    {
+     "id": "B084RZVHD2",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/2/B084RZVHD2.glb",
+     "attribution": "\"Rivet Erikson Vegan Leather Woven Dining Chair, Set of 2, 18\"W, Beige\" 3D model (B084RZVHD2) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Erikson Vegan Leather Woven Dining Chair, Set of 2, 18\"W, Beige",
+     "path": null,
+     "dims_m": [
+      0.473,
+      0.533,
+      0.905
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 59819,
+     "mb": null,
+     "tex_res": 4096,
+     "listing_color": "Beige",
+     "listing_material": "Faux Leather",
+     "albedo_colors": null,
+     "notes": "Cane back + woven faux-leather seat (vegan leather)."
+    },
+    {
+     "id": "B0857JM2NC",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/C/B0857JM2NC.glb",
+     "attribution": "\"Stone & Beam Mid-Century Beech and Rattan Dining Chair with Arms, 21.9\"W, Natural\" 3D model (B0857JM2NC) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Mid-Century Beech and Rattan Dining Chair with Arms, 21.9\"W, Natural",
+     "path": null,
+     "dims_m": [
+      0.556,
+      0.495,
+      0.762
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 180768,
+     "mb": null,
+     "tex_res": 4096,
+     "listing_color": "Natural",
+     "listing_material": "Beech | Paper Rope Weave",
+     "albedo_colors": null,
+     "notes": "Beech + paper-cord armchair (armchair, too wide x6)."
+    }
+   ]
+  },
+  "pendant_dining": {
+   "pick": "B07HK85JV8",
+   "runner_up": "B082JH9VVD",
+   "notes": "",
+   "candidates": [
+    {
+     "id": "B07HK85JV8",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/8/B07HK85JV8.glb",
+     "attribution": "\"Rivet Rustic Natural Material Construction Pendant Light with Bulb, 60\"H, Brown\" 3D model (B07HK85JV8) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Rustic Natural Material Construction Pendant Light with Bulb, 60\"H, Brown",
+     "path": "abo/B07HK85JV8.glb",
+     "dims_m": [
+      0.643,
+      0.643,
+      1.009
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 169716,
+     "mb": 6.6,
+     "tex_res": 2048,
+     "listing_color": "Brown",
+     "listing_material": null,
+     "albedo_colors": "#212121(48%) #b1a89c(42%) #1c1c1b(6%) #202121(2%)",
+     "notes": "PICK. Rivet natural rope/jute pendant 0.64 dia (natural fiber) - one large fixture over the 2 m table; drop is 1.01 m incl. cord, trim cord to ceiling. 170k tris."
+    },
+    {
+     "id": "B082JH9VVD",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/D/B082JH9VVD.glb",
+     "attribution": "\"Stone & Beam Traditional Woven Globe Pendant Light with White Cloth Cord, 18\"H, Natural Willow\" 3D model (B082JH9VVD) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Traditional Woven Globe Pendant Light with White Cloth Cord, 18\"H, Natural Willow",
+     "path": "abo/B082JH9VVD.glb",
+     "dims_m": [
+      0.457,
+      0.457,
+      2.019
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 217402,
+     "mb": 47.0,
+     "tex_res": 4096,
+     "listing_color": "Natural Twine",
+     "listing_material": null,
+     "albedo_colors": "#9f9f9f(60%) #aba195(35%) #9e9f9f(3%) #9b9186(1%)",
+     "notes": "RUNNER-UP. Woven willow globe 0.46 dia; use two in line for the 2 m table. Cord model is 2.02 m long - shorten."
+    },
+    {
+     "id": "hanging_industrial_lamp",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/hanging_industrial_lamp",
+     "attribution": "\"Hanging Industrial Lamp\" by Kuutti Siitonen, Poly Haven (https://polyhaven.com/a/hanging_industrial_lamp), CC0 - credit not required, given as courtesy.",
+     "path": null,
+     "dims_m": [
+      0.55,
+      0.55,
+      1.355
+     ],
+     "dims_source": "Poly Haven API dimensions",
+     "front": "symmetric / n.a.",
+     "tris": 9530,
+     "mb": null,
+     "tex_res": null,
+     "notes": "Rejected: green factory lamp."
+    },
+    {
+     "id": "B07374QGD8",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/8/B07374QGD8.glb",
+     "attribution": "\"Stone & Beam Industrial Triple Glass Shade Ceiling Hanging Pendant Chandelier Fixture - 23 x 7 x 36 Inches, Gunmetal Black\" 3D model (B07374QGD8) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Industrial Triple Glass Shade Ceiling Hanging Pendant Chandelier Fixture - 23 x 7 x 36 Inches, Gunmetal Black",
+     "path": null,
+     "dims_m": [
+      0.582,
+      0.177,
+      0.557
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 16878,
+     "mb": null,
+     "tex_res": 4096,
+     "listing_color": "Black",
+     "listing_material": "Metal",
+     "albedo_colors": null,
+     "notes": "Black linear 3-light with clear glass - industrial, not downloaded."
+    }
+   ]
+  },
+  "bar_stool": {
+   "pick": "B07QFRRLG1",
+   "runner_up": "B0857JWWWS",
+   "notes": "",
+   "candidates": [
+    {
+     "id": "B07QFRRLG1",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/1/B07QFRRLG1.glb",
+     "attribution": "\"Stone & Beam Elden Leather Nailhead-Trim Kitchen Counter Backless Bar Stool, 30\"H, Cognac\" 3D model (B07QFRRLG1) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Elden Leather Nailhead-Trim Kitchen Counter Backless Bar Stool, 30\"H, Cognac",
+     "path": "abo/B07QFRRLG1.glb",
+     "dims_m": [
+      0.5,
+      0.361,
+      0.759
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 18796,
+     "mb": 40.8,
+     "tex_res": 4096,
+     "listing_color": "Light Brown Leather",
+     "listing_material": "brass | wood",
+     "albedo_colors": "#3a2a14(38%) #372713(32%) #604325(20%) #281c0e(8%)",
+     "notes": "PICK x3. Stone & Beam Elden, cognac leather saddle seat + dark wood legs = \"madera y cuero\". It is bar height (seat 0.76): scale Z to 0.86 for a 0.65 counter seat, or keep if the island is 1.05."
+    },
+    {
+     "id": "B0857JWWWS",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/S/B0857JWWWS.glb",
+     "attribution": "\"Stone & Beam Wishbone Counter-Height Barstool, 35.5\"H, Natural\" 3D model (B0857JWWWS) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Wishbone Counter-Height Barstool, 35.5\"H, Natural",
+     "path": "abo/B0857JWWWS.glb",
+     "dims_m": [
+      0.536,
+      0.575,
+      0.923
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 412452,
+     "mb": 45.9,
+     "tex_res": 4096,
+     "listing_color": "Natural",
+     "listing_material": "Rubber Wood | Paper Rope Weave",
+     "albedo_colors": "#bd8a62(31%) #cf9b6d(27%) #e0b489(21%) #856043(18%)",
+     "notes": "RUNNER-UP. Wishbone counter stool, honey wood + paper-cord seat (counter height). 412k tris - decimate."
+    },
+    {
+     "id": "B075YPTF1L",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/L/B075YPTF1L.glb",
+     "attribution": "\"Rivet Modern Industrial Wood and Metal Kitchen Counter Bar Stool, 25.6\"H, Oak, Black\" 3D model (B075YPTF1L) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Modern Industrial Wood and Metal Kitchen Counter Bar Stool, 25.6\"H, Oak, Black",
+     "path": null,
+     "dims_m": [
+      0.48,
+      0.401,
+      0.679
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 21616,
+     "mb": null,
+     "tex_res": 2048,
+     "listing_color": "Brown",
+     "listing_material": "Wood; metal base",
+     "albedo_colors": null,
+     "notes": "Oak saddle seat on black iron hairpin base, 0.68 counter height (wood + iron, no leather)."
+    }
+   ]
+  },
+  "bed_king": {
+   "pick": "B075QBL1V8",
+   "runner_up": "B07HSL882C",
+   "notes": "Frames are king-size (2.12-2.15 wide incl. upholstery; mattress ~1.93). A good bed exists; only bedding needs modeling.",
+   "candidates": [
+    {
+     "id": "B075QBL1V8",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/8/B075QBL1V8.glb",
+     "attribution": "\"Stone & Beam Clifton Modern Upholstered King Bed with Headboard, 84.25\"W, Cream\" 3D model (B075QBL1V8) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Clifton Modern Upholstered King Bed with Headboard, 84.25\"W, Cream",
+     "path": "abo/B075QBL1V8.glb",
+     "dims_m": [
+      2.145,
+      2.293,
+      1.471
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 20194,
+     "mb": 1.6,
+     "tex_res": 2048,
+     "listing_color": "Infinitey Natural",
+     "listing_material": "stone",
+     "albedo_colors": "#e8d8c6(40%) #714a36(25%) #f6ede3(24%) #bfa591(9%)",
+     "notes": "PICK. Stone & Beam Clifton king, cream upholstered wingback (headboard 1.47 h), frame 2.15 x 2.29: \"cama tapizada en lino\". Mattress/sheets are modeled - replace bedding with your linen + plaid runner."
+    },
+    {
+     "id": "B07HSL882C",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/C/B07HSL882C.glb",
+     "attribution": "\"Stone & Beam Rylee Modern Acacia Wood King Bed, 83.27\"W, Gray-Wash Acacia\" 3D model (B07HSL882C) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Rylee Modern Acacia Wood King Bed, 83.27\"W, Gray-Wash Acacia",
+     "path": "abo/B07HSL882C.glb",
+     "dims_m": [
+      2.116,
+      2.167,
+      1.1
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 99019,
+     "mb": 13.2,
+     "tex_res": 2048,
+     "listing_color": "Beige",
+     "listing_material": "Wood",
+     "albedo_colors": "#a08364(43%) #9b7d5e(29%) #906f53(17%) #b5a18b(9%)",
+     "notes": "RUNNER-UP. Rylee acacia platform king 2.12 x 2.17, low wood headboard 1.10 (works in front of the slat wall)."
+    },
+    {
+     "id": "B07B4Y45S1",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/1/B07B4Y45S1.glb",
+     "attribution": "\"Rivet Brecken Modern Wood King Bed Frame Platform with Headboard, 80\"W, Brown\" 3D model (B07B4Y45S1) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Brecken Modern Wood King Bed Frame Platform with Headboard, 80\"W, Brown",
+     "path": null,
+     "dims_m": [
+      2.038,
+      2.235,
+      1.537
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 18918,
+     "mb": null,
+     "tex_res": 2048,
+     "listing_color": "Brown",
+     "listing_material": "Wood | stone",
+     "albedo_colors": null,
+     "notes": "Chevron wood headboard - competes with the slat wall."
+    },
+    {
+     "id": "B075QDZJ4H",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/H/B075QDZJ4H.glb",
+     "attribution": "\"Stone & Beam Clifton Modern Upholstered King Bed with Storage Drawers, 84.25\"W, Cream\" 3D model (B075QDZJ4H) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Clifton Modern Upholstered King Bed with Storage Drawers, 84.25\"W, Cream",
+     "path": null,
+     "dims_m": [
+      2.145,
+      2.293,
+      1.471
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 33924,
+     "mb": null,
+     "tex_res": 2048,
+     "listing_color": "Infinitey Natural",
+     "listing_material": "stone",
+     "albedo_colors": null,
+     "notes": "Clifton with storage drawers (same look)."
+    }
+   ]
+  },
+  "nightstand": {
+   "pick": "B082JH6LSF",
+   "runner_up": "B072ZLCB32",
+   "notes": "",
+   "candidates": [
+    {
+     "id": "B082JH6LSF",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/F/B082JH6LSF.glb",
+     "attribution": "\"Stone & Beam Mid-Century 2-Drawer File Cabinet, 21.7\"W, Pine Finish\" 3D model (B082JH6LSF) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Mid-Century 2-Drawer File Cabinet, 21.7\"W, Pine Finish",
+     "path": "abo/B082JH6LSF.glb",
+     "dims_m": [
+      0.551,
+      0.394,
+      0.599
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 14425,
+     "mb": 40.3,
+     "tex_res": 4096,
+     "listing_color": "Brown",
+     "listing_material": "Pine | Engineered Wood",
+     "albedo_colors": "#d5a46f(34%) #906e4a(22%) #deaf7c(21%) #c79766(21%)",
+     "notes": "PICK x2. Stone & Beam mid-century 2-drawer in honey pine 0.55 x 0.39 x 0.60 (Lenga)."
+    },
+    {
+     "id": "B072ZLCB32",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/2/B072ZLCB32.glb",
+     "attribution": "\"Rivet Axel Lid Storage Wood and Metal Side End Table Nightstand, Walnut\" 3D model (B072ZLCB32) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Axel Lid Storage Wood and Metal Side End Table Nightstand, Walnut",
+     "path": "abo/B072ZLCB32.glb",
+     "dims_m": [
+      0.397,
+      0.397,
+      0.607
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 4251,
+     "mb": 2.2,
+     "tex_res": 2048,
+     "listing_color": "Brown",
+     "listing_material": "Metal",
+     "albedo_colors": "#927658(41%) #3a4137(29%) #bcbbbb(26%) #575141(2%)",
+     "notes": "RUNNER-UP. Rivet Axel walnut box on black iron frame 0.40 x 0.40 x 0.61."
+    },
+    {
+     "id": "B07RMZ83ZY",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/Y/B07RMZ83ZY.glb",
+     "attribution": "\"AmazonBasics 2-Drawer Beside Table, 45 x 38 x 46 cm, Light Brown with Black Legs/Handles\" 3D model (B07RMZ83ZY) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "AmazonBasics 2-Drawer Beside Table, 45 x 38 x 46 cm, Light Brown with Black Legs/Handles",
+     "path": "abo/B07RMZ83ZY.glb",
+     "dims_m": [
+      0.445,
+      0.38,
+      0.46
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 11172,
+     "mb": 25.7,
+     "tex_res": 4096,
+     "listing_color": "Beige",
+     "listing_material": "Wood",
+     "albedo_colors": "#b69676(54%) #f0f1f1(31%) #cbb8a5(7%) #91785f(7%)",
+     "notes": "Light oak 2-drawer on black legs, 0.45 x 0.38 x 0.46 (low)."
+    },
+    {
+     "id": "B075Z8GZ9X",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/X/B075Z8GZ9X.glb",
+     "attribution": "\"Stone & Beam Bateman Casual Rustic Wood Bedside Table Nightstand, Brass Hardware, 24 Inch Wide, Brown\" 3D model (B075Z8GZ9X) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Bateman Casual Rustic Wood Bedside Table Nightstand, Brass Hardware, 24 Inch Wide, Brown",
+     "path": null,
+     "dims_m": [
+      0.61,
+      0.446,
+      0.61
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 16978,
+     "mb": null,
+     "tex_res": 2048,
+     "listing_color": "Brown",
+     "listing_material": "stone",
+     "albedo_colors": null,
+     "notes": "Mosaic wood with brass X base - brass not wanted."
+    }
+   ]
+  },
+  "bed_bench": {
+   "pick": "B07K7NQR23",
+   "runner_up": "B07B4SC9RP",
+   "notes": "",
+   "candidates": [
+    {
+     "id": "B07K7NQR23",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/3/B07K7NQR23.glb",
+     "attribution": "\"Alkove - Hayes - Banco de madera maciza con asiento tapizado (roble salvaje)\" 3D model (B07K7NQR23) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Alkove - Hayes - Banco de madera maciza con asiento tapizado (roble salvaje)",
+     "path": "abo/B07K7NQR23.glb",
+     "dims_m": [
+      1.2,
+      0.405,
+      0.48
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 3076,
+     "mb": 21.7,
+     "tex_res": 4096,
+     "listing_color": null,
+     "listing_material": null,
+     "albedo_colors": "#472f29(39%) #f1bf83(35%) #facc8c(23%) #684b3a(1%)",
+     "notes": "PICK. Alkove Hayes solid oak bench 1.20 x 0.40 x 0.48 with dark brown leather seat (wood + leather); retexture seat with leather_cognac if wanted; sheepskin on top."
+    },
+    {
+     "id": "B07B4SC9RP",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/P/B07B4SC9RP.glb",
+     "attribution": "\"Stone & Beam Contemporary Metal Bedroom Bench with Cushion, 58\"W, Oatmeal\" 3D model (B07B4SC9RP) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Contemporary Metal Bedroom Bench with Cushion, 58\"W, Oatmeal",
+     "path": "abo/B07B4SC9RP.glb",
+     "dims_m": [
+      1.488,
+      0.479,
+      0.488
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 14168,
+     "mb": 1.9,
+     "tex_res": 2048,
+     "listing_color": "Oatmeal",
+     "listing_material": "Metal",
+     "albedo_colors": "#847c71(40%) #2f160a(34%) #8e877c(19%) #4a372c(5%)",
+     "notes": "RUNNER-UP. 1.49 m oatmeal linen cushion on black iron frame."
+    },
+    {
+     "id": "B07HSBDCX8",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/8/B07HSBDCX8.glb",
+     "attribution": "\"Stone & Beam Rylee Modern Farmhouse Acacia Wood Dining Bench, 71\"W, Gray-Wash Acacia\" 3D model (B07HSBDCX8) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Rylee Modern Farmhouse Acacia Wood Dining Bench, 71\"W, Gray-Wash Acacia",
+     "path": null,
+     "dims_m": [
+      1.698,
+      0.378,
+      0.431
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 1624,
+     "mb": null,
+     "tex_res": 2048,
+     "listing_color": "Gray",
+     "listing_material": "Stone",
+     "albedo_colors": null,
+     "notes": "Plain acacia plank bench 1.70 (grey-wash)."
+    },
+    {
+     "id": "B0857JZJPR",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/R/B0857JZJPR.glb",
+     "attribution": "\"Stone & Beam Stella Modern Farmhouse Woven Dining Bench, 47.2\"W, Gray\" 3D model (B0857JZJPR) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Stella Modern Farmhouse Woven Dining Bench, 47.2\"W, Gray",
+     "path": null,
+     "dims_m": [
+      1.198,
+      0.507,
+      0.457
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 222736,
+     "mb": null,
+     "tex_res": 4096,
+     "listing_color": "Grey",
+     "listing_material": "Rubber Wood | Paper Rope Weave",
+     "albedo_colors": null,
+     "notes": "Woven cord bench 1.20."
+    }
+   ]
+  },
+  "reading_chair": {
+   "pick": "B082QDSXMN",
+   "runner_up": "B07B4MTFRH",
+   "notes": "",
+   "candidates": [
+    {
+     "id": "B082QDSXMN",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/N/B082QDSXMN.glb",
+     "attribution": "\"Rivet Spear Mid-Century Modern Channel Tufted Accent Chair with Wood Arms, 29.1\"W, Ivory\" 3D model (B082QDSXMN) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Spear Mid-Century Modern Channel Tufted Accent Chair with Wood Arms, 29.1\"W, Ivory",
+     "path": "abo/B082QDSXMN.glb",
+     "dims_m": [
+      0.741,
+      0.798,
+      0.832
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 17572,
+     "mb": 58.6,
+     "tex_res": 4096,
+     "listing_color": "Ivory",
+     "listing_material": "Polyester",
+     "albedo_colors": "#543724(38%) #a09f9a(34%) #a4a39e(25%) #6e594b(1%)",
+     "notes": "PICK. Rivet Spear, ivory channel-tufted upholstery on exposed walnut arms/frame, 0.74 w - reading corner by the window."
+    },
+    {
+     "id": "B07B4MTFRH",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/H/B07B4MTFRH.glb",
+     "attribution": "\"Stone & Beam Andover Modern Living Room Accent Chair, 38\"W, Sand\" 3D model (B07B4MTFRH) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Andover Modern Living Room Accent Chair, 38\"W, Sand",
+     "path": "abo/B07B4MTFRH.glb",
+     "dims_m": [
+      0.996,
+      0.959,
+      0.919
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 13948,
+     "mb": 3.2,
+     "tex_res": 2048,
+     "listing_color": "Sand",
+     "listing_material": "stone",
+     "albedo_colors": "#cdc7ba(37%) #ded8ca(30%) #dcd6c8(26%) #a09589(5%)",
+     "notes": "RUNNER-UP. Andover sand/cream track-arm club chair 1.00 w (matches the sofa family)."
+    },
+    {
+     "id": "B082QBZB1Q",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/Q/B082QBZB1Q.glb",
+     "attribution": "\"Rivet Theresa Modern Upholstered Accent Chair, 30\"W, Cream\" 3D model (B082QBZB1Q) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Theresa Modern Upholstered Accent Chair, 30\"W, Cream",
+     "path": null,
+     "dims_m": [
+      0.762,
+      0.787,
+      0.838
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 19428,
+     "mb": null,
+     "tex_res": 4096,
+     "listing_color": "Cream",
+     "listing_material": null,
+     "albedo_colors": null,
+     "notes": "Cream mid-century slipper chair."
+    }
+   ]
+  },
+  "sheepskin": {
+   "pick": "sheepskin_teddy",
+   "runner_up": null,
+   "notes": "No sheepskin model in the allowed sources. Model the pelt; for close-ups add Blender hair curves (2-3 cm, cream) on top of the material.",
+   "candidates": [
+    {
+     "id": "sheepskin_teddy",
+     "source": "material (see materials)",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/curly_teddy_natural",
+     "attribution": "\"Curly Teddy Natural\" by colormass, Rico Cilliers, Poly Haven, CC0 (credit optional).",
+     "path": "tex/sheepskin_teddy/",
+     "dims_m": null,
+     "front": null,
+     "tris": null,
+     "mb": 42.7,
+     "notes": "PICK. Poly Haven curly_teddy_natural on a modeled pelt outline (~0.60 x 0.95, 1-2 cm thick, irregular edge)."
+    }
+   ]
+  },
+  "nightstand_suite2": {
+   "pick": "B072ZLCB32",
+   "runner_up": "B07RMZ83ZY",
+   "notes": "",
+   "candidates": [
+    {
+     "id": "B072ZLCB32",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/2/B072ZLCB32.glb",
+     "attribution": "\"Rivet Axel Lid Storage Wood and Metal Side End Table Nightstand, Walnut\" 3D model (B072ZLCB32) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Axel Lid Storage Wood and Metal Side End Table Nightstand, Walnut",
+     "path": "abo/B072ZLCB32.glb",
+     "dims_m": [
+      0.397,
+      0.397,
+      0.607
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 4251,
+     "mb": 2.2,
+     "tex_res": 2048,
+     "listing_color": "Brown",
+     "listing_material": "Metal",
+     "albedo_colors": "#927658(41%) #3a4137(29%) #bcbbbb(26%) #575141(2%)",
+     "notes": "PICK. Walnut + black iron box (differs from master pine nightstands)."
+    },
+    {
+     "id": "B07RMZ83ZY",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/Y/B07RMZ83ZY.glb",
+     "attribution": "\"AmazonBasics 2-Drawer Beside Table, 45 x 38 x 46 cm, Light Brown with Black Legs/Handles\" 3D model (B07RMZ83ZY) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "AmazonBasics 2-Drawer Beside Table, 45 x 38 x 46 cm, Light Brown with Black Legs/Handles",
+     "path": "abo/B07RMZ83ZY.glb",
+     "dims_m": [
+      0.445,
+      0.38,
+      0.46
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 11172,
+     "mb": 25.7,
+     "tex_res": 4096,
+     "listing_color": "Beige",
+     "listing_material": "Wood",
+     "albedo_colors": "#b69676(54%) #f0f1f1(31%) #cbb8a5(7%) #91785f(7%)",
+     "notes": "RUNNER-UP. Light oak 2-drawer on black legs (0.46 h - low; scale Z 1.2)."
+    }
+   ]
+  },
+  "desk_or_dresser": {
+   "pick": "B07HSNQW37",
+   "runner_up": "B071P9WJBT",
+   "notes": "",
+   "candidates": [
+    {
+     "id": "B07HSNQW37",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/7/B07HSNQW37.glb",
+     "attribution": "\"Stone & Beam Rylee Modern Acacia Wood 6-Drawer Bedroom Dresser, 61\"W, Gray-Wash Acacia\" 3D model (B07HSNQW37) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Rylee Modern Acacia Wood 6-Drawer Bedroom Dresser, 61\"W, Gray-Wash Acacia",
+     "path": "abo/B07HSNQW37.glb",
+     "dims_m": [
+      1.554,
+      0.455,
+      0.805
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 3466,
+     "mb": 4.1,
+     "tex_res": 2048,
+     "listing_color": "Beige",
+     "listing_material": "stone",
+     "albedo_colors": "#9c8266(27%) #95795d(27%) #a48b6f(24%) #8b5e3d(19%)",
+     "notes": "PICK. Rylee acacia 6-drawer dresser 1.55 x 0.45 x 0.80 on splayed legs; only 3.5k tris. Put mirror or wall_art above."
+    },
+    {
+     "id": "B071P9WJBT",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/T/B071P9WJBT.glb",
+     "attribution": "\"Stone & Beam Parson 6-Drawer Wood Bedroom Dresser, 60\"W, Natural\" 3D model (B071P9WJBT) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Parson 6-Drawer Wood Bedroom Dresser, 60\"W, Natural",
+     "path": "abo/B071P9WJBT.glb",
+     "dims_m": [
+      1.657,
+      0.563,
+      0.932
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 18312,
+     "mb": 4.5,
+     "tex_res": 2048,
+     "listing_color": "Brown",
+     "listing_material": "stone",
+     "albedo_colors": "#a97c49(31%) #b4854f(26%) #bf9158(25%) #946d42(16%)",
+     "notes": "RUNNER-UP. Parson 6-drawer natural wood 1.66 x 0.56 x 0.93, brass-tone pulls (retexture to black)."
+    }
+   ]
+  },
+  "wall_art": {
+   "pick": "B073P5V2LX",
+   "runner_up": "B073P1RD5Z",
+   "notes": "",
+   "candidates": [
+    {
+     "id": "B073P5V2LX",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/X/B073P5V2LX.glb",
+     "attribution": "\"Rivet Lakeside Snow-Capped Mountains Printed on Wood Wall Art, 16\" x 20\"\" 3D model (B073P5V2LX) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Lakeside Snow-Capped Mountains Printed on Wood Wall Art, 16\" x 20\"",
+     "path": "abo/B073P5V2LX.glb",
+     "dims_m": [
+      0.508,
+      0.01,
+      0.408
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 188,
+     "mb": 0.8,
+     "tex_res": 2048,
+     "listing_color": "Multi",
+     "listing_material": "wood",
+     "albedo_colors": "#cead8c(28%) #b89379(27%) #52463a(26%) #8e6f57(16%)",
+     "notes": "PICK. \"Lakeside snow-capped mountains\" printed on wood - reads like Nahuel Huapi/Lanin. Native 0.51 x 0.41; scale up to ~1.0-1.2 m wide over the fireplace (texture is 2048 px) or use as-is in the second suite."
+    },
+    {
+     "id": "B073P1RD5Z",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/Z/B073P1RD5Z.glb",
+     "attribution": "\"Rivet Wooden Dock at The Lake Canvas Print Wall Art, 45\" x 30\"\" 3D model (B073P1RD5Z) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Wooden Dock at The Lake Canvas Print Wall Art, 45\" x 30\"",
+     "path": "abo/B073P1RD5Z.glb",
+     "dims_m": [
+      1.149,
+      0.04,
+      0.765
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 874,
+     "mb": 0.6,
+     "tex_res": 2048,
+     "listing_color": "Multi",
+     "listing_material": "canvas",
+     "albedo_colors": "#bfbfad(39%) #573227(28%) #d8d8d1(18%) #928175(14%)",
+     "notes": "RUNNER-UP. Wooden dock at the lake canvas 1.15 x 0.77 - right size above the fireplace as-is."
+    },
+    {
+     "id": "B073P58BZG",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/G/B073P58BZG.glb",
+     "attribution": "\"Stone & Beam Modern Black and White Print of Forest Snow, White Frame, 30\" x 30\"\" 3D model (B073P58BZG) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Modern Black and White Print of Forest Snow, White Frame, 30\" x 30\"",
+     "path": null,
+     "dims_m": [
+      0.761,
+      0.037,
+      0.761
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 2050,
+     "mb": null,
+     "tex_res": 2048,
+     "listing_color": "Black",
+     "listing_material": "wood",
+     "albedo_colors": null,
+     "notes": "B&W snowy firs 0.76 square (second suite option)."
+    },
+    {
+     "id": "B073P19TDR",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/R/B073P19TDR.glb",
+     "attribution": "\"Rivet Abstract Black and White Wall Art Print of Tree Line in Black Frame, 45\" x 30\"\" 3D model (B073P19TDR) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Abstract Black and White Wall Art Print of Tree Line in Black Frame, 45\" x 30\"",
+     "path": null,
+     "dims_m": [
+      1.19,
+      0.028,
+      0.805
+     ],
+     "dims_source": "ABO metadata extents (not downloaded)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 708,
+     "mb": null,
+     "tex_res": 2048,
+     "listing_color": "Black",
+     "listing_material": "canvas",
+     "albedo_colors": null,
+     "notes": "Abstract black tree line 1.19 x 0.80 (graphic, cooler)."
+    }
+   ]
+  },
+  "bath_accessories": {
+   "pick": [
+    "B07HSMVFKY",
+    "B078JMXRGC",
+    "potted_plant_04"
+   ],
+   "runner_up": "terry_towel",
+   "notes": "No towel or soap-dish models in the allowed sources; towels must be modeled.",
+   "candidates": [
+    {
+     "id": "B07HSMVFKY",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/Y/B07HSMVFKY.glb",
+     "attribution": "\"Rivet Modern Braided Stripe Round Basket Set - Set of 3, Natural\" 3D model (B07HSMVFKY) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Modern Braided Stripe Round Basket Set - Set of 3, Natural",
+     "path": "abo/B07HSMVFKY.glb",
+     "dims_m": [
+      0.8,
+      0.363,
+      0.396
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 74542,
+     "mb": 12.6,
+     "tex_res": 2048,
+     "listing_color": null,
+     "listing_material": null,
+     "albedo_colors": "#c0b49d(36%) #aa8d69(28%) #c4baa6(23%) #b8a488(11%)",
+     "notes": "PICK. Set of 3 cream/jute striped woven baskets (towels storage)."
+    },
+    {
+     "id": "B078JMXRGC",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/C/B078JMXRGC.glb",
+     "attribution": "\"Rivet Modern Stone and Birch Natural Edge Serving Decor Tray - 15.5 x 9 x 2.5 Inch, Black and Wood\" 3D model (B078JMXRGC) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Modern Stone and Birch Natural Edge Serving Decor Tray - 15.5 x 9 x 2.5 Inch, Black and Wood",
+     "path": "abo/B078JMXRGC.glb",
+     "dims_m": [
+      0.387,
+      0.231,
+      0.062
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 22528,
+     "mb": 48.8,
+     "tex_res": 4096,
+     "listing_color": null,
+     "listing_material": null,
+     "albedo_colors": "#5b5a5a(42%) #66605b(21%) #977b5b(21%) #3b3a3a(14%)",
+     "notes": "PICK (shared with decor). Slate + birch tray as the stone soap tray."
+    },
+    {
+     "id": "potted_plant_04",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/potted_plant_04",
+     "attribution": "\"Potted Plant 04\" by James Ray Cock, Poly Haven (https://polyhaven.com/a/potted_plant_04), CC0 - credit not required, given as courtesy.",
+     "path": "models/potted_plant_04/potted_plant_04.blend",
+     "dims_m": [
+      0.168,
+      0.185,
+      0.267
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "symmetric / n.a.",
+     "tris": 8929,
+     "mb": 9.0,
+     "tex_res": "2k",
+     "notes": "PICK (already local). Small aloe/haworthia in white pot for the vanity."
+    },
+    {
+     "id": "terry_towel",
+     "source": "material (see materials)",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/terry_cloth",
+     "attribution": "\"Terry Cloth\" by colormass, Rico Cilliers, Poly Haven, CC0 (credit optional).",
+     "path": "tex/terry_towel/",
+     "dims_m": null,
+     "front": null,
+     "tris": null,
+     "mb": 18.8,
+     "notes": "Folded towels: model as rounded boxes 0.30 x 0.20 x 0.04 stacked; terry_towel material tinted linen/cream."
+    }
+   ]
+  },
+  "outdoor_lounge_chair": {
+   "pick": "B07B4M6B3B",
+   "runner_up": "B082QDSXMN",
+   "notes": "No free teak/outdoor low lounge chair exists in Poly Haven, ABO or Khronos. Best result: MODEL a simple teak slatted low lounge chair (0.72 w x 0.85 d x 0.70 h, seat 0.38, 10 cm cream cushion) - ~30 min in Blender - or use the retextured stand-in.",
+   "candidates": [
+    {
+     "id": "B07B4M6B3B",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/B/B07B4M6B3B.glb",
+     "attribution": "\"Stone & Beam Alderman Mid-Century Modern Accent Chair, 29.9\"W, Dark Brown Leather\" 3D model (B07B4M6B3B) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Stone & Beam Alderman Mid-Century Modern Accent Chair, 29.9\"W, Dark Brown Leather",
+     "path": "abo/B07B4M6B3B.glb",
+     "dims_m": [
+      0.782,
+      0.83,
+      0.897
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 17732,
+     "mb": 2.4,
+     "tex_res": 2048,
+     "listing_color": "Dark Brown Leather",
+     "listing_material": "stone",
+     "albedo_colors": "#583d35(45%) #573b33(24%) #513731(17%) #6f4d3b(12%)",
+     "notes": "PICK (stand-in) x2. Stone & Beam Alderman: exposed wood frame + loose cushions, 0.78 x 0.83 x 0.90. Retexture frame to teak (oak_slats tinted darker) and cushions to an outdoor canvas in Lana."
+    },
+    {
+     "id": "B082QDSXMN",
+     "source": "Amazon Berkeley Objects (ABO)",
+     "license": "CC BY 4.0",
+     "url": "https://amazon-berkeley-objects.s3.amazonaws.com/3dmodels/original/N/B082QDSXMN.glb",
+     "attribution": "\"Rivet Spear Mid-Century Modern Channel Tufted Accent Chair with Wood Arms, 29.1\"W, Ivory\" 3D model (B082QDSXMN) from Amazon Berkeley Objects, (c) Amazon.com, licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified (scaled/retextured) for this visualization where noted.",
+     "name": "Rivet Spear Mid-Century Modern Channel Tufted Accent Chair with Wood Arms, 29.1\"W, Ivory",
+     "path": "abo/B082QDSXMN.glb",
+     "dims_m": [
+      0.741,
+      0.798,
+      0.832
+     ],
+     "dims_source": "measured in Blender 4.5 (w=X, d=Y, h=Z)",
+     "front": "-Y in Blender (glTF +Z), Z up; front/seat/drawers face -Y",
+     "tris": 17572,
+     "mb": 58.6,
+     "tex_res": 4096,
+     "listing_color": "Ivory",
+     "listing_material": "Polyester",
+     "albedo_colors": "#543724(38%) #a09f9a(34%) #a4a39e(25%) #6e594b(1%)",
+     "notes": "RUNNER-UP (shared with reading_chair). Walnut-frame lounge; same retexture idea."
+    },
+    {
+     "id": "mid_century_lounge_chair",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/mid_century_lounge_chair",
+     "attribution": "\"Mid Century Lounge Chair\" by Kuutti Siitonen, Poly Haven (https://polyhaven.com/a/mid_century_lounge_chair), CC0 - credit not required, given as courtesy.",
+     "path": "models/mid_century_lounge_chair/mid_century_lounge_chair.blend",
+     "dims_m": [
+      1.009,
+      1.19,
+      1.169
+     ],
+     "dims_source": "Poly Haven API dimensions",
+     "front": "symmetric / n.a.",
+     "tris": 6148,
+     "mb": 11.4,
+     "tex_res": "2k",
+     "notes": "Already local; swivel office-style lounge - not outdoor."
+    },
+    {
+     "id": "painted_wooden_sofa",
+     "source": "Poly Haven",
+     "license": "CC0 1.0",
+     "url": "https://polyhaven.com/a/painted_wooden_sofa",
+     "attribution": "\"Painted Wooden Sofa\" by Kirill Sannikov, Poly Haven (https://polyhaven.com/a/painted_wooden_sofa), CC0 - credit not required, given as courtesy.",
+     "path": null,
+     "dims_m": [
+      2.452,
+      0.787,
+      1.281
+     ],
+     "dims_source": "Poly Haven API dimensions",
+     "front": "symmetric / n.a.",
+     "tris": 5826,
+     "mb": null,
+     "tex_res": null,
+     "notes": "Rejected: painted vintage bench-sofa."
+    }
+   ]
+  }
+ },
+ "materials": {
+  "floor_wood_honey": {
+   "slot": "floor_wood",
+   "source_id": "oak_wood_planks",
+   "source": "Poly Haven",
+   "license": "CC0 1.0",
+   "url": "https://polyhaven.com/a/oak_wood_planks",
+   "attribution": "\"Oak Wood Planks\" by Dimitrios Savva, Poly Haven, CC0 (credit optional).",
+   "path": "tex/floor_wood_honey/",
+   "res": "4k",
+   "tile_m": [
+    1.2,
+    1.2
+   ],
+   "notes": "PICK. Wide honey oak planks, satin; closest to Lenga #B07A48 without tinting. Use roughness x0.9 for oiled-satin.",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 50.7
+  },
+  "floor_wood_plank_alt": {
+   "slot": "floor_wood",
+   "source_id": "WoodFloor051",
+   "source": "ambientCG",
+   "license": "CC0 1.0",
+   "url": "https://ambientcg.com/a/WoodFloor051",
+   "attribution": "WoodFloor051 from ambientCG.com, CC0 (credit optional).",
+   "path": "tex/floor_wood_plank_alt/",
+   "res": "4K",
+   "tile_m": [
+    1.8,
+    1.8
+   ],
+   "notes": "RUNNER-UP. Staggered honey planks (narrower boards, more orange); procedural, very clean.",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 13.5
+  },
+  "stone_ledge": {
+   "slot": "stone_wall",
+   "source_id": "castle_wall_slates",
+   "source": "Poly Haven",
+   "license": "CC0 1.0",
+   "url": "https://polyhaven.com/a/castle_wall_slates",
+   "attribution": "\"Castle Wall Slates\" by Rob Tuytel, Poly Haven, CC0 (credit optional).",
+   "path": "tex/stone_ledge/",
+   "res": "4k",
+   "tile_m": [
+    2.5,
+    2.5
+   ],
+   "notes": "PICK. Thin dry-stacked slates in warm grey-beige = \"piedra laja apilada\"; use disp.jpg (displacement 2-3 cm) on the fireplace wall. Slight desaturation toward Piedra #8D877E.",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 37.8
+  },
+  "stone_ledge_alt": {
+   "slot": "stone_wall",
+   "source_id": "stacked_stone_wall",
+   "source": "Poly Haven",
+   "license": "CC0 1.0",
+   "url": "https://polyhaven.com/a/stacked_stone_wall",
+   "attribution": "\"Stacked Stone Wall\" by Dimitrios Savva, Poly Haven, CC0 (credit optional).",
+   "path": "tex/stone_ledge_alt/",
+   "res": "4k",
+   "tile_m": [
+    2.0,
+    2.0
+   ],
+   "notes": "RUNNER-UP. True ledgestone (flat stacked flags) but rust-brown; needs hue/sat pull toward warm grey.",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 46.6
+  },
+  "granite_dark": {
+   "slot": "countertop",
+   "source_id": "granite_tile",
+   "source": "Poly Haven",
+   "license": "CC0 1.0",
+   "url": "https://polyhaven.com/a/granite_tile",
+   "attribution": "\"Granite Tile\" by Charlotte Baglioni, Poly Haven, CC0 (credit optional).",
+   "path": "tex/granite_dark/",
+   "res": "4k",
+   "tile_m": [
+    2.3,
+    2.3
+   ],
+   "notes": "PICK. Honed charcoal granite (Basalto #34322F range). It is a tile texture with joints every ~1.15 m: on the counter, map one tile per straight run or hide joints at sink/hob cut-outs.",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 48.3
+  },
+  "tile_backsplash": {
+   "slot": "backsplash",
+   "source_id": "Tiles139",
+   "source": "ambientCG",
+   "license": "CC0 1.0",
+   "url": "https://ambientcg.com/a/Tiles139",
+   "attribution": "Tiles139 from ambientCG.com, CC0 (credit optional).",
+   "path": "tex/tile_backsplash/",
+   "res": "4K",
+   "tile_m": [
+    2.0,
+    2.0
+   ],
+   "notes": "PICK. Cream limestone tiles, matte, natural variation (Lana). No zellige exists in the allowed sources; this is the warm natural-stone option.",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 12.2
+  },
+  "oak_slats": {
+   "slot": "wood_slats_or_veneer",
+   "source_id": "oak_veneer_01",
+   "source": "Poly Haven",
+   "license": "CC0 1.0",
+   "url": "https://polyhaven.com/a/oak_veneer_01",
+   "attribution": "\"Oak Veneer 01\" by Jenelle van Heerden, Poly Haven, CC0 (credit optional).",
+   "path": "tex/oak_slats/",
+   "res": "4k",
+   "tile_m": [
+    1.83,
+    1.83
+   ],
+   "notes": "PICK. Honey oak veneer with visible grain for the headboard slats and furniture retexturing (Lenga).",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 64.2
+  },
+  "wool_cream": {
+   "slot": "wool_fabric",
+   "source_id": "Fabric019",
+   "source": "ambientCG",
+   "license": "CC0 1.0",
+   "url": "https://ambientcg.com/a/Fabric019",
+   "attribution": "Fabric019 from ambientCG.com, CC0 (credit optional).",
+   "path": "tex/wool_cream/",
+   "res": "4K",
+   "tile_m": [
+    0.4,
+    0.4
+   ],
+   "notes": "PICK. White wool weave; multiply Diffuse by Lana #ECE4D6. Note: Poly Haven \"wool_boucle\" is actually a grey/rust glen-check, not cream bouclé. Tile size estimated (ambientCG lists 0).",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 13.6
+  },
+  "linen_natural": {
+   "slot": "linen_fabric",
+   "source_id": "Fabric036",
+   "source": "ambientCG",
+   "license": "CC0 1.0",
+   "url": "https://ambientcg.com/a/Fabric036",
+   "attribution": "Fabric036 from ambientCG.com, CC0 (credit optional).",
+   "path": "tex/linen_natural/",
+   "res": "4K",
+   "tile_m": [
+    0.4,
+    0.4
+   ],
+   "notes": "PICK. Fine natural woven linen, light greige; for bedding, shades, sofa retint. Tile size estimated.",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 30.7
+  },
+  "plaid_green": {
+   "slot": "plaid_fabric",
+   "source_id": "curly_teddy_checkered",
+   "source": "Poly Haven",
+   "license": "CC0 1.0",
+   "url": "https://polyhaven.com/a/curly_teddy_checkered",
+   "attribution": "\"Curly Teddy Checkered\" by colormass, Rico Cilliers, Poly Haven, CC0 (credit optional).",
+   "path": "tex/plaid_green/",
+   "res": "4k",
+   "tile_m": [
+    0.562,
+    0.474
+   ],
+   "notes": "PICK. Soft brushed large check in green/teal/charcoal (Bosque) - reads as a wool blanket, not cabin tartan. For the bed runner and a throw.",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 46.9
+  },
+  "knit_rust": {
+   "slot": "plaid_fabric",
+   "source_id": "Fabric085",
+   "source": "ambientCG",
+   "license": "CC0 1.0",
+   "url": "https://ambientcg.com/a/Fabric085",
+   "attribution": "Fabric085 from ambientCG.com, CC0 (credit optional).",
+   "path": "tex/knit_rust/",
+   "res": "4K",
+   "tile_m": [
+    0.3,
+    0.3
+   ],
+   "notes": "RUNNER-UP / knit option. Chunky rust knit (Otono #9E4A2C) for the living-room throw.",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 24.9
+  },
+  "leather_cognac": {
+   "slot": "leather",
+   "source_id": "fabric_leather_02",
+   "source": "Poly Haven",
+   "license": "CC0 1.0",
+   "url": "https://polyhaven.com/a/fabric_leather_02",
+   "attribution": "\"Fabric Leather 02\" by Rob Tuytel, Poly Haven, CC0 (credit optional).",
+   "path": "tex/leather_cognac/",
+   "res": "4k",
+   "tile_m": [
+    0.5,
+    0.5
+   ],
+   "notes": "PICK. Worn saddle/cognac leather with seams; for retexturing chairs, bench seat, stool seats.",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 32.2
+  },
+  "rug_berber": {
+   "slot": "rug_wool",
+   "source_id": "Carpet016",
+   "source": "ambientCG",
+   "license": "CC0 1.0",
+   "url": "https://ambientcg.com/a/Carpet016",
+   "attribution": "Carpet016 from ambientCG.com, CC0 (credit optional).",
+   "path": "tex/rug_berber/",
+   "res": "4K",
+   "tile_m": [
+    1.7,
+    1.7
+   ],
+   "notes": "PICK. Beige textured wool (berber-like); tint slightly lighter toward Lana for the big living rug.",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 21.0
+  },
+  "sheepskin_teddy": {
+   "slot": "sheepskin",
+   "source_id": "curly_teddy_natural",
+   "source": "Poly Haven",
+   "license": "CC0 1.0",
+   "url": "https://polyhaven.com/a/curly_teddy_natural",
+   "attribution": "\"Curly Teddy Natural\" by colormass, Rico Cilliers, Poly Haven, CC0 (credit optional).",
+   "path": "tex/sheepskin_teddy/",
+   "res": "4k",
+   "tile_m": [
+    0.336,
+    0.331
+   ],
+   "notes": "PICK. Cream curly fleece; apply to a modeled pelt shape (+ optional short hair particles) for the sheepskin on the bench and reading chair.",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 42.7
+  },
+  "black_metal": {
+   "slot": "black_metal",
+   "source_id": "Metal046A",
+   "source": "ambientCG",
+   "license": "CC0 1.0",
+   "url": "https://ambientcg.com/a/Metal046A",
+   "attribution": "Metal046A from ambientCG.com, CC0 (credit optional).",
+   "path": "tex/black_metal/",
+   "res": "2K",
+   "tile_m": [
+    1.0,
+    1.0
+   ],
+   "notes": "PICK (2K). Dark forged/blackened metal with subtle texture; for iron frames, fireplace surround.",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 2.8
+  },
+  "bath_stone": {
+   "slot": "bath_stone",
+   "source_id": "large_grey_tiles",
+   "source": "Poly Haven",
+   "license": "CC0 1.0",
+   "url": "https://polyhaven.com/a/large_grey_tiles",
+   "attribution": "\"Large Grey Tiles\" by Rob Tuytel, Poly Haven, CC0 (credit optional).",
+   "path": "tex/bath_stone/",
+   "res": "4k",
+   "tile_m": [
+    3.0,
+    3.0
+   ],
+   "notes": "PICK. Large warm-grey stone tiles for bath floor/walls (Piedra).",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 27.2
+  },
+  "firewood_logs": {
+   "slot": "firewood",
+   "source_id": "Logs001",
+   "source": "ambientCG",
+   "license": "CC0 1.0",
+   "url": "https://ambientcg.com/a/Logs001",
+   "attribution": "Logs001 from ambientCG.com, CC0 (credit optional).",
+   "path": "tex/firewood_logs/",
+   "res": "2K",
+   "tile_m": [
+    2.0,
+    2.0
+   ],
+   "notes": "PICK (2K). Stacked split-log end-grain texture; map on the front face of a box filling the firewood niche, with disp.jpg.",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 5.7
+  },
+  "terry_towel": {
+   "slot": "bath_towels",
+   "source_id": "terry_cloth",
+   "source": "Poly Haven",
+   "license": "CC0 1.0",
+   "url": "https://polyhaven.com/a/terry_cloth",
+   "attribution": "\"Terry Cloth\" by colormass, Rico Cilliers, Poly Haven, CC0 (credit optional).",
+   "path": "tex/terry_towel/",
+   "res": "2k",
+   "tile_m": [
+    0.367,
+    0.363
+   ],
+   "notes": "For modeled folded towels (2K); tint to linen/cream.",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 18.8
+  }
+ }
+}

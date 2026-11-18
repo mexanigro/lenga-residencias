@@ -15,6 +15,7 @@ Requiere reportlab, pypdf y shapely. Opcionales: ezdxf (DXF) y pypdfium2 (PNG).
 """
 import argparse
 import ast
+import json
 import math
 import pathlib
 import re
@@ -207,7 +208,7 @@ def load_depto():
 
     base = {'H': D['H'], 'EYE': D['EYE'], 'SLAB': D['SLAB']}
     walk(funcs['build'].body, dict(base), 'build')
-    for fn in ('kitchen', 'vanity', 'shower'):
+    for fn in ('kitchen', 'vanity', 'shower', 'hogar'):
         walk(funcs[fn].body, dict(base), fn)
     D['calls'] = calls
     # firmas de los muebles hechos a medida (valores por defecto)
@@ -2501,9 +2502,9 @@ def pj_furniture(F, r):
 
 
 FINISH = {
-    'living': ('Entablonado de roble', 'Yeso, látex', 'Placa de yeso susp.'),
-    'bed': ('Entablonado de roble', 'Yeso, látex', 'Placa de yeso susp.'),
-    'hall': ('Entablonado de roble', 'Yeso, látex', 'Placa de yeso susp.'),
+    'living': ('Entablonado de madera miel', 'Yeso, látex', 'Placa de yeso susp.'),
+    'bed': ('Entablonado de madera miel', 'Yeso, látex', 'Placa de yeso susp.'),
+    'hall': ('Entablonado de madera miel', 'Yeso, látex', 'Placa de yeso susp.'),
     'wet': ('Porcellanato 60 x 60', 'Porcellanato h 2,40', 'Placa de yeso verde'),
     'balcony': ('Deck de lenga termotr.', 'Baranda vidrio 5+5', 'Losa vista, borde GRC'),
 }
@@ -2794,6 +2795,26 @@ def depto_furniture(d, D, F, model=False):
         x, y = cl['args'][:2]
         F.circle(x, -y, 0.21, fill=None)
         F.circle(x, -y, 0.05, fill=G)
+    # piezas del catálogo de ambientación (interiorismo/catalogo.json), con su huella real
+    cat_f = ROOT / 'interiorismo' / 'catalogo.json'
+    cat = json.loads(cat_f.read_text(encoding='utf-8'))['slots'] if cat_f.exists() else {}
+    for cl in dcalls(D, 'mueble'):
+        slot, x, y = cl['args'][:3]
+        if slot not in cat or cl['kw'].get('colgar') or cl['kw'].get('z'):
+            continue  # lo que cuelga o va arriba de otro mueble no se dibuja en planta
+        s = cat[slot]
+        c = next(k for k in s['candidates'] if k['id'] == (cl['kw'].get('pick') or s['pick']))
+        w0, d0 = c['dims_m'][:2]
+        k = (cl['kw']['w'] / w0) if cl['kw'].get('w') else 1.0
+        w_, d_ = w0 * k, d0 * k
+        ang = 180 - (cl['kw'].get('rot', cl['args'][3] if len(cl['args']) > 3 else 0) or 0)
+        hw, hd = w_ / 2, d_ / 2
+        if any(t in slot for t in ('sofa', 'armchair', 'chair', 'stool', 'lounge')):
+            grp(x, y, ang, [(rect(-hw, -hd, hw, hd), WHITE), (rect(-hw, hd - min(0.18, d_ * 0.25), hw, hd), DK)])
+        elif 'plant' in slot or 'lamp' in slot:
+            d.circle(F.P(x, -y), max(hw, hd), 'xf', 'MOBILIARIO', color=G, z=1.3)
+        else:
+            grp(x, y, ang, [(rect(-hw, -hd, hw, hd), CT)])
     for cl in dcalls(D, 'ph_model'):
         asset, x, y = cl['args'][:3]
         ang = cl['kw'].get('rot', 0)
@@ -2817,7 +2838,8 @@ def depto_furniture(d, D, F, model=False):
             continue
         nm = cl['args'][0]
         x0, y0, z0, x1, y1, z1 = cl['args'][1:7]
-        if nm in ('Columna', 'Bajo mesada', 'Isla tapa', 'Vanitory tapa', 'Vanitory 2', 'Banco', 'Cómoda', 'Banco ducha'):
+        if nm in ('Columna', 'Bajo mesada', 'Isla tapa', 'Vanitory tapa', 'Vanitory 2', 'Banco', 'Cómoda', 'Banco ducha',
+                  'Banco hogar', 'Hogar'):
             box_(x0, y0, x1, y1, fill=CT if nm not in ('Columna',) else DK)
         elif nm in ('Mesada',):
             box_(x0, y0, x1, y1, fill=None, pen='hr')
@@ -2960,9 +2982,9 @@ def sh_unit(X, c, key, model=False, extra=None, north=None):
     for i, r in enumerate(t['plan']):
         fin = FINISH[r[5]]
         if key == 'L2' and r[0].startswith('Cocina'):
-            fin = ('Entablonado de roble', 'Terrazo s/ mesada', 'Placa de yeso susp.')
+            fin = ('Entablonado de madera miel', 'Piedra caliza s/ mesada de granito', 'Placa de yeso susp.')
         if key == 'L2' and r[0] == 'Baño':
-            fin = ('Travertino', 'Travertino y azulejo', 'Placa de yeso verde')
+            fin = ('Piedra gris', 'Piedra caliza crema', 'Placa de yeso verde')
         rows.append([f'{i + 1:02d}', r[0], f'{fnum(r[3])} x {fnum(r[4])}', fnum(r[3] * r[4]), fin[0], fin[2]])
     covx, opx = t['covered_exact'], t['open_exact']
     oname = bal[0].lower()
@@ -3080,7 +3102,7 @@ TYPE_NOTES = {
     'B1': [], 'B2': [], 'L3': [], 'C3': ['La galería se extiende sobre el frente principal (18,00 x 3,00 m).'],
     'PH': ['Terraza de 22,00 x 4,00 m sobre el frente principal; el resto del perímetro es balcón corrido de servicio.'],
     'L2': ['Muros, aberturas y equipamiento según el departamento modelo (A-501). El acceso se ubica en el '
-           'muro oeste del estar, entre el aparador y la suite (el modelo 3D no lo incluye).'],
+           'muro oeste del estar, entre el muro del hogar y la suite.'],
 }
 
 
@@ -3166,11 +3188,12 @@ def sh_A501(X, c):
     tx2 = tx + 206
     ty2 = DA[1] + 98
     txt(c, tx2, ty2, 'Terminaciones del modelo', 3.2, 'Helvetica-Bold')
-    fin = [['Piso estar, cocina y suites', 'Laminado de roble'], ['Piso y revestimiento del baño', 'Travertino'],
-           ['Mesada, isla y respaldo', 'Terrazo'], ['Receptáculo de ducha', 'Cemento alisado'],
-           ['Placards, columna de cocina', 'Roble natural'], ['Aparador, mesas de luz, cómoda', 'Roble ahumado'],
-           ['Isla (frente)', 'Laca blanca'], ['Balcón', 'Deck de madera'], ['Carpinterías y griferías', 'Metal negro'],
-           ['Paredes', 'Enlucido de yeso blanco cálido']]
+    fin = [['Piso estar, cocina y suites', 'Entablonado de madera miel'], ['Muro del hogar (estar)', 'Piedra laja apilada'],
+           ['Banco del hogar, mesada e isla', 'Granito negro apomazado'], ['Bajo mesada', 'Laca mate verde bosque'],
+           ['Columna, isla y estante', 'Madera miel'], ['Salpicadero', 'Piedra caliza crema'],
+           ['Respaldo suite principal', 'Listones de madera miel'], ['Respaldo segunda suite', 'Pintura verde bosque'],
+           ['Piso y mesada del baño', 'Piedra gris'], ['Paredes del baño', 'Piedra caliza crema en placas'], ['Balcón', 'Deck de madera'],
+           ['Carpinterías y griferías', 'Metal negro'], ['Paredes', 'Enlucido de yeso blanco cálido']]
     table(c, tx2, ty2 - 3, [62, 52], fin, head=['Ubicación', 'Material'], size=2.0, rowh=4.4)
     return {'A-501_departamento_modelo_L2': d, 'A-501_cielorrasos_L2': r}
 

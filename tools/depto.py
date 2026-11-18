@@ -212,6 +212,51 @@ def emit_mat(name, color=(1.0, 0.82, 0.62), strength=8.0):
     return m
 
 
+def fire_mat():
+    """Llamas del hogar: emisión con ruido estirado hacia arriba (más intensa abajo, se apaga arriba)."""
+    m, N, L = _tree('Fuego')
+    out = N.new('ShaderNodeOutputMaterial')
+    tc = N.new('ShaderNodeTexCoord')
+    mp = N.new('ShaderNodeMapping')
+    mp.inputs['Scale'].default_value = (6.0, 6.0, 1.6)
+    L.new(tc.outputs['Object'], mp.inputs['Vector'])
+    nz = N.new('ShaderNodeTexNoise')
+    nz.inputs['Scale'].default_value = 2.2
+    nz.inputs['Detail'].default_value = 6
+    L.new(mp.outputs[0], nz.inputs['Vector'])
+    sep = N.new('ShaderNodeSeparateXYZ')
+    L.new(tc.outputs['Generated'], sep.inputs[0])
+    fall = N.new('ShaderNodeMath')
+    fall.operation = 'SUBTRACT'
+    L.new(nz.outputs['Fac'], fall.inputs[0])
+    L.new(sep.outputs['Z'], fall.inputs[1])
+    ramp = N.new('ShaderNodeValToRGB')
+    ramp.color_ramp.elements[0].position = 0.05
+    ramp.color_ramp.elements[0].color = (0, 0, 0, 1)
+    e1 = ramp.color_ramp.elements.new(0.25)
+    e1.color = (0.8, 0.18, 0.02, 1)
+    ramp.color_ramp.elements[1].position = 0.55
+    ramp.color_ramp.elements[1].color = (1.0, 0.62, 0.18, 1)
+    L.new(fall.outputs[0], ramp.inputs[0])
+    em = N.new('ShaderNodeEmission')
+    em.inputs['Strength'].default_value = 7.0
+    L.new(ramp.outputs[0], em.inputs[0])
+    tr = N.new('ShaderNodeBsdfTransparent')
+    mix = N.new('ShaderNodeMixShader')
+    bw = N.new('ShaderNodeRGBToBW')
+    L.new(ramp.outputs[0], bw.inputs[0])
+    gain = N.new('ShaderNodeMath')
+    gain.operation = 'MULTIPLY'
+    gain.use_clamp = True
+    gain.inputs[1].default_value = 4.0
+    L.new(bw.outputs[0], gain.inputs[0])
+    L.new(gain.outputs[0], mix.inputs[0])
+    L.new(tr.outputs[0], mix.inputs[1])
+    L.new(em.outputs[0], mix.inputs[2])
+    L.new(mix.outputs[0], out.inputs[0])
+    return m
+
+
 def curtain_mat():
     m, N, L = _tree('Cortina')
     out = N.new('ShaderNodeOutputMaterial')
@@ -247,22 +292,57 @@ def photo_mat(name, path, crop=None):
 M = {}
 
 
+def lin(hex_):
+    """Color de la paleta (interiorismo/concepto.md, sRGB) a lineal, como lo usa Blender."""
+    c = [int(hex_[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+    return tuple(v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4 for v in c)
+
+
+# paleta "montaña contemporánea patagónica" (interiorismo/concepto.md)
+LENGA, LANA, PIEDRA, BASALTO, BOSQUE, OTONO, LAGO = (lin(h) for h in (
+    '#B07A48', '#ECE4D6', '#8D877E', '#34322F', '#3D4A3B', '#9E4A2C', '#50707D'))
+
+
+def tx(new, old):
+    """La textura nueva del catálogo si ya está bajada; si no, la anterior (el script corre igual)."""
+    return new if (ASSETS / 'tex' / new / 'Diffuse.jpg').exists() else old
+
+
 def materials():
-    M['piso'] = pbr('Piso roble', 'laminate_floor_02', rough_gain=0.85, nstr=0.6, coat=0.15)
-    M['pared'] = pbr('Pared', 'white_plaster_02', size=1.4, color=(0.9, 0.88, 0.84), nstr=0.12, rough_gain=1.0)
-    M['techo'] = pbr('Techo', color=(0.9, 0.89, 0.87), rough=0.9)
-    M['roble'] = pbr('Roble', 'white_oak_veneer', size=0.9, rough_gain=0.9, coat=0.1)
-    M['roble_osc'] = pbr('Roble ahumado', 'white_oak_veneer', size=0.9, tint=(0.36, 0.25, 0.17, 1.9), coat=0.15)
-    M['piedra'] = pbr('Travertino', 'marble_01', size=1.8, rough_gain=0.6, coat=0.25)
+    M['piso'] = pbr('Piso madera miel', tx('floor_wood_honey', 'laminate_floor_02'), rough_gain=0.85, nstr=0.6, coat=0.12)
+    M['pared'] = pbr('Pared', 'white_plaster_02', size=1.4, color=(0.86, 0.81, 0.73), nstr=0.12, rough_gain=1.0)
+    M['techo'] = pbr('Techo', color=(0.88, 0.85, 0.8), rough=0.9)
+    # madera miel (lenga): muebles a medida, columna de la cocina, listones
+    M['roble'] = pbr('Madera miel', tx('oak_slats', 'white_oak_veneer'), size=0.9, tint=(*LENGA, 1.9), rough_gain=0.9,
+                     coat=0.1)
+    M['roble_osc'] = pbr('Madera tostada', tx('oak_slats', 'white_oak_veneer'), size=0.9, tint=(0.2, 0.11, 0.05, 1.9),
+                         coat=0.15)
+    M['piedra_laja'] = pbr('Piedra laja', tx('stone_ledge', 'marble_01'), rough_gain=1.0, nstr=1.2)
+    M['basalto'] = pbr('Granito negro', tx('granite_dark', 'marble_01'), tint=(*BASALTO, 1.6), rough_gain=0.75,
+                       coat=0.08)
+    M['bosque'] = pbr('Laca verde bosque', color=BOSQUE, rough=0.42, coat=0.05)
+    M['pintura_bosque'] = pbr('Pintura verde bosque', 'white_plaster_02', size=1.4, color=BOSQUE, nstr=0.12, rough=0.9)
+    M['salpicadero'] = pbr('Salpicadero', tx('tile_backsplash', 'long_white_tiles'), rough_gain=0.6, coat=0.2)
+    M['caliza'] = pbr('Caliza baño', tx('tile_backsplash', 'long_white_tiles'), size=4.0, rough_gain=0.6, coat=0.2)  # placas grandes
+    M['fuego'] = fire_mat()
+    M['lena'] = pbr('Leña', tx('firewood_logs', 'white_oak_veneer'), size=0.4, rough_gain=1.0, nstr=1.5)
+    M['piedra'] = pbr('Piedra baño', tx('bath_stone', 'marble_01'), size=None if tx('bath_stone', '') else 1.8,
+                      rough_gain=0.6, coat=0.2)
     M['terrazo'] = pbr('Terrazo', 'terrazzo_tiles', size=2.4, rough_gain=0.7, coat=0.3)
     M['azulejo'] = pbr('Azulejo', 'long_white_tiles', size=1.0, rough_gain=0.5)
     M['cemento'] = pbr('Cemento alisado', 'smooth_concrete_floor', tint=(0.62, 0.6, 0.57, 1.6), rough_gain=0.8)
     M['deck'] = pbr('Deck', 'wood_floor_deck', tint=(0.46, 0.38, 0.30, 1.8), rough_gain=1.0, nstr=0.8)
-    M['tela'] = pbr('Tela sofá', 'poly_wool_herringbone', size=0.32, tint=(0.80, 0.76, 0.69, 1.9), sheen=0.4, nstr=0.6)
-    M['tela_osc'] = pbr('Tela salvia', 'poly_wool_herringbone', size=0.32, tint=(0.42, 0.45, 0.39, 1.9), sheen=0.4, nstr=0.6)
-    M['alfombra'] = pbr('Alfombra', 'poly_wool_herringbone', size=0.5, tint=(0.74, 0.70, 0.63, 1.8), sheen=0.5, nstr=1.2)
-    M['lino'] = pbr('Lino blanco', 'rough_linen', size=0.35, tint=(0.95, 0.93, 0.89, 1.7), sheen=0.3, nstr=0.8)
-    M['lino_arena'] = pbr('Lino arena', 'rough_linen', size=0.35, tint=(0.70, 0.60, 0.48, 1.7), sheen=0.3, nstr=0.8)
+    M['tela'] = pbr('Lana cruda', tx('wool_cream', 'poly_wool_herringbone'), size=0.32, tint=(*LANA, 1.9), sheen=0.4,
+                    nstr=0.6)
+    M['tela_osc'] = pbr('Cuero coñac', tx('leather_cognac', 'poly_wool_herringbone'), size=0.5, tint=(*OTONO, 1.9),
+                        rough_gain=0.8, coat=0.1, nstr=0.6)
+    M['alfombra'] = pbr('Alfombra de lana', tx('rug_berber', 'poly_wool_herringbone'), size=0.5, tint=(0.66, 0.6, 0.5, 1.8),
+                        sheen=0.5, nstr=1.2)
+    M['lino'] = pbr('Lino crudo', tx('linen_natural', 'rough_linen'), size=0.35, tint=(*LANA, 1.7), sheen=0.3, nstr=0.8)
+    M['lino_arena'] = pbr('Manta a cuadros', tx('knit_rust', 'rough_linen'), size=0.4,
+                          tint=None if tx('knit_rust', '') else (*OTONO, 1.7), sheen=0.4, nstr=0.8)
+    M['manta_bosque'] = pbr('Manta verde', tx('plaid_green', 'rough_linen'), size=0.3, sheen=0.4, nstr=0.8)
+    M['piel'] = pbr('Piel de oveja', tx('sheepskin_teddy', 'rough_linen'), size=0.25, tint=(*LANA, 1.5), sheen=0.6, nstr=1.4)
     M['negro'] = pbr('Metal negro', color=(0.025, 0.025, 0.025), rough=0.35, metal=0.6)
     M['bronce'] = pbr('Bronce', color=(0.55, 0.38, 0.2), rough=0.25, metal=1.0)
     M['blanco'] = pbr('Laca blanca', color=(0.86, 0.85, 0.82), rough=0.4)
@@ -523,7 +603,8 @@ def lamp_light(parent, co, watts, color=(1.0, 0.78, 0.55), radius=0.06):
     ld.shadow_soft_size = radius
     o = bpy.data.objects.new('Luz', ld)
     bpy.context.scene.collection.objects.link(o)
-    o.parent = parent
+    if parent:
+        o.parent = parent
     o.location = co
     return o
 
@@ -615,12 +696,12 @@ def kitchen():
     box('Horno', 8.18, yb + 0.6, 1.05, 8.88, yb + 0.645, 1.62, M['vitro'], bevel=0.004)
     box('Columna junta', 8.06, yb + 0.64, 1.68, 9.0, yb + 0.645, 1.684, M['sombra'])
     box('Zócalo', 9.0, yb, 0, 11.55, yb + 0.56, 0.1, M['sombra'])
-    box('Bajo mesada', 9.0, yb, 0.1, 11.55, yb + 0.62, 0.88, M['roble'], bevel=0.003)
+    box('Bajo mesada', 9.0, yb, 0.1, 11.55, yb + 0.62, 0.88, M['bosque'], bevel=0.003)  # laca verde bosque
     for i in range(1, 4):
         xx = 9.0 + i * 2.55 / 4
         box('Junta', xx - 0.002, yb + 0.6, 0.12, xx + 0.002, yb + 0.625, 0.86, M['sombra'])
-    box('Mesada', 9.0, yb, 0.88, 11.55, yb + 0.65, 0.92, M['terrazo'], bevel=0.004)
-    box('Respaldo', 9.0, yb, 0.92, 11.55, yb + 0.02, 1.55, M['terrazo'])
+    box('Mesada', 9.0, yb, 0.88, 11.55, yb + 0.65, 0.92, M['basalto'], bevel=0.004)  # granito negro
+    box('Respaldo', 9.0, yb, 0.92, 11.55, yb + 0.02, 1.55, M['salpicadero'])
     box('Estante', 9.0, yb, 1.55, 11.55, yb + 0.28, 1.59, M['roble'], bevel=0.003)
     box('Tira LED', 9.02, yb + 0.25, 1.545, 11.53, yb + 0.27, 1.55, M['led'])
     box('Bacha', 10.55, yb + 0.12, 0.86, 11.25, yb + 0.5, 0.921, M['negro'])
@@ -630,25 +711,26 @@ def kitchen():
     ph_model('ceramic_vase_02', 9.55, yb + 0.14, height=0.3, z=1.59)
     ph_model('potted_plant_04', 11.3, yb + 0.2, height=0.3, z=0.92)
     # isla con anafe y banquetas
-    box('Isla', 8.5, -3.95, 0.08, 10.3, -3.0, 0.9, M['blanco'], bevel=0.004)
+    box('Isla', 8.5, -3.95, 0.08, 10.3, -3.0, 0.9, M['roble'], bevel=0.004)  # madera miel
     box('Isla zócalo', 8.56, -3.9, 0, 10.24, -3.06, 0.08, M['sombra'])
-    box('Isla tapa', 8.4, -4.0, 0.9, 10.4, -2.75, 0.95, M['terrazo'], bevel=0.005)
+    box('Isla tapa', 8.4, -4.0, 0.9, 10.4, -2.75, 0.95, M['basalto'], bevel=0.005)
     box('Anafe', 8.85, -3.85, 0.95, 9.6, -3.35, 0.952, M['vitro'])
     for xx in (8.85, 9.45, 10.05):
-        stool(xx, -2.45)
+        mueble('bar_stool', xx, -2.5, rot=180, h=0.66)  # cuero coñac y madera, a la altura de la isla
     for xx in (8.9, 9.4, 9.9):
         pendant(xx, -3.38)
     ph_model('wooden_bowl_01', 10.0, -3.35, height=0.09, z=0.95)
 
 
 def clad(name, a, b, openings=(), mat=None):
-    """Revestimiento fino (piedra, azulejo) sobre la cara de un muro."""
-    wall(name, a, b, 0.012, openings, mat or M['piedra'])
+    """Revestimiento fino sobre la cara de un muro. En el baño, la misma caliza crema del salpicadero de la cocina:
+    paredes claras en un ambiente sin ventana; la piedra gris queda para el piso y la mesada."""
+    wall(name, a, b, 0.012, openings, mat or M['caliza'])
 
 
-def bed(x, y, rot=0, w=1.8, l=2.1, head_w=None):
+def bed(x, y, rot=0, w=1.8, l=2.1, head_w=None, mesas=True):
     g = group('Cama', x, y, rot)
-    hw = (head_w or w + 1.0) / 2
+    hw = (head_w or (w + 1.0 if mesas else w + 0.12)) / 2
     box('Respaldo', -hw, -0.06, 0, hw, 0.0, 1.25, M['tela'], bevel=0.02, parent=g)
     box('Base cama', -w / 2, -l, 0.1, w / 2, -0.06, 0.38, M['tela'], bevel=0.02, parent=g)
     box('Base sombra', -w / 2 + 0.05, -l + 0.05, 0, w / 2 - 0.05, -0.1, 0.1, M['sombra'], parent=g)
@@ -660,6 +742,12 @@ def bed(x, y, rot=0, w=1.8, l=2.1, head_w=None):
         p = box('Almohada', s * w / 4 - 0.34, -0.5, 0.6, s * w / 4 + 0.34, -0.1, 0.76, M['lino'], bevel=0.07, seg=4,
                 parent=g)
         p.rotation_euler.x = math.radians(18)
+        # almohadones de acento delante de las almohadas: verde bosque y óxido
+        a = box('Almohadón', s * w / 5 - 0.24, -0.62, 0.62, s * w / 5 + 0.24, -0.5, 0.98, M['manta_bosque' if s < 0 else 'lino_arena'],
+                bevel=0.06, seg=4, parent=g)
+        a.rotation_euler.x = math.radians(14)
+        if not mesas:
+            continue
         box('Mesa de luz', s * (w / 2 + 0.3) - 0.25, -0.46, 0.3, s * (w / 2 + 0.3) + 0.25, -0.08, 0.52, M['roble_osc'],
             bevel=0.006, parent=g)
         lg = group('Velador', 0, 0, 0)
@@ -695,6 +783,147 @@ def shower():
     box('Nicho', 7.33, -6.6, 1.1, 7.36, -6.0, 1.4, M['sombra'])
 
 
+def hogar():
+    """Muro oeste del estar en piedra laja de piso a techo, con un hogar lineal de bioetanol en un volumen que sobresale,
+    banco de granito negro a lo largo del muro y leña a la vista. El cuadro va encima del hogar."""
+    x0 = 0.125  # cara interior del muro oeste
+    # la piedra termina antes de la puerta de entrada (muro oeste, y -4.15 a -5.05): ahí sigue el revoque
+    box('Revestimiento piedra', x0, -3.95, 0, x0 + 0.03, -0.2, H, M['piedra_laja'])
+    xa, xf = x0 + 0.03, 0.62  # el volumen del hogar sobresale 47 cm
+    ya, yb = -3.3, -1.4       # 1,90 m de ancho, centrado en la mesa baja (y = -2.35)
+    oa, ob, z0, z1 = -2.95, -1.75, 0.62, 1.02  # boca del hogar
+    box('Banco hogar', xa, -3.85, 0, xf + 0.02, -0.55, 0.4, M['basalto'], bevel=0.012)
+    for (y0_, y1_, za, zb) in [(ya, yb, 0.4, z0), (ya, yb, z1, H), (ya, oa, z0, z1), (ob, yb, z0, z1)]:
+        box('Hogar', xa, y0_, za, xf, y1_, zb, M['piedra_laja'])
+    box('Hogar fondo', xa, oa, z0, xa + 0.04, ob, z1, M['sombra'])
+    box('Hogar cama', xa, oa, z0, xf - 0.04, ob, z0 + 0.05, M['basalto'])
+    for (y0_, y1_, za, zb) in [(oa - 0.025, ob + 0.025, z0 - 0.025, z0), (oa - 0.025, ob + 0.025, z1, z1 + 0.025),
+                               (oa - 0.025, oa, z0, z1), (ob, ob + 0.025, z0, z1)]:
+        box('Hogar marco', xf - 0.006, y0_, za, xf + 0.006, y1_, zb, M['negro'])
+    box('Hogar vidrio', xf - 0.002, oa, z0, xf + 0.002, ob, z1, M['vidrio'])
+    for i, yy in enumerate((-2.7, -2.35, -2.0)):
+        box('Llama', xa + 0.2 + 0.03 * (i % 2), yy - 0.22, z0 + 0.05, xa + 0.205 + 0.03 * (i % 2), yy + 0.22, z1 - 0.03,
+            M['fuego'])
+    ld = bpy.data.lights.new('Hogar luz', 'POINT')
+    ld.energy = 45
+    ld.color = (1.0, 0.55, 0.22)
+    ld.shadow_soft_size = 0.25
+    o = bpy.data.objects.new('Hogar luz', ld)
+    bpy.context.scene.collection.objects.link(o)
+    o.location = (xa + 0.3, -2.35, z0 + 0.15)
+    # leña apilada sobre el banco, en el extremo norte (leños acostados, a lo largo de x)
+    for row in range(4):
+        for k in range(4 - row % 2):
+            r = 0.05 + 0.008 * ((k + row) % 3)
+            leno(xa + 0.02, xf - 0.04, -0.7 - 0.12 * k - 0.06 * (row % 2), 0.4 + 0.055 + row * 0.1, r)
+    return xf
+
+
+def leno(x0, x1, y, z, r):
+    me = bpy.data.meshes.new('Leño')
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=12, radius1=r, radius2=r * 0.92, depth=x1 - x0)
+    for v in bm.verts:
+        v.co = Vector(((x0 + x1) / 2 + v.co.z, y + v.co.y, z + v.co.x))
+    bm.to_mesh(me)
+    bm.free()
+    o = _obj('Leño', me, M['lena'])
+    for p in me.polygons:
+        p.use_smooth = True
+    return o
+
+
+def puerta_entrada():
+    """Puerta de entrada desde el palier, en el muro oeste (cerrada), con marco y manija de hierro negro."""
+    ya, yb = -5.05, -4.15
+    box('Puerta de entrada', -0.03, ya + 0.02, 0, 0.03, yb - 0.02, 2.18, M['roble_osc'], bevel=0.004)
+    for (y0_, y1_, za, zb) in [(ya - 0.05, ya + 0.02, 0, 2.25), (yb - 0.02, yb + 0.05, 0, 2.25), (ya - 0.05, yb + 0.05, 2.18, 2.25)]:
+        box('Marco entrada', 0.1, y0_, za, 0.14, y1_, zb, M['blanco'], bevel=0.004)
+    box('Manija', 0.03, yb - 0.17, 0.98, 0.09, yb - 0.15, 1.0, M['negro'])
+    box('Manija placa', 0.03, yb - 0.19, 0.9, 0.04, yb - 0.13, 1.06, M['negro'])
+
+
+def listones(x0, x1, y_face, mat, z1=H, w=0.045, gap=0.022, depth=0.022, back=None):
+    """Revestimiento de listones verticales sobre la cara de un muro (en y = y_face, mirando al norte)."""
+    if back:
+        box('Listones fondo', x0, y_face, 0, x1, y_face + 0.006, z1, back)
+    n = int((x1 - x0 + gap) / (w + gap))
+    off = x0 + ((x1 - x0) - (n * w + (n - 1) * gap)) / 2
+    for i in range(n):
+        xx = off + i * (w + gap)
+        box('Listón', xx, y_face + 0.006, 0, xx + w, y_face + 0.006 + depth, z1, mat, bevel=0.003)
+
+
+def apoyo(x, y, desde=2.0):
+    """Altura de la superficie que hay en (x, y) (colchón, mesa, banco), para apoyar encima lo que va arriba."""
+    bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get()
+    hit, loc, *_ = bpy.context.scene.ray_cast(dg, Vector((x, y, desde)), Vector((0, 0, -1)))
+    return loc.z if hit else 0.0
+
+
+CATALOGO = ROOT / 'interiorismo' / 'catalogo.json'
+
+
+def _catalogo():
+    return json.loads(CATALOGO.read_text(encoding='utf-8')) if CATALOGO.exists() else {'slots': {}}
+
+
+def mueble(slot, x, y, rot=0, w=None, h=None, z=0.0, pick=None, colgar=False, luz=0.0):
+    """Pieza del catálogo de ambientación (interiorismo/catalogo.json), centrada en (x, y) y apoyada en z.
+    rot: hacia dónde mira el frente, en grados desde el norte en sentido horario (0 = al lago, 90 = al este).
+    w o h la escalan a ese ancho o alto (m); sin ninguno queda en su tamaño real.
+    colgar: cuelga del techo (los colgantes). luz: vatios de una luz cálida dentro de la pantalla (las lámparas)."""
+    s = _catalogo()['slots'][slot]
+    cid = pick or s['pick']
+    c = next(k for k in s['candidates'] if k['id'] == cid)
+    path = ASSETS / c['path']  # las rutas del catálogo son relativas a la carpeta de assets
+    before = set(bpy.context.scene.objects)
+    if path.suffix == '.blend':
+        imgs = set(bpy.data.images)
+        with bpy.data.libraries.load(str(path), link=False) as (src, dst):
+            dst.objects = list(src.objects)
+        for im in set(bpy.data.images) - imgs:
+            name = pathlib.Path(im.filepath.replace('//', '')).name
+            cand = list(path.parent.rglob(name))
+            if cand:
+                im.filepath = str(cand[0])
+                im.reload()
+        objs = [o for o in dst.objects if o is not None]
+        for o in objs:
+            bpy.context.scene.collection.objects.link(o)
+    else:
+        bpy.ops.import_scene.gltf(filepath=str(path))
+        objs = [o for o in bpy.context.scene.objects if o not in before]
+    # el frente original de la pieza (catálogo: "-y" por defecto, como glTF importado y Poly Haven)
+    face = {'-y': 0, '+x': 90, '+y': 180, '-x': -90}.get(c.get('front', '-y'), 0)
+    root = group(f'{slot} {cid}', x, y, 180 - rot - face, z)
+    for o in objs:
+        if o.parent is None:
+            o.parent = root
+    bpy.context.view_layer.update()
+    pts = [o.matrix_world @ Vector(cc) for o in objs if o.type == 'MESH' for cc in o.bound_box]
+    if not pts:
+        return root
+    loc = Matrix.Rotation(-root.rotation_euler.z, 4, 'Z')
+    lp = [loc @ (p - root.location) for p in pts]
+    width = max(p.x for p in lp) - min(p.x for p in lp)
+    height = max(p.z for p in lp) - min(p.z for p in lp)
+    k = (w / width) if w else (h / height) if h else 1.0
+    root.scale = (k, k, k)
+    bpy.context.view_layer.update()
+    pts = [o.matrix_world @ Vector(cc) for o in objs if o.type == 'MESH' for cc in o.bound_box]
+    root.location.x += x - (min(p.x for p in pts) + max(p.x for p in pts)) / 2
+    root.location.y += y - (min(p.y for p in pts) + max(p.y for p in pts)) / 2
+    zmin, zmax = min(p.z for p in pts), max(p.z for p in pts)
+    root.location.z += (H - zmax) if colgar else (z - zmin)
+    if luz:
+        top = H if colgar else z + (zmax - zmin)
+        bot = top - (zmax - zmin)
+        lamp_light(None, (x, y, bot + 0.12 if colgar else bot + 0.72 * (top - bot)), luz, radius=0.08)
+    return root
+
+
 # ------------------------------------------------------------------ armado
 def build():
     sc = reset()
@@ -710,7 +939,8 @@ def build():
 
     # cerramientos exteriores
     window('Frente', (0, 0), (13, 0), mullions=5, open=[(2.6, 5.2), (7.8, 10.4)])
-    wall('Muro oeste', (0, 0.0), (0, -10), te, [(6.0, 9.6, H, 0)])
+    wall('Muro oeste', (0, 0.0), (0, -10), te, [(4.15, 5.05, 2.2, 0), (6.0, 9.6, H, 0)])  # entrada desde el palier
+    puerta_entrada()
     window('Ventana suite', (0, -6.0), (0, -9.6), mullions=2)
     wall('Muro este', (13, 0.0), (13, -10), te, [(0, 4.6, H, 0), (6.0, 9.6, H, 0)])
     window('Ventana cocina', (13, 0), (13, -4.6), mullions=2)
@@ -746,50 +976,64 @@ def build():
     for (a, b) in [((0.07, -5.53), (13 - 0.07, -5.53))]:
         box('Zócalo', a[0], a[1] - 0.012, 0, b[0], a[1], 0.07, M['blanco'])
 
-    # estar
-    rug(2.9, -2.75, 3.4, 2.6)
-    sofa(2.9, -4.25, 180, w=2.5)
-    coffee_table(2.9, -2.65)
-    ph_model('decorative_book_set_01', 2.6, -2.65, rot=8, height=0.12, z=0.36)
-    ph_model('wooden_bowl_01', 3.25, -2.6, height=0.08, z=0.36)
-    ph_model('mid_century_lounge_chair', 1.25, -1.6, rot=-130, height=0.82)
-    ph_model('modern_arm_chair_01', 4.75, -2.35, rot=100, height=0.8)
-    side_table(1.2, -4.1, 0.5)
-    ph_model('ceramic_vase_02', 1.2, -4.1, height=0.32, z=0.5)
-    floor_lamp(1.25, -4.85)
-    credenza(0.24, -2.8, rot=-90)
-    ph_model('standing_picture_frame_01', 0.26, -3.5, rot=-90, height=0.32, z=0.62)
-    ph_model('ceramic_vase_03', 0.24, -2.1, height=0.4, z=0.62)
-    ph_model('potted_plant_02', 0.55, -0.55, height=1.5)
+    # estar: el hogar en el muro oeste; el sofá lo mira, con el lago a la derecha (interiorismo/concepto.md).
+    # La franja junto al tabique sur (y < -4.15) queda libre: es el paso de la entrada a la suite y a la cocina.
+    hogar()
+    rug(2.47, -2.3, 2.95, 3.55)                            # toma las patas de todos los asientos
+    mueble('sofa_3', 4.15, -2.35, rot=270)                 # 2,40 m, mira al hogar
+    mueble('coffee_table', 2.83, -2.35, rot=270)           # a 45 cm del sofá
+    mueble('armchair_leather', 1.62, -0.98, rot=145)       # butacas de cuero a los lados del hogar, mirándose
+    mueble('armchair_leather', 1.62, -3.6, rot=35)
+    mueble('side_table', 4.15, -0.92, rot=270)
+    mueble('table_lamp', 4.15, -0.92, z=0.604, luz=10)
+    mueble('cushions', 4.28, -1.5, rot=270, z=0.44, pick='B07JLGCKPV')   # cuero
+    mueble('cushions', 4.3, -2.15, rot=270, z=0.44, pick='B07JM1VM9Q')   # lino con franja verde
+    mueble('cushions', 4.28, -3.2, rot=270, z=0.44, pick='B07JLZC7FK')   # óxido
+    box('Manta sofá', 3.78, -3.53, 0.44, 4.3, -3.05, 0.5, M['lino_arena'], bevel=0.02, seg=4)  # manta tejida doblada
+    mueble('console_table', 4.9, -2.35, rot=90)            # detrás del sofá, mirando a la cocina
+    mueble('table_lamp', 4.9, -1.65, z=0.81, luz=12)
+    mueble('decor', 4.9, -2.9, rot=90, z=0.81, pick='B07QHL8W81')        # cerámicas gris y azul lago
+    mueble('decor', 4.9, -2.25, rot=90, z=0.81, pick='B07QFB5MW6')
+    mueble('decor', 2.83, -2.0, rot=270, z=0.4, pick='B078JMXRGC')       # bandeja de pizarra
+    mueble('decor', 2.86, -2.7, z=0.4, pick='wooden_bowl_02')
+    mueble('decor', 0.4, -1.65, z=0.4, pick='B07B8PXTSY')  # jarrón óxido sobre el banco del hogar
+    mueble('decor', 0.4, -3.55, z=0.4, pick='B07HSPJ11F')  # faroles
+    cyl('Piel de oveja', 1.05, -2.35, 0, 0.02, 0.45, M['piel'], seg=24).scale = (0.75, 1.25, 1)
+    mueble('wall_art', 0.63, -2.35, rot=90, w=1.1, z=1.3)  # sobre el hogar: lago y cordillera
+    ph_model('potted_plant_02', 0.6, -0.4, height=1.6)
     ph_model('potted_plant_04', 7.6, -5.15, height=0.9)
-    # cuadro sobre el aparador
-    art = ROOT / 'img' / 'originales' / 'aerea-2.png'
-    if art.exists():
-        box('Marco', 0.07, -3.55, 1.05, 0.11, -2.05, 2.05, M['roble_osc'])
-        o = box('Cuadro', 0.11, -3.5, 1.1, 0.115, -2.1, 2.0, photo_mat('Foto', art))
-        uv = o.data.uv_layers.new()
-        for poly in o.data.polygons:
-            for li in poly.loop_indices:
-                co = o.data.vertices[o.data.loops[li].vertex_index].co
-                uv.data[li].uv = ((co.y + 3.5) / 1.4, (co.z - 1.1) / 0.9)
-    for (xx, yy) in [(0.6, -1.0), (0.6, -4.6), (7.3, -1.0), (7.3, -4.6)]:
+    for (xx, yy) in [(0.9, -1.0), (0.9, -4.6), (7.3, -1.0), (7.3, -4.6)]:
         downlight(xx, yy, 5)
-    curtain('Cortina oeste', (0.12, -0.15), (0.12, -1.1))
+    curtain('Cortina lago oeste', (0.25, -0.15), (1.2, -0.15))
     curtain('Cortina frente', (11.6, -0.15), (12.85, -0.15))
 
     # cocina y comedor
     kitchen()
-    dining(12.1, -1.75, rot=90, w=2.2, d=0.95, chairs=3)
-    ph_model('ceramic_vase_03', 12.1, -1.75, height=0.36, z=0.75)
+    # comedor para seis junto a la ventana este, con colgante de fibra centrado sobre la mesa
+    mueble('dining_table', 11.95, -1.75, rot=90, w=1.8)
+    for yy in (-1.15, -1.75, -2.35):
+        mueble('dining_chair', 11.32, yy, rot=90)
+        mueble('dining_chair', 12.58, yy, rot=270)
+    mueble('pendant_dining', 11.95, -1.75, colgar=True, luz=30)
+    mueble('decor', 11.95, -1.75, z=0.77, pick='ceramic_vase_04')
     for (xx, yy) in [(8.6, -1.0), (8.6, -4.6), (12.4, -4.6)]:
         downlight(xx, yy, 5)
 
-    # suite principal
-    bed(2.6, -9.94, 180, w=1.8)  # el respaldo contra el muro del fondo; la cama hacia la habitación
-    rug(2.6, -8.4, 2.8, 2.4)
-    box('Banco', 1.75, -7.62, 0.0, 3.45, -7.2, 0.44, M['roble_osc'], bevel=0.006)
-    ph_model('modern_arm_chair_01', 0.8, -6.45, rot=-60, height=0.8)
-    ph_model('potted_plant_01', 0.45, -9.55, height=1.1)
+    # suite principal: pared del respaldo en listones de madera miel, cama tapizada, banco a los pies
+    listones(0.15, 4.88, -9.875, M['roble'], back=M['roble_osc'])
+    mueble('bed_king', 2.6, -8.7, rot=0)                   # el respaldo contra los listones
+    for xx in (1.22, 3.98):
+        mueble('nightstand', xx, -9.645, rot=0)
+        mueble('table_lamp', xx, -9.645, z=0.599, luz=9)
+    # capas sobre la cama: manta tejida a los pies y almohadones de acento delante de las almohadas
+    zc = apoyo(2.6, -7.9)
+    box('Manta cama', 1.7, -8.25, zc - 0.01, 3.5, -7.62, zc + 0.04, M['lino_arena'], bevel=0.02, seg=4)
+    mueble('cushions', 2.22, -9.05, rot=0, z=apoyo(2.22, -9.05) - 0.03, pick='B07JLZJ9JM')   # escocés
+    mueble('cushions', 2.98, -9.05, rot=0, z=apoyo(2.98, -9.05) - 0.03, pick='B07JLGCKPV')   # cuero
+    mueble('bed_bench', 2.6, -7.3, rot=0)
+    rug(2.6, -8.15, 3.3, 2.5)
+    mueble('reading_chair', 0.7, -6.88, rot=120)           # rincón de lectura junto a la ventana
+    box('Manta butaca', 0.55, -7.15, 0.45, 0.95, -6.75, 0.5, M['manta_bosque'], bevel=0.02, seg=4)
     curtain('Cortina suite a', (0.12, -6.05), (0.12, -6.9))
     curtain('Cortina suite b', (0.12, -8.8), (0.12, -9.6))
     downlight(2.6, -6.3, 5)
@@ -797,15 +1041,6 @@ def build():
     for i in range(1, 6):
         xx = 0.1 + i * 3.45 / 6
         box('Placard junta', xx - 0.002, -6.305, 0.05, xx + 0.002, -6.29, 2.4, M['sombra'])
-    art2 = ROOT / 'img' / 'originales' / 'aerea-1.png'
-    if art2.exists():
-        box('Marco cama', 1.7, -9.95, 1.45, 3.5, -9.92, 2.25, M['roble_osc'])
-        o = box('Cuadro cama', 1.74, -9.92, 1.49, 3.46, -9.915, 2.21, photo_mat('Foto 2', art2))
-        uv = o.data.uv_layers.new()
-        for poly in o.data.polygons:
-            for li in poly.loop_indices:
-                co = o.data.vertices[o.data.loops[li].vertex_index].co
-                uv.data[li].uv = ((co.x - 1.74) / 1.72, (co.z - 1.49) / 0.72)
 
     # baño en suite
     vanity()
@@ -818,18 +1053,26 @@ def build():
     box('Toalla', 5.25, -5.78, 0.75, 5.7, -5.72, 1.21, M['lino'], bevel=0.02)
     box('Banco ducha', 6.5, -5.95, 0.0, 7.2, -5.68, 0.45, M['roble'], bevel=0.006)
     ph_model('potted_plant_01', 7.1, -7.6, height=0.6)
-    for (xx, yy) in [(5.6, -6.4), (6.7, -7.3)]:
-        downlight(xx, yy, 14)
+    for (xx, yy) in [(5.6, -6.4), (6.7, -7.3), (6.85, -6.1)]:  # vanitory, centro y ducha: un baño sin ventana
+        downlight(xx, yy, 24)
     # vestidor y baño 2 (sin cámara, pero se ven por las puertas)
     wardrobe(5.1, -9.94, 7.34, -9.35)
     box('Vanitory 2', 7.5, -9.94, 0.3, 8.94, -9.45, 0.86, M['roble_osc'], bevel=0.004)
 
     # suite 2
-    bed(11.0, -9.94, 180, w=1.6)
-    rug(11.0, -8.4, 2.5, 2.2, mat=M['alfombra'])
+    box('Pared verde', 9.07, -9.875, 0, 12.88, -9.869, H, M['pintura_bosque'])  # respaldo pintado verde bosque
+    mueble('bed_king', 11.27, -8.83, rot=0, w=1.95, pick='B07HSL882C')  # cama de madera sobre la pared verde
+    zc = apoyo(11.27, -8.0)
+    box('Pie de cama 2', 10.45, -8.25, zc - 0.01, 12.09, -7.88, zc + 0.05, M['lino_arena'], bevel=0.03, seg=4)
+    zc = apoyo(11.27, -9.5)
+    for x0 in (10.5, 11.32):
+        box('Almohada 2', x0, -9.8, zc - 0.02, x0 + 0.72, -9.42, zc + 0.15, M['lino'], bevel=0.07, seg=4)
+    mueble('cushions', 11.27, -9.25, rot=0, z=zc, pick='B07JLZC7FK')   # almohadón óxido
+    for xx in (10.06, 12.47):
+        mueble('nightstand_suite2', xx, -9.67, rot=0)
+        mueble('table_lamp', xx, -9.67, z=0.607, luz=8, pick='B07QJLF9XP')
+    rug(11.27, -8.3, 2.7, 2.2, mat=M['alfombra'])
     wardrobe(9.08, -9.94, 9.65, -7.4)
-    ph_model('mid_century_lounge_chair', 12.33, -8.35, rot=15, height=0.82)  # junto a la ventana, sin tapar la puerta
-    ph_model('potted_plant_04', 12.6, -9.55, height=0.9)
     curtain('Cortina suite 2 a', (12.88, -6.05), (12.88, -6.9))
     curtain('Cortina suite 2 b', (12.88, -8.8), (12.88, -9.6))
     downlight(11.0, -6.3, 5)

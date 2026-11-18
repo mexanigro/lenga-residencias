@@ -34,6 +34,7 @@ y abrir http://localhost:5173.
 - `js/assets.js` cajas de las plantas y placeholder del loader (generado por `tools/assets.py`)
 - `js/vendor/` Three.js 0.170 (con GLTFLoader) y Lenis 1.1.20, alojados en el repo para no depender de un CDN
 - `planos/` legajo de planos de arquitectura del proyecto (19 láminas A1 en PDF y DXF, ver `planos/README.md`)
+- `interiorismo/` concepto y paleta de la ambientación, catálogo de muebles y materiales libres (`catalogo.json`, lo lee `mueble()` en `tools/depto.py`) y créditos
 
 ### Herramientas
 
@@ -49,4 +50,4 @@ Los originales (`img/originales/`) y los renders crudos (`3d/out/`) no se versio
 
 ## Créditos
 
-Vuelo, fotos de la torre y etapas de obra generados con Google Flow (Veo 3.1 y Nano Banana) a partir del render del proyecto. Departamento modelado en Blender, con la luz horneada en Cycles, y texturas y modelos CC0 de Poly Haven. Plantas y maquetas generadas con ChatGPT. Librerías: Three.js y Lenis (en `js/vendor`).
+Vuelo, fotos de la torre y etapas de obra generados con Google Flow (Veo 3.1 y Nano Banana) a partir del render del proyecto. Departamento modelado en Blender, con la luz horneada en Cycles. Ambientación (concepto y paleta en `interiorismo/concepto.md`) con muebles de Amazon Berkeley Objects (© Amazon.com, CC BY 4.0, modificados) y modelos y materiales CC0 de Poly Haven y ambientCG; el detalle está en `interiorismo/CREDITOS.md`. Plantas y maquetas generadas con ChatGPT. Librerías: Three.js y Lenis (en `js/vendor`).

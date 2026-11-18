@@ -291,6 +291,9 @@ body.in-level .elevator__rail li[data-zone]::before { opacity: 0; }
 .pspot:hover i, .pspot:focus-visible i { transform: scale(1.1); background: rgba(242, 182, 109, .5); }
 .pano-title { position: absolute; left: var(--gutter); top: 96px; padding: 1rem 1.2rem; }
 .pano-title h2 { font: 300 2rem/1 var(--serif); letter-spacing: -.02em; margin-top: .3rem; }
+.pano-credit { margin-top: .5rem; max-width: 15rem; font-size: .62rem; line-height: 1.35; opacity: .62; }
+.pano-credit a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.pano-credit a:hover, .pano-credit a:focus-visible { opacity: 1; }
 .pano-map { position: absolute; right: var(--gutter); top: 96px; width: clamp(150px, 15vw, 220px); padding: 10px; background: rgba(239, 233, 223, .92); border-color: rgba(255, 255, 255, .4); }
 .pano-map svg { width: 100%; height: auto; display: block; }
 .pano-map :is(.labels, .north, .scale, .entry, .entry-t, .furn) { display: none; }
@@ -352,7 +355,7 @@ body.at-end:not(.in-level) .credit { opacity: 1; }
   .elevator__rail li[data-zone]::before { display: none; }
   .elevator__rail button { font-size: .68rem; }
   .level--floor, .level--unit { padding-top: 112px; }
-  .pano-title { top: 112px; left: 12px; padding: .7rem .9rem; }
+  .pano-title { top: 112px; left: 12px; padding: .7rem .9rem; max-width: calc(100vw - 146px); } /* deja 12 px antes del mini mapa */
   .pano-title h2 { font-size: 1.5rem; }
   .pano-map { top: 112px; right: 12px; width: 110px; padding: 6px; }
   .pano-zoom { display: none; } /* en el celular se acerca pellizcando */

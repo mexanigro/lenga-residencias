@@ -161,8 +161,9 @@ def aplicar(objs):
         o.data = me
 
 
-def aliviar(objs, tope=40000, por_metro=16000):
-    """Decima los modelos pesados de Poly Haven: presupuesto por modelo según su tamaño, y nunca más de `tope` por objeto."""
+def aliviar(objs, tope=20000, por_metro=8000):
+    """Decima los modelos pesados (Poly Haven, ABO): presupuesto por modelo según su tamaño, y nunca más de `tope` por
+    objeto. Para el recorrido alcanza: cerca de cada punto de vista manda el panorama, que se renderiza sin decimar."""
     grupos = defaultdict(list)
     for o in objs:
         grupos[o['raiz']].append(o)
@@ -496,9 +497,18 @@ def desplegar(sc, zona, objs, res, margen_px):
         tmp.append(t)
     k = [densidad(o) for o in objs]
     area = [area_uv_3d(t.data)[1] for t in tmp]
+    sp = dict(angle_limit=math.radians(60), margin_method='FRACTION', island_margin=0.002, area_weight=0.0,
+              correct_aspect=True, scale_to_bounds=False)
     unidades = defaultdict(list)
     for o, t, kk, a in zip(objs, tmp, k, area):
-        unidades[o['raiz'] if es_modelo(o) else ''].append((t, kk * kk * a))
+        clave = o['raiz'] if es_modelo(o) else ''
+        if not clave and len(o.data.vertices) > 3000:
+            # muebles de tejido o de varillas (sillas de ratán, colgantes de fibra): miles de islas que, empaquetadas
+            # con la zona, pagan margen cada una y dejan el atlas vacío; van en un bloque propio, como los modelos
+            editar([t], bpy.ops.uv.smart_project, **sp)
+            if area_uv_3d(t.data)[0] < 0.2:
+                clave = o['raiz']
+        unidades[clave].append((t, kk * kk * a))
     pesos = sorted(((kk * kk * a, o.get('raiz', o.name)) for o, kk, a in zip(objs, k, area)), reverse=True)
     suma = defaultdict(float)
     for w, r in pesos:
@@ -512,8 +522,7 @@ def desplegar(sc, zona, objs, res, margen_px):
     for clave, g in unidades.items():
         ts = [t for t, _ in g]
         if not clave:
-            editar(ts, bpy.ops.uv.smart_project, angle_limit=math.radians(60), margin_method='FRACTION',
-                   island_margin=0.002, area_weight=0.0, correct_aspect=True, scale_to_bounds=False)
+            editar(ts, bpy.ops.uv.smart_project, **sp)
         else:
             lado = math.sqrt(sum(a for _, a in g) / 0.5) * est
             for margen in (min(0.01, max(0.0005, 0.75 / max(lado, 1.0))), 0.0):
@@ -534,9 +543,17 @@ def desplegar(sc, zona, objs, res, margen_px):
         if au < 1e-9:
             log(f'AVISO {zona}: UV degenerada en {clave or "objetos armados"}')
             au = 1.0
-        e = math.sqrt(a3 / au)
+        # ponytail: un bloque con islas muy sueltas (hojas, tejido) se achica como si llenara el 25 %: esas piezas pierden
+        # resolución en vez de quitarle medio atlas al resto
+        e = math.sqrt(a3 / (max(au, 0.25) if clave else au))
         todo = np.concatenate(uvs) * e
         lo, hi = todo.min(0), todo.max(0)
+        relleno = a3 / max(1e-9, float(np.prod(hi - lo)))
+        log(f'{zona}: bloque {clave or "objetos armados"}: {a3:.3f} m², UV {au:.4f}, '
+            f'{hi[0] - lo[0]:.2f} × {hi[1] - lo[1]:.2f} m, relleno {relleno * 100:.0f} %')
+        if relleno < 0.1:
+            ext = sorted(((float(np.ptp(u, 0).max()), t.name) for t, u in zip(ts, uvs)), reverse=True)[:5]
+            log(f'AVISO {zona}: bloque casi vacío; las UV más extendidas: ' + ', '.join(f'{n} {x:.3f}' for x, n in ext))
         bloques.append([clave, ts, [u * e - lo for u in uvs], hi - lo])
     ancho = max(math.sqrt(sum(float(b[3][0] * b[3][1]) for b in bloques)) * 1.3, max(float(b[3][0]) for b in bloques))
     x = y = fila = 0.0
