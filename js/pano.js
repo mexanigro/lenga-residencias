@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from './vendor/addons/GLTFLoader.js';
 import { Reflector } from './vendor/addons/Reflector.js';
+import { createRealism } from './realismo.js';
 import { DEPTO3D } from './depto3d.js';
 
 const R = 0.2; // radio del cuerpo: la cámara no se acerca más que esto a paredes y muebles (m)
@@ -62,8 +63,8 @@ export function createPano(host, spotsLayer, { reduced = false } = {}) {
   camera.rotation.order = 'YXZ';
 
   /* ---------------- carga del modelo ---------------- */
-  let ready = null;
-  const solids = []; // lo que se puede tocar con un clic (todo menos vidrio y paisaje)
+  let ready = null, realism = null, glassMat = null, mirrorSheet = null;
+  const solids = [], glassMeshes = []; // lo que se puede tocar con un clic (todo menos vidrio y paisaje)
   function load() {
     if (ready) return ready;
     // son ~11 MB (8 en celulares): el cartel de ayuda muestra el avance mientras bajan
@@ -91,23 +92,42 @@ export function createPano(host, spotsLayer, { reduced = false } = {}) {
     ]).then(([gltf, maps, vista]) => {
       // un material por zona: la luz ya está en la textura, se muestra tal cual
       const mats = Object.fromEntries(DEPTO3D.chunks.map((c, i) => [c.name, new THREE.MeshBasicMaterial({ map: maps[i] })]));
-      mats[G.material] = new THREE.MeshBasicMaterial({
-        color: new THREE.Color().setRGB(...G.color, THREE.SRGBColorSpace), transparent: true, opacity: G.opacity, depthWrite: false,
-      });
+      // vidrio: casi invisible de frente y con más reflejo (un gris neutro) cuanto más rasante se lo mira, como el real
+      mats[G.material] = new THREE.MeshBasicMaterial({ color: 0x9fa6aa, transparent: true, opacity: G.opacity, depthWrite: false });
+      mats[G.material].onBeforeCompile = (sh) => {
+        sh.vertexShader = 'varying vec3 vGW;\n' + sh.vertexShader.replace('#include <project_vertex>',
+          '#include <project_vertex>\n  vGW = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+        sh.fragmentShader = 'varying vec3 vGW;\n' + sh.fragmentShader.replace('#include <alphamap_fragment>', `#include <alphamap_fragment>
+  {
+    vec3 n = normalize(cross(dFdx(vGW), dFdy(vGW)));
+    float c = abs(dot(n, normalize(cameraPosition - vGW)));
+    diffuseColor.a *= 0.2 + 2.5 * (0.04 + 0.96 * pow(1.0 - c, 5.0));
+  }`);
+      };
       mats[B.vista.material] = new THREE.MeshBasicMaterial({ map: vista, side: THREE.DoubleSide });
       mats[B.agua.material] = new THREE.MeshBasicMaterial({ color: B.agua.color });
+      glassMat = mats[G.material];
       gltf.scene.traverse((o) => {
         if (!o.isMesh) return;
         const name = o.material?.name;
         o.material = mats[name] ?? new THREE.MeshBasicMaterial({ color: 0x888888 });
-        if (name === G.material) o.renderOrder = 2;
+        if (name === G.material) { o.renderOrder = 2; glassMeshes.push(o); }
         else if (DEPTO3D.chunks.some((c) => c.name === name)) solids.push(o);
         o.matrixAutoUpdate = false;
         o.updateMatrix();
       });
       scene.add(gltf.scene);
       gltf.scene.updateMatrixWorld(true);
-      // el espejo del baño no se puede hornear (depende de dónde se pare uno): refleja en tiempo real
+      // reflejos y panoramas de Cycles sobre el horneado (js/realismo.js)
+      realism = createRealism(renderer, scene, camera, {
+        lite,
+        captures: Object.entries(DEPTO3D.views).map(([key, v]) => ({ key, pos: v.pos, eye: EYE, url: `img/depto3d/pano-${key}${lite ? '-m' : ''}.webp` })),
+        hide: () => [...glassMeshes, ring],
+      });
+      for (const c of DEPTO3D.chunks) realism.patch(mats[c.name]);
+      // el espejo del baño no se puede hornear (depende de dónde se pare uno): refleja en tiempo real, sin panoramas
+      // (vistos desde atrás del espejo quedarían corridos). Parado frente a él se ve el reflejo del render de Cycles:
+      // una lámina con el panorama encima, que se apaga al alejarse.
       const esp = gltf.scene.getObjectByName('bano-espejo');
       if (esp) {
         const bb = new THREE.Box3().setFromObject(esp), size = bb.getSize(new THREE.Vector3()), c = bb.getCenter(new THREE.Vector3());
@@ -117,8 +137,16 @@ export function createPano(host, spotsLayer, { reduced = false } = {}) {
         });
         mirror.position.set(c.x, c.y, bb.min.z - 0.002);
         mirror.rotation.y = Math.PI; // mira hacia el baño (−z en Three.js es el norte de Blender)
+        const reflect = mirror.onBeforeRender;
+        mirror.onBeforeRender = (...a) => { realism.suspend(); reflect(...a); realism.resume(); };
         scene.add(mirror);
         esp.visible = false;
+        mirrorSheet = new THREE.Mesh(new THREE.PlaneGeometry(size.x, size.y), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0, depthWrite: false }));
+        mirrorSheet.position.set(c.x, c.y, bb.min.z - 0.004);
+        mirrorSheet.rotation.y = Math.PI;
+        realism.patch(mirrorSheet.material);
+        scene.add(mirrorSheet);
+        glassMeshes.push(mirror, mirrorSheet); // se ocultan igual que el vidrio en las pasadas auxiliares
       }
       // subir texturas y shaders ahora, no en el primer cuadro (si no, el primer giro da un tirón)
       for (const t of [...maps, vista]) renderer.initTexture(t);
@@ -504,6 +532,11 @@ export function createPano(host, spotsLayer, { reduced = false } = {}) {
     ring.material.opacity += (ringOn - ring.material.opacity) * Math.min(1, dt * 12);
 
     applyCamera();
+    if (realism) {
+      realism.update(dt);
+      glassMat.opacity = DEPTO3D.glass.opacity * (1 - 0.6 * realism.panoWeight); // el panorama ya trae el vidrio (no se apaga del todo: detrás de una columna sigue el horneado)
+      if (mirrorSheet) mirrorSheet.material.opacity = realism.panoWeight;
+    }
     renderer.render(scene, camera);
     if (current === null && !placed) return; // todavía cargando: el título y el mapa siguen en el ambiente pedido
     const room = roomAt(px, py);
@@ -543,6 +576,7 @@ export function createPano(host, spotsLayer, { reduced = false } = {}) {
         return;
       }
       if (roomAt(px, py) === key && Math.hypot(px - v.pos[0], py - v.pos[1]) < 0.3) return;
+      realism?.prefetch(key);
       await walkTo(v.pos, { endYaw: v.start });
     },
     pause() {

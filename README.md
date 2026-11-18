@@ -7,7 +7,7 @@ Sitio conceptual de un desarrollo inmobiliario (locación y marca ficticias), he
 - **Final del scroll: el edificio.** La última etapa es la misma foto en la que se calibraron los pisos: cada piso se puede tocar sobre la foto o con el ascensor.
 - **Planta del piso:** render cenital de cada planta, girado según la rotación del piso, con las unidades por estado.
 - **Ficha de unidad:** maqueta 3D de la tipología con puntos por ambiente y plano de arquitecto (SVG generado desde los datos).
-- **Recorrido interior en 3D, en tiempo real:** el departamento modelo (tipo L2) armado en Blender con la luz de Cycles horneada en texturas, así se ve igual que un render desde cualquier punto. Se camina libre como en un juego (W A S D o flechas, arrastrar para mirar), tocando el piso (camina hasta ahí esquivando paredes y muebles) o eligiendo un ambiente (camina hasta él pasando por las puertas). El mini mapa sigue la posición y la mirada.
+- **Recorrido interior en 3D, en tiempo real:** el departamento modelo (tipo L2) armado en Blender con la luz de Cycles horneada en texturas. Cerca del punto de vista de cada ambiente se proyecta sobre el modelo su 360° de Cycles (con reflejos, brillos y vidrios), así se ve como el render; al alejarse se funde con el horneado, que suma un reflejo del piso en tiempo real. Se camina libre como en un juego (W A S D o flechas, arrastrar para mirar), tocando el piso (camina hasta ahí esquivando paredes y muebles) o eligiendo un ambiente (camina hasta él pasando por las puertas). El mini mapa sigue la posición y la mirada.
 - Navegación por niveles con URL propia (`#/piso/10/10C/living`), migas, Escape para subir y botón atrás del navegador.
 
 ## Correrlo
@@ -26,6 +26,7 @@ y abrir http://localhost:5173.
 - `js/flight.js` vuelo por scroll (secuencia de cuadros en canvas) y obra piso por piso (etapas recortadas con los contornos de `js/zones.js`)
 - `js/building.js` edificio, ascensor, planta, ficha y router de niveles
 - `js/pano.js` recorrido 3D: caminar, colisiones y caminos entre ambientes (Three.js, se carga solo al entrar)
+- `js/realismo.js` panoramas de Cycles proyectados sobre el modelo y reflejo del piso
 - `js/depto3d.js` zonas, ambientes y cajas de colisión del modelo horneado (generado por `tools/hornear.py`)
 - `js/depto.js` ambientes del departamento modelo para el mini mapa (generado por `tools/depto.py`)
 - `js/plan.js` dibujo de planos; `js/data.js` pisos, tipologías y unidades
@@ -42,7 +43,7 @@ y abrir http://localhost:5173.
 - `tools/depto.py` arma el departamento en Blender 4.5
 - `tools/hornear.py` hornea la luz del departamento en Cycles y exporta el modelo del recorrido (`blender -b --factory-startup -P tools/hornear.py --`; con `--zonas suite2` rehornea solo esa zona)
 - `tools/polyhaven.py` baja las texturas y modelos CC0 que usa el departamento (fuera del repo, en `%LOCALAPPDATA%/lenga3d`)
-- `tools/assets.py` convierte los originales a los `.webp` del sitio y arma `img/og.jpg`
+- `tools/assets.py` convierte los originales y los 360° de Cycles (`tools/depto.py -- --pano all`) a los `.webp` del sitio y arma `img/og.jpg`
 
 Los originales (`img/originales/`) y los renders crudos (`3d/out/`) no se versionan.
 

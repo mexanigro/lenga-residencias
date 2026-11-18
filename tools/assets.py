@@ -3,7 +3,9 @@
                                        y img/og.jpg (vista previa al compartir, 1200x630)
 - img/originales/planta-<zona>.png   -> img/plate-<zona>.webp (fondo transparente) + caja de la losa
 - img/originales/iso-*.png           -> img/iso-*.webp
-(el recorrido 3D del departamento sale de tools/hornear.py, directo a img/depto3d/)
+- 3d/out/pano-<ambiente>.png         -> img/depto3d/pano-<ambiente>.webp (6144) y -m.webp (4096, celular):
+                                       los 360° de Cycles que el recorrido 3D proyecta sobre el modelo (js/realismo.js)
+(el modelo horneado del recorrido sale de tools/hornear.py, directo a img/depto3d/)
 Escribe js/assets.js con las cajas de las plantas y el placeholder borroso del loader (primer cuadro del vuelo).
 Uso: python -I tools/assets.py"""
 import base64
@@ -52,6 +54,12 @@ for p in sorted(SRC.glob('planta-*.png')):
     out = OUT / f'plate-{zone}.webp'
     Image.fromarray(np.dstack([a, alpha * 255]).astype('uint8'), 'RGBA').save(out, 'WEBP', quality=85, method=6)
     print(f'plate-{zone}.webp (alfa)  {out.stat().st_size // 1024} KB')
+
+# panoramas 360° de Cycles (tools/depto.py --pano all)
+for p in sorted((ROOT / '3d' / 'out').glob('pano-*.png')):
+    im = Image.open(p).convert('RGB')
+    save(im.resize((6144, 3072), Image.LANCZOS) if im.size[0] != 6144 else im, OUT / 'depto3d' / f'{p.stem}.webp', 84)
+    save(im.resize((4096, 2048), Image.LANCZOS), OUT / 'depto3d' / f'{p.stem}-m.webp', 82)
 
 # placeholder borroso del primer cuadro del vuelo, embebido para que el loader tenga imagen al instante
 lqip = ''
