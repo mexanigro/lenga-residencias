@@ -234,7 +234,7 @@ export function createPano(host, spotsLayer, { reduced = false } = {}) {
   let px = VIEWS.living.pos[0], py = VIEWS.living.pos[1]; // posición (Blender x, y)
   let yaw = VIEWS.living.start, pitch = -4, fov = 70, fovTarget = 70; // grados; yaw desde el norte, horario
   let vx = 0, vy = 0, wyaw = 0; // velocidades al caminar y al girar
-  let glide = null, settle = null, running = false, opts = {}, current = null, W = 1, H = 1, gen = 0;
+  let glide = null, settle = null, placed = false, running = false, opts = {}, current = null, W = 1, H = 1, gen = 0;
   const keys = new Set();
   const baseFov = () => (W < H ? 88 : 72);
 
@@ -505,6 +505,7 @@ export function createPano(host, spotsLayer, { reduced = false } = {}) {
 
     applyCamera();
     renderer.render(scene, camera);
+    if (current === null && !placed) return; // todavía cargando: el título y el mapa siguen en el ambiente pedido
     const room = roomAt(px, py);
     if (room !== lastRoom) {
       lastRoom = room;
@@ -537,6 +538,7 @@ export function createPano(host, spotsLayer, { reduced = false } = {}) {
         pitch = -4;
         fov = fovTarget = baseFov();
         lastRoom = null;
+        placed = true;
         host.classList.add('is-ready');
         return;
       }
@@ -553,6 +555,7 @@ export function createPano(host, spotsLayer, { reduced = false } = {}) {
     },
     reset() {
       current = null;
+      placed = false;
       lastRoom = null;
       spotsFor = null;
       host.classList.remove('is-ready');
