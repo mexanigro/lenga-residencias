@@ -7,8 +7,9 @@ Fondo (sin ventana):
   blender -b --factory-startup -P tools/habitacion.py -- base            escena recortada -> 3d/out/suite/base.blend
   blender -b -P tools/habitacion.py -- todo render                         todos los pasos y un render de control
 Con ventana (BlenderMCP): abrir base.blend y llamar a los pasos de a uno: cama(), luz(), detalles(), acabados(),
-camara(), revelado(). luz(), acabados() y camara() se pueden repetir sobre suite.blend para ajustar.
-Los criterios (sol, albedos, cámara) salen de referencias/render-hiperrealista-blender.md, en la carpeta del manual.
+camara(), revelado(). luz(), ropa(), respaldo(), acabados() y camara() se pueden repetir sobre suite.blend para
+ajustar: python tools/render/bmcp.py pasos ropa acabados. Pruebas y recortes: tools/render/prueba.py y hoja.py.
+Es la implementación de referencia del método del manual: referencias/hiperrealismo-metodo.md.
 """
 import math
 import pathlib
@@ -145,11 +146,14 @@ def tela_mat(nombre, color, tex='linen_natural', size=0.35, sheen=0.5, rough=0.8
     return m
 
 
-def simular(o, frames, gravedad=1.0, presion=0.0, calidad=8, rigidez=10, flexion=0.3, encoge=0.0, propia=True, pin=False):
+def simular(o, frames, gravedad=1.0, presion=0.0, calidad=8, rigidez=10, flexion=0.3, encoge=0.0, propia=True, pin=False,
+            masa=0.3):
+    """masa: kg por vértice. 0,3 (lo de Blender) sirve para telas que cuelgan; en algo cerrado que tiene que
+    sostenerse con presión, una almohada de 2.400 vértices pesaría 700 kg y se desinfla."""
     cl = o.modifiers.new('tela', 'CLOTH')
     s = cl.settings
     s.quality = calidad
-    s.mass = 0.3
+    s.mass = masa
     s.tension_stiffness = s.compression_stiffness = rigidez
     s.bending_stiffness = flexion
     s.shrink_min = encoge
@@ -208,24 +212,65 @@ def terminar(o, material, grosor=0.008, arriba=False):
     o.data.materials.append(material)
 
 
-def almohada(nombre, ancho, alto, grueso, material, presion=2.0):
-    """Almohada inflada: un cubo subdividido con presión, sin gravedad. Las costuras quedan pellizcadas."""
+def almohada(nombre, ancho, alto, grueso, material, lugar, presion=2.0, encoge=0.03, vivo=None, rigidez=15, flexion=0.05):
+    """Almohada que se infla mientras cae sobre lo que ya hay en la cama (lugar: x, y, z, giro x, giro z en grados).
+    Antes se inflaba en el aire y se ubicaba girada: flotaba, rígida, y todas iguales.
+    vivo: material del cordón de la costura (almohadones y europeas); None, sin cordón.
+    rigidez, flexion: las de la tela al asentarse; el cuero necesita ~3 y ~40 veces más o se dobla como una
+    cartera vacía."""
     bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 0))
     o = bpy.context.object
     o.name = nombre
-    o.scale = (ancho, alto, grueso)
-    bpy.ops.object.transform_apply(scale=True)
+    o.data.transform(Matrix.Diagonal((ancho, alto, grueso, 1)))
     bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.subdivide(number_cuts=18)
+    bpy.ops.mesh.subdivide(number_cuts=19)  # 20 tramos: queda una fila de vértices justo en la costura
     bpy.ops.object.mode_set(mode='OBJECT')
-    simular(o, 14, gravedad=0.0, presion=presion, calidad=6, rigidez=15, flexion=0.05, encoge=0.03, propia=False)
-    lo, hi = wbox(o)
-    o.data.transform(Matrix.Translation(-(lo + hi) / 2))  # centrada en su origen, para poder ubicarla
-    o.location = (0, 0, 0)
+    costura = o.vertex_groups.new(name='costura')
+    costura.add([v.index for v in o.data.vertices if abs(v.co.z) < 1e-5], 1.0, 'REPLACE')
+    x, y, z, rx, rz = lugar
+    # coordenadas del mundo en la malla y el objeto en el origen (ver plano())
+    o.data.transform(Matrix.Translation((x, y, z)) @ Matrix.Rotation(math.radians(rz), 4, 'Z')
+                     @ Matrix.Rotation(math.radians(rx), 4, 'X'))
+    # se infla sin peso, en su lugar; después se asienta con el peso real (~1 kg) sin perder el relleno
+    # (el inflado es siempre de tela: con la rigidez del cuero no se infla y queda doblado)
+    simular(o, 14, gravedad=0.0, presion=presion, calidad=6, rigidez=15, flexion=0.05, encoge=encoge, propia=False)
+    simular(o, 40, gravedad=1.0, presion=0.3, calidad=6, rigidez=rigidez, flexion=flexion, propia=False,
+            masa=1.0 / len(o.data.vertices))
+    o.modifiers.new('choque', 'COLLISION')  # la que cae después se apoya en esta
+    o.collision.thickness_outer = 0.004
+    o.collision.cloth_friction = 40
     o.modifiers.new('suave', 'SUBSURF').levels = 1
     bpy.ops.object.shade_smooth()
     o.data.materials.append(material)
+    if vivo:
+        ribete(o, vivo)
     return o
+
+
+def ribete(o, material, radio=0.0045):
+    """Cordón de 9 mm sobre la costura de un almohadón: la fila de vértices del grupo 'costura'."""
+    import bmesh
+    bm = bmesh.new()
+    bm.from_mesh(o.data)
+    capa, k = bm.verts.layers.deform.active, o.vertex_groups['costura'].index
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if k not in v[capa]], context='VERTS')
+    me = bpy.data.meshes.new(f'Vivo {o.name}')
+    bm.to_mesh(me)
+    bm.free()
+    v = bpy.data.objects.new(f'Vivo {o.name}', me)
+    sc().collection.objects.link(v)
+    bpy.ops.object.select_all(action='DESELECT')
+    v.select_set(True)
+    bpy.context.view_layer.objects.active = v
+    bpy.ops.object.convert(target='CURVE')
+    for s in v.data.splines:  # curva suave, no un polígono de tramos rectos
+        s.type = 'NURBS'
+        s.order_u = 3
+        s.use_cyclic_u = True
+    v.data.bevel_depth = radio
+    v.data.bevel_resolution = 3
+    v.data.materials.append(material)
+    return v
 
 
 def poner(o, x, y, z, rx=0.0, rz=0.0):
@@ -241,11 +286,7 @@ def cama():
     x0, x1 = CAMA_X - 1.0, CAMA_X + 1.0
     fondo, pie = PARED_Y + 0.11, PARED_Y + 0.11 + 2.12
     tapiz = tapizado()
-    n = 9  # respaldo tapizado en canales verticales
-    paso = (x1 - x0 + 0.08) / n
-    for i in range(n):
-        a = x0 - 0.04 + i * paso
-        D.box('Respaldo', a + 0.002, PARED_Y + 0.01, 0.05, a + paso - 0.002, fondo, 1.3, tapiz, bevel=0.05, seg=8)
+    respaldo()
     base_ = D.box('Base cama', x0, fondo, 0.06, x1, pie, 0.36, tapiz, bevel=0.035, seg=8)
     colchon = D.box('Colchón', x0 + 0.035, fondo + 0.01, 0.36, x1 - 0.035, pie - 0.025, 0.6,
                     tela_mat('Sábana', BLANCOS['Sábana']), bevel=0.07, seg=8)
@@ -257,32 +298,89 @@ def cama():
     ac = plano('Acolchado', x0 - 0.3, x1 + 0.3, fondo + 0.55, pie + 0.3, 0.64, 120, 110, amp=0.02, seed=2,
                pin=(1, fondo + 0.5, fondo + 0.62))
     simular(ac, 60, calidad=8, encoge=0.015, pin=True)
-    # una copia quieta del acolchado hace de cuerpo de choque para la manta (tela contra tela simulada se atraviesa)
-    choque = ac.copy()
-    choque.data = ac.data.copy()
+    terminar(ac, tela_mat('Acolchado lino', BLANCOS['Acolchado lino']), grosor=0.025, arriba=True)
+    tela_mat('Funda', BLANCOS['Funda'])
+    D.pbr('Cuero almohadón', D.tx('leather_cognac', 'leather_cognac'), size=0.6, rough=0.45)
+    ropa()
+    print('CAMA LISTA')
+
+
+def respaldo(n=9):
+    """Respaldo tapizado en canales verticales. Cada canal es un acolchado: el frente abombado ~2 cm y las
+    costuras hundidas entre canales. Como cajas con bisel parecían tablones; además ninguno es idéntico."""
+    borrar([c for o in sc().objects if o.parent is None and o.name.startswith('Respaldo') for c in hijos(o)])
+    x0, x1 = CAMA_X - 1.04, CAMA_X + 1.04
+    y0, y1, z0, z1 = PARED_Y + 0.01, PARED_Y + 0.11, 0.05, 1.3
+    paso = (x1 - x0) / n
+    tapiz = tapizado()
+    random.seed(7)
+    for i in range(n):
+        bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 0))
+        o = bpy.context.object
+        o.name = 'Respaldo'
+        w, d, h = paso - 0.004, y1 - y0 - 0.02, z1 - z0
+        o.data.transform(Matrix.Diagonal((w, d, h, 1)))
+        # primero el borde redondeado y después la subdivisión: al revés, el bisel no puede ser más ancho que
+        # los tramos chicos y la punta de cada canal queda cuadrada
+        bv, r = o.modifiers.new('borde', 'BEVEL'), 0.05
+        bv.width, bv.segments, bv.limit_method = r, 8, 'ANGLE'
+        bpy.ops.object.modifier_apply(modifier='borde')
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='SELECT')
+        bpy.ops.mesh.subdivide(number_cuts=8)
+        bpy.ops.object.mode_set(mode='OBJECT')
+        comba, wf, hf = 0.02 * random.uniform(0.85, 1.15), w - 2 * r, h - 2 * r
+        for v in o.data.vertices:
+            if v.co.y > d / 2 - 1e-5:  # solo la cara del frente se abomba; los bordes redondeados quedan
+                v.co.y += comba * max(0.0, 1 - (2 * v.co.x / wf) ** 2) * max(0.0, 1 - (2 * v.co.z / hf) ** 6)
+        o.data.transform(Matrix.Translation((x0 + paso * (i + 0.5), (y0 + y1 - 0.02) / 2, (z0 + z1) / 2)))
+        o.modifiers.new('suave', 'SUBSURF').levels = 1
+        bpy.ops.object.shade_smooth()
+        o.data.materials.append(tapiz)
+
+
+def ropa():
+    """Frazada y almohadas sobre la cama ya hecha. Se puede repetir sobre suite.blend: borra las anteriores."""
+    borrar([c for o in sc().objects if o.parent is None and (o.name == 'Manta' or o.name.startswith(
+        ('Almohada', 'Europea', 'Lumbar', 'Cojín', 'Vivo', 'Choque'))) for c in hijos(o)])
+    x0, x1 = CAMA_X - 1.0, CAMA_X + 1.0
+    fondo, pie = PARED_Y + 0.11, PARED_Y + 0.11 + 2.12
+    # una copia quieta del acolchado hace de cuerpo de choque (tela contra tela simulada se atraviesa)
+    ac = sc().objects['Acolchado']
+    choque = bpy.data.objects.new('Choque acolchado', ac.data.copy())
     sc().collection.objects.link(choque)
     choque.modifiers.new('choque', 'COLLISION')
     choque.collision.thickness_outer = 0.03  # el acolchado terminado tiene 2,5 cm de alto
     choque.collision.cloth_friction = 60
     choque.hide_render = True
-    terminar(ac, tela_mat('Acolchado lino', BLANCOS['Acolchado lino']), grosor=0.025, arriba=True)
-    # manta tejida al pie, corrida hacia la ventana, que cuelga de un costado
-    mt = plano('Manta', CAMA_X - 0.55, x1 + 0.32, pie - 0.66, pie + 0.06, 0.72, 110, 46, amp=0.02, seed=5,
-               pin=(0, CAMA_X - 0.56, CAMA_X - 0.5))  # cuelga del lado de la cámara; el otro extremo queda fijo
-    simular(mt, 50, calidad=10, encoge=0.02, pin=True)
-    bpy.data.objects.remove(choque)
+    for o in sc().objects:  # las almohadas se apoyan en el respaldo
+        if o.name.startswith('Respaldo') and 'choque' not in o.modifiers:
+            o.modifiers.new('choque', 'COLLISION')
+            o.collision.thickness_outer = 0.004
+            o.collision.cloth_friction = 40
+    # frazada cruzada a los pies, colgando de los dos costados. Con un borde fijo para que no se resbalara,
+    # ese borde quedaba levantado en el aire; repartida de los dos lados no tira para ninguno y no hace falta fijarla
+    mt = plano('Manta', x0 - 0.30, x1 + 0.40, pie - 0.62, pie - 0.04, 0.74, 150, 34, amp=0.015, seed=5)
+    simular(mt, 70, calidad=10, encoge=0.02)
     terminar(mt, mat('Manta a cuadros'), grosor=0.01, arriba=True)
-    # almohadas: dos para dormir apoyadas en el respaldo, dos europeas y un almohadón de cuero
-    blanco = tela_mat('Funda', BLANCOS['Funda'])
+    # almohadas como se arma una cama: europeas contra el respaldo, las de dormir delante, después los almohadones.
+    # Cada una se infla y cae sobre las anteriores: se apoya, se aplasta donde toca y no hay dos iguales
+    blanco = mat('Funda')
+    # Las europeas casi paradas y finas: si sobresalen abajo, las de dormir quedan montadas sobre el borde del
+    # acolchado y se ve una franja de sábana en sombra debajo, como si flotaran. Así el borde de abajo de las de
+    # dormir apoya en la sábana, justo antes del doblez del acolchado (que empieza a 55 cm del respaldo)
     for i, s in enumerate((-1, 1)):
-        a = almohada(f'Almohada {i}', 0.74, 0.5, 0.12, blanco)
-        poner(a, CAMA_X + s * 0.44, fondo + 0.21, 0.87, rx=-60)  # apoyada en el respaldo, sin hundirse en el colchón
-        e = almohada(f'Europea {i}', 0.62, 0.62, 0.12, tapiz if i else mat('Manta verde'))
-        poner(e, CAMA_X + s * 0.36, fondo + 0.52, 0.92, rx=-72, rz=s * -4)
-    cuero = D.pbr('Cuero almohadón', D.tx('leather_cognac', 'leather_cognac'), size=0.6, rough=0.45)
-    lum = almohada('Lumbar', 0.55, 0.32, 0.1, cuero)
-    poner(lum, CAMA_X + 0.05, fondo + 0.8, 0.78, rx=-70, rz=3)
-    print('CAMA LISTA')
+        almohada(f'Europea {i}', 0.65, 0.65, 0.12, blanco, (CAMA_X + s * 0.40, fondo + 0.14, 0.95, -82, s * 2),
+                 vivo=blanco)
+    for i, s in enumerate((-1, 1)):
+        almohada(f'Almohada {i}', 0.74, 0.5, 0.13, blanco, (CAMA_X + s * 0.42, fondo + 0.45, 0.87, -55, -s * 3),
+                 encoge=0.0)  # funda floja: arrugas
+    almohada('Cojín escocés', 0.45, 0.45, 0.12, mat('Manta verde'), (CAMA_X - 0.36, fondo + 0.64, 0.94, -67, 4),
+             vivo=tapizado())
+    almohada('Lumbar', 0.55, 0.32, 0.11, mat('Cuero almohadón'), (CAMA_X + 0.2, fondo + 0.66, 0.88, -68, -4),
+             rigidez=45, flexion=2.0)
+    bpy.data.objects.remove(choque)
+    print('ROPA LISTA')
 
 
 # ------------------------------------------------------------------ paso 2: luz
@@ -521,12 +619,41 @@ def banco():
     print('BANCO LISTO')
 
 
+def alfombra():
+    """Alfombra bereber: el rulo de la lana tiene que leerse (relieve 2,2 y trama más chica) y el tono variar
+    un poco, como una alfombra de lana real. Antes era una superficie beige lisa."""
+    m = mat('Alfombra de lana')
+    N, L = m.node_tree.nodes, m.node_tree.links
+    next(n for n in N if n.type == 'MAPPING').inputs['Scale'].default_value = (1 / 0.35,) * 3
+    next(n for n in N if n.type == 'NORMAL_MAP').inputs['Strength'].default_value = 2.2
+    ajustar_albedo(m, (0.50, 0.46, 0.38))
+    if any(n.name == 'Manchado' for n in N):
+        return
+    b = next(n for n in N if n.type == 'BSDF_PRINCIPLED')
+    antes = b.inputs['Base Color'].links[0].from_socket
+    tc, rz = N.new('ShaderNodeTexCoord'), N.new('ShaderNodeTexNoise')
+    rz.name = 'Manchado'
+    rz.inputs['Scale'].default_value = 1.2
+    L.new(tc.outputs['Object'], rz.inputs['Vector'])
+    rango = N.new('ShaderNodeMapRange')
+    rango.inputs['From Min'].default_value, rango.inputs['From Max'].default_value = 0.3, 0.7
+    rango.inputs['To Min'].default_value, rango.inputs['To Max'].default_value = 0.95, 1.05
+    L.new(rz.outputs['Fac'], rango.inputs['Value'])
+    mix = N.new('ShaderNodeMix')
+    mix.data_type, mix.blend_type = 'RGBA', 'MULTIPLY'
+    mix.inputs[0].default_value = 1
+    L.new(antes, mix.inputs[6])
+    L.new(rango.outputs['Result'], mix.inputs[7])
+    L.new(mix.outputs[2], b.inputs['Base Color'])
+
+
 def acabados():
     for nombre, c in BLANCOS.items():
         ajustar_albedo(mat(nombre), c)
     tapizado()
     listones()
     superficies()
+    alfombra()
     banco()
     print('ACABADOS LISTOS')
 
