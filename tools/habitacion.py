@@ -105,7 +105,7 @@ def tapizado():
 
 # ------------------------------------------------------------------ paso 0: escena recortada
 def base():
-    D.build()
+    D.build(real=False)
     (x0, y0), (x1, y1) = CAJA
     fuera = []
     for o in sc().objects:
@@ -278,37 +278,68 @@ def poner(o, x, y, z, rx=0.0, rz=0.0):
     o.rotation_euler = (math.radians(rx), 0, math.radians(rz))
 
 
+def dentro(o, caja=CAJA):
+    """El objeto, con sus hijos, cae dentro de la caja (planta). En el departamento entero se repiten los nombres:
+    otra cama 'bed_king', los 'cushions' del sofá, el 'Respaldo' que es el salpicadero de la cocina."""
+    ms = [c for c in hijos(o) if c.type in ('MESH', 'CURVE')] or ([o] if o.type == 'LIGHT' else [])
+    if not ms:
+        return False
+    if o.type == 'LIGHT':
+        c = o.matrix_world.translation
+    else:
+        c = sum(((wbox(m)[0] + wbox(m)[1]) / 2 for m in ms), Vector()) / len(ms)
+    (x0, y0), (x1, y1) = caja
+    return x0 <= c.x <= x1 and y0 <= c.y <= y1
+
+
+def raices(prefijos, caja=CAJA):
+    return [o for o in sc().objects if o.parent is None and o.name.startswith(prefijos) and dentro(o, caja)]
+
+
+def con_choque(o, friccion=60, grosor=0.004):
+    if 'choque' not in o.modifiers:
+        o.modifiers.new('choque', 'COLLISION')
+    o.collision.thickness_outer = grosor
+    o.collision.cloth_friction = friccion
+
+
 def cama():
     # fuera la cama de catálogo (una sola malla con la ropa de cama fundida), la manta-caja y los almohadones
-    viejos = [o for o in sc().objects if o.parent is None and (o.name.startswith(('bed_king', 'cushions', 'Manta cama'))
-                                                                or o.name.startswith('Manta tela'))]
-    borrar([c for o in viejos for c in hijos(o)])
+    borrar([c for o in raices(('bed_king', 'cushions', 'Manta cama', 'Manta tela')) for c in hijos(o)])
     x0, x1 = CAMA_X - 1.0, CAMA_X + 1.0
     fondo, pie = PARED_Y + 0.11, PARED_Y + 0.11 + 2.12
     tapiz = tapizado()
     respaldo()
     base_ = D.box('Base cama', x0, fondo, 0.06, x1, pie, 0.36, tapiz, bevel=0.035, seg=8)
+    # sin esto la base quedaba a 6 cm del piso sin nada abajo: una cama flotando. Zócalo hundido en sombra
+    D.box('Base cama sombra', x0 + 0.06, fondo + 0.06, 0, x1 - 0.06, pie - 0.06, 0.06, mat('Junta'))
     colchon = D.box('Colchón', x0 + 0.035, fondo + 0.01, 0.36, x1 - 0.035, pie - 0.025, 0.6,
                     tela_mat('Sábana', BLANCOS['Sábana']), bevel=0.07, seg=8)
     for o in (base_, colchon):
-        o.modifiers.new('choque', 'COLLISION')
-        o.collision.thickness_outer = 0.004
-        o.collision.cloth_friction = 60
-    # acolchado: cae sobre el colchón y cuelga por los costados y el pie; arranca a 55 cm del respaldo
-    ac = plano('Acolchado', x0 - 0.3, x1 + 0.3, fondo + 0.55, pie + 0.3, 0.64, 120, 110, amp=0.02, seed=2,
-               pin=(1, fondo + 0.5, fondo + 0.62))
-    simular(ac, 60, calidad=8, encoge=0.015, pin=True)
-    terminar(ac, tela_mat('Acolchado lino', BLANCOS['Acolchado lino']), grosor=0.025, arriba=True)
+        con_choque(o)
     tela_mat('Funda', BLANCOS['Funda'])
     D.pbr('Cuero almohadón', D.tx('leather_cognac', 'leather_cognac'), size=0.6, rough=0.45)
+    acolchado(CAMA_X, fondo, pie, 2.0, 0.6)
     ropa()
     print('CAMA LISTA')
+
+
+def acolchado(cx, fondo, pie, ancho, z, sufijo=''):
+    """Acolchado que cae sobre el colchón y cuelga por los costados y el pie; arranca a 55 cm del respaldo
+    (ahí queda fijo: es el único borde fijo que va, porque queda apoyado)."""
+    x0, x1 = cx - ancho / 2, cx + ancho / 2
+    ac = plano(f'Acolchado{sufijo}', x0 - 0.3, x1 + 0.3, fondo + 0.55, pie + 0.3, z + 0.04, 120, 110, amp=0.02,
+               seed=2, pin=(1, fondo + 0.5, fondo + 0.62))
+    simular(ac, 60, calidad=8, encoge=0.015, pin=True)
+    terminar(ac, mat('Acolchado lino') or tela_mat('Acolchado lino', BLANCOS['Acolchado lino']), grosor=0.025,
+             arriba=True)
+    return ac
 
 
 def respaldo(n=9):
     """Respaldo tapizado en canales verticales. Cada canal es un acolchado: el frente abombado ~2 cm y las
     costuras hundidas entre canales. Como cajas con bisel parecían tablones; además ninguno es idéntico."""
-    borrar([c for o in sc().objects if o.parent is None and o.name.startswith('Respaldo') for c in hijos(o)])
+    borrar([c for o in raices('Respaldo') for c in hijos(o)])
     x0, x1 = CAMA_X - 1.04, CAMA_X + 1.04
     y0, y1, z0, z1 = PARED_Y + 0.01, PARED_Y + 0.11, 0.05, 1.3
     paso = (x1 - x0) / n
@@ -328,6 +359,9 @@ def respaldo(n=9):
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.select_all(action='SELECT')
         bpy.ops.mesh.subdivide(number_cuts=8)
+        # subdividir el bisel deja ~2.300 vértices repetidos (costuras abiertas): el decimado del horneado
+        # retorcía los canales y el subsurf abre grietas en esas costuras
+        bpy.ops.mesh.remove_doubles(threshold=1e-5)
         bpy.ops.object.mode_set(mode='OBJECT')
         comba, wf, hf = 0.02 * random.uniform(0.85, 1.15), w - 2 * r, h - 2 * r
         for v in o.data.vertices:
@@ -339,28 +373,27 @@ def respaldo(n=9):
         o.data.materials.append(tapiz)
 
 
-def ropa():
-    """Frazada y almohadas sobre la cama ya hecha. Se puede repetir sobre suite.blend: borra las anteriores."""
-    borrar([c for o in sc().objects if o.parent is None and (o.name == 'Manta' or o.name.startswith(
-        ('Almohada', 'Europea', 'Lumbar', 'Cojín', 'Vivo', 'Choque'))) for c in hijos(o)])
-    x0, x1 = CAMA_X - 1.0, CAMA_X + 1.0
-    fondo, pie = PARED_Y + 0.11, PARED_Y + 0.11 + 2.12
+def ropa(cx=CAMA_X, fondo=PARED_Y + 0.11, pie=PARED_Y + 0.11 + 2.12, ancho=2.0, z=0.6, sufijo='', caja=CAJA,
+         respaldo='Respaldo', cojin=('Manta verde', 'Lana cruda'), lumbar=('Cuero almohadón', True)):
+    """Frazada y almohadas sobre una cama ya hecha (colchón con su tope en z, respaldo en y = fondo, acolchado
+    'Acolchado{sufijo}' ya simulado). Se puede repetir: borra las anteriores de esa cama.
+    cojin: (tela, tela del cordón) del almohadón cuadrado; lumbar: (material, es cuero)."""
+    borrar([c for o in raices(('Almohada', 'Europea', 'Lumbar', 'Cojín', 'Vivo', 'Choque'), caja) for c in hijos(o)]
+           + [c for o in sc().objects if o.parent is None and o.name == f'Manta{sufijo}' for c in hijos(o)])
+    x0, x1, k = cx - ancho / 2, cx + ancho / 2, ancho / 2.0
     # una copia quieta del acolchado hace de cuerpo de choque (tela contra tela simulada se atraviesa)
-    ac = sc().objects['Acolchado']
+    ac = sc().objects[f'Acolchado{sufijo}']
     choque = bpy.data.objects.new('Choque acolchado', ac.data.copy())
     sc().collection.objects.link(choque)
-    choque.modifiers.new('choque', 'COLLISION')
-    choque.collision.thickness_outer = 0.03  # el acolchado terminado tiene 2,5 cm de alto
-    choque.collision.cloth_friction = 60
+    con_choque(choque, grosor=0.03)  # el acolchado terminado tiene 2,5 cm de alto
     choque.hide_render = True
-    for o in sc().objects:  # las almohadas se apoyan en el respaldo
-        if o.name.startswith('Respaldo') and 'choque' not in o.modifiers:
-            o.modifiers.new('choque', 'COLLISION')
-            o.collision.thickness_outer = 0.004
-            o.collision.cloth_friction = 40
+    for o in raices(respaldo, caja):  # las almohadas se apoyan en el respaldo
+        for c in hijos(o):
+            if c.type == 'MESH':
+                con_choque(c, friccion=40)
     # frazada cruzada a los pies, colgando de los dos costados. Con un borde fijo para que no se resbalara,
     # ese borde quedaba levantado en el aire; repartida de los dos lados no tira para ninguno y no hace falta fijarla
-    mt = plano('Manta', x0 - 0.30, x1 + 0.40, pie - 0.62, pie - 0.04, 0.74, 150, 34, amp=0.015, seed=5)
+    mt = plano(f'Manta{sufijo}', x0 - 0.30, x1 + 0.40, pie - 0.62, pie - 0.04, z + 0.14, 150, 34, amp=0.015, seed=5)
     simular(mt, 70, calidad=10, encoge=0.02)
     terminar(mt, mat('Manta a cuadros'), grosor=0.01, arriba=True)
     # almohadas como se arma una cama: europeas contra el respaldo, las de dormir delante, después los almohadones.
@@ -370,17 +403,17 @@ def ropa():
     # acolchado y se ve una franja de sábana en sombra debajo, como si flotaran. Así el borde de abajo de las de
     # dormir apoya en la sábana, justo antes del doblez del acolchado (que empieza a 55 cm del respaldo)
     for i, s in enumerate((-1, 1)):
-        almohada(f'Europea {i}', 0.65, 0.65, 0.12, blanco, (CAMA_X + s * 0.40, fondo + 0.14, 0.95, -82, s * 2),
+        almohada(f'Europea{sufijo} {i}', 0.65, 0.65, 0.12, blanco, (cx + s * 0.40 * k, fondo + 0.14, z + 0.35, -82, s * 2),
                  vivo=blanco)
     for i, s in enumerate((-1, 1)):
-        almohada(f'Almohada {i}', 0.74, 0.5, 0.13, blanco, (CAMA_X + s * 0.42, fondo + 0.45, 0.87, -55, -s * 3),
+        almohada(f'Almohada{sufijo} {i}', 0.74, 0.5, 0.13, blanco, (cx + s * 0.42 * k, fondo + 0.45, z + 0.27, -55, -s * 3),
                  encoge=0.0)  # funda floja: arrugas
-    almohada('Cojín escocés', 0.45, 0.45, 0.12, mat('Manta verde'), (CAMA_X - 0.36, fondo + 0.64, 0.94, -67, 4),
-             vivo=tapizado())
-    almohada('Lumbar', 0.55, 0.32, 0.11, mat('Cuero almohadón'), (CAMA_X + 0.2, fondo + 0.66, 0.88, -68, -4),
-             rigidez=45, flexion=2.0)
+    almohada(f'Cojín{sufijo}', 0.45, 0.45, 0.12, mat(cojin[0]), (cx - 0.36, fondo + 0.64, z + 0.34, -67, 4),
+             vivo=mat(cojin[1]))
+    cuero = dict(rigidez=45, flexion=2.0) if lumbar[1] else {}
+    almohada(f'Lumbar{sufijo}', 0.55, 0.32, 0.11, mat(lumbar[0]), (cx + 0.2, fondo + 0.66, z + 0.28, -68, -4), **cuero)
     bpy.data.objects.remove(choque)
-    print('ROPA LISTA')
+    print('ROPA LISTA', sufijo)
 
 
 # ------------------------------------------------------------------ paso 2: luz
@@ -411,7 +444,12 @@ def luz():
     sol.data.color = SOL['color']
     sc().view_settings.exposure = 1.0
     sc().view_settings.white_balance_temperature = 6500  # cielo nublado: se neutraliza el azul
-    # veladores: la pantalla deja pasar la luz y brilla
+    veladores(CAJA)
+    print('LUZ LISTA')
+
+
+def veladores(caja, vatios=VELADOR):
+    """Las lámparas de mesa dentro de la caja: la pantalla deja pasar la luz y brilla, a una potencia de lámpara."""
     pant = bpy.data.materials.get('Pantalla translúcida') or bpy.data.materials.new('Pantalla translúcida')
     pant.use_nodes = True
     T = pant.node_tree
@@ -427,7 +465,7 @@ def luz():
     T.links.new(p.outputs[0], mx.inputs[1])
     T.links.new(t.outputs[0], mx.inputs[2])
     T.links.new(mx.outputs[0], o_.inputs[0])
-    for lz in [o for o in sc().objects if o.type == 'LIGHT' and o.data.type == 'POINT']:
+    for lz in [o for o in sc().objects if o.type == 'LIGHT' and o.data.type == 'POINT' and dentro(o, caja)]:
         q = lz.matrix_world.translation
         cand = [o for o in sc().objects if o.type == 'MESH' and all(wbox(o)[0][i] - 0.01 <= q[i] <= wbox(o)[1][i] + 0.01 for i in range(3))
                 and (wbox(o)[1] - wbox(o)[0]).length < 0.9]
@@ -440,9 +478,8 @@ def luz():
         for pg in sh.data.polygons:
             if (sh.matrix_world @ pg.center).z > q.z - 0.13:
                 pg.material_index = k
-        lz.data.energy = VELADOR  # de día acompañan: una pantalla encendida, no un foco
+        lz.data.energy = vatios  # de día acompañan: una pantalla encendida, no un foco
         lz.data.shadow_soft_size = 0.05
-    print('LUZ LISTA')
 
 
 # ------------------------------------------------------------------ paso 3: detalles
@@ -584,8 +621,7 @@ def superficies():
 
 def banco():
     """Banco al pie de la cama hecho acá: el de catálogo traía el asiento como una placa marrón lisa."""
-    viejo = [o for o in sc().objects if o.parent is None and o.name.startswith(('bed_bench', 'Banco'))]
-    borrar([c for o in viejo for c in hijos(o)])
+    borrar([c for o in raices(('bed_bench', 'Banco')) for c in hijos(o)])
     x0, x1, y0, y1, alto = 1.95, 3.25, -7.52, -7.1, 0.46
     roble = mat('Roble banco') or D.pbr('Roble banco', D.tx('white_oak_veneer', 'oak_slats'), size=0.8,
                                         tint=(*D.LENGA, 1.9), rough=0.5, nstr=0.5)
@@ -645,6 +681,297 @@ def alfombra():
     L.new(antes, mix.inputs[6])
     L.new(rango.outputs['Result'], mix.inputs[7])
     L.new(mix.outputs[2], b.inputs['Base Color'])
+
+
+CAJA2 = ((9.0, -10.0), (13.0, -5.6))  # segunda suite
+LIVING = ((0.0, -5.6), (7.6, 0.0))
+
+
+def suite2():
+    """La segunda suite con el mismo método. La cama de catálogo traía la ropa de cama fundida en un bloque: cama
+    hecha acá (cabecera de tablas de madera sobre la pared verde), acolchado, almohadas y frazada simulados."""
+    borrar([c for o in raices(('bed_king', 'Almohada', 'Pie de cama', 'cushions'), CAJA2) for c in hijos(o)])
+    cx, ancho, pared = 11.27, 1.95, -9.869
+    fondo, pie, z = pared + 0.09, pared + 0.09 + 2.1, 0.58
+    madera = mat('Madera miel')
+    for i in range(5):  # cabecera de cinco tablas horizontales, con su junta
+        z0 = 0.30 + i * 0.172
+        D.box('Cabecera', cx - ancho / 2 - 0.05, pared + 0.005, z0, cx + ancho / 2 + 0.05, fondo, z0 + 0.166, madera,
+              bevel=0.003)
+    base_ = D.box('Base cama 2', cx - ancho / 2, fondo, 0.08, cx + ancho / 2, pie, 0.34, madera, bevel=0.006)
+    D.box('Base cama 2 sombra', cx - ancho / 2 + 0.06, fondo + 0.06, 0, cx + ancho / 2 - 0.06, pie - 0.06, 0.08,
+          mat('Junta'))
+    colchon = D.box('Colchón 2', cx - ancho / 2 + 0.03, fondo + 0.01, 0.34, cx + ancho / 2 - 0.03, pie - 0.025, z,
+                    mat('Sábana'), bevel=0.07, seg=8)
+    for o in (base_, colchon):
+        con_choque(o)
+    acolchado(cx, fondo, pie, ancho, z, sufijo=' 2')
+    ropa(cx, fondo, pie, ancho, z, sufijo=' 2', caja=CAJA2, respaldo='Cabecera', cojin=('Lana cruda', 'Manta a cuadros'),
+         lumbar=('Manta a cuadros', False))
+    veladores(CAJA2)
+    print('SUITE 2 LISTA')
+
+
+BANO = ((5.0, -8.0), (7.4, -5.6))  # baño en suite
+
+
+def granito():
+    """Piedra negra de una sola pieza (mesada, isla, banco del hogar): la foto de granito traía juntas de baldosa
+    y la isla se veía partida. Ruido fino para el moteado, rugosidad que varía y una capa de pulido."""
+    m = mat('Granito negro')
+    N, L = m.node_tree.nodes, m.node_tree.links
+    N.clear()
+    b = N.new('ShaderNodeBsdfPrincipled')
+    L.new(b.outputs[0], N.new('ShaderNodeOutputMaterial').inputs[0])
+    tc = N.new('ShaderNodeTexCoord')
+    mota = N.new('ShaderNodeTexNoise')
+    mota.inputs['Scale'].default_value = 220
+    mota.inputs['Detail'].default_value = 6
+    L.new(tc.outputs['Object'], mota.inputs['Vector'])
+    rampa = N.new('ShaderNodeValToRGB')
+    rampa.color_ramp.elements[0].position, rampa.color_ramp.elements[0].color = 0.5, (0.012, 0.012, 0.013, 1)
+    rampa.color_ramp.elements[1].position, rampa.color_ramp.elements[1].color = 0.62, (0.07, 0.068, 0.064, 1)
+    L.new(mota.outputs['Fac'], rampa.inputs['Fac'])
+    L.new(rampa.outputs['Color'], b.inputs['Base Color'])
+    lento = N.new('ShaderNodeTexNoise')
+    lento.inputs['Scale'].default_value = 3
+    L.new(tc.outputs['Object'], lento.inputs['Vector'])
+    rango = N.new('ShaderNodeMapRange')
+    rango.inputs['To Min'].default_value, rango.inputs['To Max'].default_value = 0.22, 0.38
+    L.new(lento.outputs['Fac'], rango.inputs['Value'])
+    L.new(rango.outputs['Result'], b.inputs['Roughness'])
+    b.inputs['Coat Weight'].default_value = 0.3
+    b.inputs['Coat Roughness'].default_value = 0.08
+
+
+def bacha(x, y, z, r=0.2, h=0.14):
+    """Bacha de apoyo de cerámica, hueca: el cilindro blanco liso de antes parecía de plástico."""
+    import bmesh
+    bm = bmesh.new()
+    bmesh.ops.create_cone(bm, cap_ends=True, segments=64, radius1=r * 0.9, radius2=r, depth=h)
+    arriba = max(bm.faces, key=lambda f: f.calc_center_median().z)
+    bmesh.ops.inset_individual(bm, faces=[arriba], thickness=0.012)
+    for v in arriba.verts:  # el fondo se cierra al 85 %: si no, la pared de adentro asoma por fuera de la de afuera
+        v.co.z -= h - 0.02
+        v.co.x *= 0.85
+        v.co.y *= 0.85
+    for v in bm.verts:
+        v.co += Vector((x, y, z + h / 2))
+    me = bpy.data.meshes.new('Bacha')
+    bm.to_mesh(me)
+    bm.free()
+    o = bpy.data.objects.new('Bacha', me)
+    sc().collection.objects.link(o)
+    bv = o.modifiers.new('borde', 'BEVEL')
+    bv.width, bv.segments, bv.limit_method = 0.004, 3, 'ANGLE'
+    for p in me.polygons:
+        p.use_smooth = True
+    o.data.materials.append(mat('Cerámica') or D.pbr('Cerámica', color=(0.80, 0.80, 0.78), rough=0.12, coat=0.6))
+    return o
+
+
+def toalla():
+    """Toalla de rizo colgando del toallero, simulada: la de antes era una caja. Queda fija solo la fila de arriba,
+    la que apoya sobre la barra."""
+    borrar([c for o in raices('Toalla', BANO) for c in hijos(o)])
+    rizo = mat('Toalla rizo') or D.pbr('Toalla rizo', D.tx('terry_towel', 'rough_linen'), size=0.25,
+                                       tint=(0.8, 0.78, 0.74, 1.9), sheen=0.6, rough=0.95, nstr=1.5)
+    ajustar_albedo(rizo, (0.78, 0.76, 0.72))
+    x0, x1, y, z0, z1 = 5.27, 5.68, -5.765, 0.76, 1.235
+    t = plano('Toalla', x0, x1, z0, z1, 0, 40, 46, amp=0.0)
+    for v in t.data.vertices:  # el plano nace horizontal: se para en x-z, delante de la barra
+        v.co.y, v.co.z = y + 0.004 * math.sin(v.co.x * 41) * math.sin(v.co.y * 23), v.co.y
+    g = t.vertex_groups.new(name='pin')
+    g.add([v.index for v in t.data.vertices if v.co.z > z1 - 0.012], 1.0, 'REPLACE')
+    simular(t, 30, calidad=8, encoge=0.03, pin=True)
+    terminar(t, rizo, grosor=0.006)
+
+
+def nicho():
+    """Nicho de la ducha con fondo, piso y costados de la misma piedra y una luz chica arriba: era un rectángulo
+    negro plano. El tabique tiene el hueco desde depto.build()."""
+    borrar([c for o in raices('Nicho', BANO) for c in hijos(o)])
+    cal = mat('Caliza baño')
+    x0, x1, y0, y1, z0, z1 = 7.333, 7.395, -6.6, -6.0, 1.1, 1.4
+    D.box('Nicho fondo', x1, y0 - 0.01, z0 - 0.01, x1 + 0.012, y1 + 0.01, z1 + 0.01, cal)
+    for (a, b_, c, d) in ((y0, y1, z0 - 0.012, z0), (y0, y1, z1, z1 + 0.012)):
+        D.box('Nicho piso', x0, a, c, x1, b_, d, cal)
+    for (a, b_) in ((y0 - 0.012, y0), (y1, y1 + 0.012)):
+        D.box('Nicho lado', x0, a, z0, x1, b_, z1, cal)
+    luz = mat('Nicho luz') or D.emit_mat('Nicho luz', color=(1.0, 0.86, 0.68), strength=0.6)  # tenue: con 2,5 el nicho era una caja de luz
+    D.box('Nicho luz', x0 + 0.004, y0 + 0.01, z1 - 0.008, x1 - 0.01, y1 - 0.01, z1 - 0.002, luz)
+    # del lado del baño 2 el hueco del tabique se tapa con la pared (por la puerta de la segunda suite se veía)
+    D.box('Nicho tapa', 7.452, y0 - 0.02, z0 - 0.02, 7.462, y1 + 0.02, z1 + 0.02, mat('Pared'))
+    for (yy, h, r) in ((-6.42, 0.19, 0.028), (-6.33, 0.15, 0.025)):
+        D.cyl('Nicho frasco', 7.37, yy, z0, z0 + h, r, mat('Cerámica'), bevel=0.004)
+
+
+def mata(asset, parte, x, y, z, alto, rot=0.0):
+    """Una sola mata de un modelo de Poly Haven. Los de plantas traen todas las variantes y sus niveles de detalle
+    en fila, más un objeto de geometry nodes que se renderiza como una bola: con ph_model() quedaban bolas
+    verdes flotando en el balcón. Se carga solo el objeto f'{asset}_{parte}' y se apoya con su base en (x, y, z)."""
+    path = D.ASSETS / 'models' / asset / f'{asset}.blend'
+    imgs = set(bpy.data.images)
+    with bpy.data.libraries.load(str(path), link=False) as (src, dst):
+        dst.objects = [n for n in src.objects if n == f'{asset}_{parte}']
+    for im in set(bpy.data.images) - imgs:
+        cand = list((path.parent).rglob(pathlib.Path(im.filepath.replace('//', '')).name))
+        if cand:
+            im.filepath = str(cand[0])
+            im.reload()
+    o = dst.objects[0]
+    sc().collection.objects.link(o)
+    o.parent = None
+    o.location, o.rotation_euler, o.scale = (0, 0, 0), (0, 0, math.radians(rot)), (1, 1, 1)
+    bpy.context.view_layer.update()
+    lo, hi = wbox(o)
+    k = alto / (hi.z - lo.z)
+    o.scale = (k, k, k)
+    bpy.context.view_layer.update()
+    lo, hi = wbox(o)
+    o.location = (x - (lo.x + hi.x) / 2, y - (lo.y + hi.y) / 2, z - lo.z)
+    return o
+
+
+def jardineras():
+    """Las jardineras del balcón tenían el fondo negro a la vista: tierra, pasto y un arbusto (Poly Haven, CC0)."""
+    tierra = mat('Tierra') or D.pbr('Tierra', color=(0.05, 0.038, 0.026), rough=0.95)
+    for o in [o for o in sc().objects if o.parent is None and o.name.startswith('planter_box_01')]:
+        ms = [c for c in hijos(o) if c.type == 'MESH']
+        lo = Vector([min(wbox(c)[0][i] for c in ms) for i in range(3)])
+        hi = Vector([max(wbox(c)[1][i] for c in ms) for i in range(3)])
+        D.box('Tierra', lo.x + 0.03, lo.y + 0.03, hi.z - 0.14, hi.x - 0.03, hi.y - 0.03, hi.z - 0.05, tierra)
+        cy, w, z = (lo.y + hi.y) / 2, hi.x - lo.x, hi.z - 0.06
+        for (t, asset, parte, alto) in ((0.22, 'grass_medium_01', 'large_a_LOD0', 0.38),
+                                        (0.5, 'shrub_04', 'c_LOD0', 0.42),
+                                        (0.78, 'grass_medium_01', 'large_c_LOD0', 0.34)):
+            mata(asset, parte, lo.x + t * w, cy + random.uniform(-0.03, 0.03), z, alto, rot=random.uniform(0, 360))
+
+
+def aparador_living():
+    """La pared grande entre la suite y la cocina estaba vacía: aparador bajo, cerámicas y una foto enmarcada."""
+    D.credenza(6.25, -5.31, rot=0, w=2.1, d=0.42, h=0.62)
+    D.ph_model('ceramic_vase_01', 5.6, -5.3, height=0.34, z=0.62)
+    D.ph_model('ceramic_vase_02', 5.85, -5.28, height=0.22, z=0.62)
+    D.ph_model('decorative_book_set_01', 6.85, -5.3, rot=8, height=0.08, z=0.62)
+    foto = D.ROOT / 'img' / 'originales' / 'vista-lago.jpg'
+    if foto.exists():
+        D.box('Marco living', 5.45, -5.54, 1.05, 7.05, -5.5, 2.05, mat('Madera tostada'), bevel=0.004)
+        o = D.box('Cuadro living', 5.5, -5.501, 1.1, 7.0, -5.497, 2.0, D.photo_mat('Foto living', foto))
+        uv = o.data.uv_layers.new()
+        for poly in o.data.polygons:  # un recorte vertical de la foto: la cordillera de la izquierda
+            for li in poly.loop_indices:
+                co = o.data.vertices[o.data.loops[li].vertex_index].co
+                uv.data[li].uv = (0.05 + 0.33 * (co.x - 5.5) / 1.5, 0.3 + 0.55 * (co.z - 1.1) / 0.9)
+
+
+def arreglos():
+    """Los defectos de la revisión del departamento (interiorismo/revision-hiperrealismo.md), por número."""
+    # 2 el fuego del hogar: tres planos con llamas de ruido. Quemado a blanco parecía dibujado, y anaranjado y
+    # suave, de cerca, también. No aguanta la mirada: hogar apagado, como en cualquier foto de día
+    # (se borran, no se ocultan: el horneado del recorrido toma todas las mallas, visibles o no)
+    borrar([o for o in sc().objects if o.name.startswith('Llama')])
+    for o in sc().objects:
+        if o.name.startswith('Hogar luz'):
+            o.data.energy = 0.0
+    # 3 colgantes de la cocina: el disco de abajo usaba el LED de los spots (12) y se veía quemado
+    dif = mat('Difusor') or D.emit_mat('Difusor', color=(1.0, 0.86, 0.68), strength=1.2)
+    for o in sc().objects:
+        if o.name.startswith('Colgante difusor'):
+            o.data.materials[0] = dif
+    # 3 mesada, isla y banco del hogar de una sola pieza
+    granito()
+    # 1 la pared vacía del living
+    aparador_living()
+    # 5 jardineras con tierra y plantas
+    random.seed(3)
+    jardineras()
+    # 10 el baño 2 sin luz se veía como un cuarto negro por la puerta de la segunda suite
+    D.downlight(8.2, -7.2, 6)
+    # 11 la piedra del baño, pulida, reflejaba el espejo y su tira de luz como una raya blanca: piedra apomazada
+    for nombre, ganancia in (('Caliza baño', 1.0), ('Piedra baño', 0.85)):
+        m = mat(nombre)
+        b = next(n for n in m.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
+        b.inputs['Coat Weight'].default_value = 0.0
+        if b.inputs['Roughness'].links:
+            b.inputs['Roughness'].links[0].from_node.inputs[1].default_value = ganancia
+    # 12 baño: bachas de cerámica, toalla colgada, nicho con fondo
+    yb = -8.0 + 0.06
+    borrar([c for o in raices('Bacha', BANO) for c in hijos(o)])
+    for xx in (5.75, 6.75):
+        bacha(xx, yb + 0.27, 0.86)
+    toalla()
+    nicho()
+    # el banco de la ducha era una caja de roble: el modelo no daba para más. Taburete plegable de listones (Poly
+    # Haven, CC0), el que se usa en una ducha porque escurre
+    borrar([c for o in raices('Banco ducha', BANO) for c in hijos(o)])
+    D.ph_model('folding_wooden_stool', 6.95, -5.97, rot=7, z=0.02)
+    # auditoría del 19-nov-2026 (tools/render/auditoria.py)
+    # barniz satinado: con la rugosidad de Blender (0,03) la capa es un espejo y el piso devolvía la tira LED de la
+    # cocina como una raya blanca y cada spot como un punto
+    for n in ('Piso madera miel', 'Madera miel'):
+        next(x for x in mat(n).node_tree.nodes if x.type == 'BSDF_PRINCIPLED').inputs['Coat Roughness'].default_value = 0.3
+    # voile: 0,93 de difuso y 0,98 de translúcido reflejaban más que cualquier tela real (techo ~0,85)
+    cn = mat('Cortina').node_tree.nodes
+    next(x for x in cn if x.type == 'BSDF_DIFFUSE').inputs[0].default_value = (0.80, 0.78, 0.74, 1)
+    next(x for x in cn if x.type == 'BSDF_TRANSLUCENT').inputs[0].default_value = (0.85, 0.81, 0.74, 1)
+    # los veladores del dormitorio 2 quedaban a 1,4 cm de la mesa de luz y el jarrón del comedor a 7,7 cm de la mesa
+    for o in [o for o in sc().objects if o.parent is None and o.name.startswith(APOYADOS)]:
+        apoyar(o)
+    print('ARREGLOS LISTOS')
+
+
+APOYADOS = ('table_lamp', 'decor', 'ceramic_vase', 'wooden_bowl', 'decorative_book_set', 'standing_picture_frame')
+
+
+def apoyar(o, tope=0.1):
+    """Baja un objeto con sus hijos hasta lo que tiene abajo, si queda en el aire (hasta `tope`). Se mide con rayos
+    hacia abajo en el centro y en cuatro puntos de la huella. Los rayos arrancan 2 cm por encima de la base y saltean
+    el objeto: desde abajo de la base, lo que apoya justo al ras arranca adentro del mueble y se hundía."""
+    bpy.context.view_layer.update()
+    ms = [c for c in hijos(o) if c.type == 'MESH']
+    pts = [c.matrix_world @ Vector(v) for c in ms for v in c.bound_box]
+    lo = Vector([min(p[i] for p in pts) for i in range(3)])
+    hi = Vector([max(p[i] for p in pts) for i in range(3)])
+    dg = bpy.context.evaluated_depsgraph_get()
+    gap = tope
+    mios = {c.name for c in ms}
+    for a, b in ((0.5, 0.5), (0.3, 0.3), (0.7, 0.3), (0.3, 0.7), (0.7, 0.7)):
+        org = Vector((lo.x + (hi.x - lo.x) * a, lo.y + (hi.y - lo.y) * b, lo.z + 0.02))
+        for _ in range(12):
+            ok, loc, _n, _i, ob, _m = sc().ray_cast(dg, org, Vector((0, 0, -1)))
+            if not ok:
+                break
+            if ob.name in mios:
+                org = loc - Vector((0, 0, 1e-4))
+                continue
+            gap = min(gap, lo.z - loc.z)
+            break
+    if 0.001 < gap < tope:
+        o.location.z -= gap
+        print(f'APOYADO {o.name}: bajó {gap * 100:.1f} cm')
+
+
+def departamento():
+    """El método aplicado al departamento entero; lo llama depto.build(). La suite trabajada, luz de día con sol
+    suave, albedos y pintura reales, la segunda suite vestida y los arreglos de cada ambiente
+    (interiorismo/revision-hiperrealismo.md). Los 360° y el recorrido horneado salen de acá."""
+    cama()
+    detalles()
+    acabados()
+    luz()
+    suite2()
+    veladores(LIVING)
+    arreglos()
+    # los cordones son curvas: a malla, que es lo único que toma el horneado del recorrido
+    curvas = [o for o in sc().objects if o.type == 'CURVE' and o.name.startswith('Vivo')]
+    if curvas:
+        bpy.ops.object.select_all(action='DESELECT')
+        for o in curvas:
+            o.select_set(True)
+        bpy.context.view_layer.objects.active = curvas[0]
+        bpy.ops.object.convert(target='MESH')
+    print('DEPARTAMENTO LISTO')
 
 
 def acabados():

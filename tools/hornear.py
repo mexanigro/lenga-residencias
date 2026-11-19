@@ -38,6 +38,7 @@ import argparse
 import json
 import math
 import pathlib
+import re
 import subprocess
 import sys
 import time
@@ -161,23 +162,37 @@ def aplicar(objs):
         o.data = me
 
 
-def aliviar(objs, tope=20000, por_metro=8000):
-    """Decima los modelos pesados (Poly Haven, ABO): presupuesto por modelo según su tamaño, y nunca más de `tope` por
-    objeto. Para el recorrido alcanza: cerca de cada punto de vista manda el panorama, que se renderiza sin decimar."""
+def familia(o):
+    """Los modelos de catálogo (Poly Haven, ABO) van cada uno por su lado. Las piezas armadas a mano se juntan por
+    nombre ('Respaldo.003' -> 'Respaldo', 'Almohada 1' -> 'Almohada'): cada canal del respaldo, por separado, se
+    llevaba el presupuesto de un mueble entero y la suite pasó de 12 mil a 250 mil triángulos."""
+    r = o['raiz']
+    if es_modelo(o) or re.search(r' B0\w{8}', r):
+        return r, False
+    lo, hi = caja([o])
+    return (re.sub(r'[ .]\d+$', '', r), zona_de((lo + hi) / 2)), True  # cada ambiente con su presupuesto
+
+
+def aliviar(objs, tope=20000, por_metro=8000, tope_armado=10000, por_metro_armado=4000):
+    """Decima los modelos pesados (Poly Haven, ABO) y las telas simuladas: presupuesto por grupo según su tamaño, y
+    nunca más de `tope` por objeto. Las piezas armadas a mano son formas suaves y aguantan menos triángulos. Para el
+    recorrido alcanza: cerca de cada punto de vista manda el panorama, que se renderiza sin decimar."""
     grupos = defaultdict(list)
     for o in objs:
-        grupos[o['raiz']].append(o)
+        grupos[familia(o)].append(o)
     tocados = []
-    for raiz, g in grupos.items():
+    for (raiz, armado), g in grupos.items():
+        raiz = ' · '.join(raiz) if armado else raiz
         lo, hi = caja(g)
-        pres = min(tope, max(2000, float(np.linalg.norm(hi - lo)) * por_metro))
+        t, pm = (tope_armado, por_metro_armado) if armado else (tope, por_metro)
+        pres = min(t, max(2000, float(np.linalg.norm(hi - lo)) * pm))
         cuentas = [tris(o.data) for o in g]
         tot = sum(cuentas)
-        if tot <= pres * 1.15 and max(cuentas) <= tope:
+        if tot <= pres * 1.15 and max(cuentas) <= t:
             continue
         r = min(1.0, pres / tot)
         for o, n in zip(g, cuentas):
-            ro = min(r, tope / n) if n else 1.0
+            ro = min(r, t / n) if n else 1.0
             if n < 300 or ro > 0.95:
                 continue
             md = o.modifiers.new('Alivio', 'DECIMATE')
@@ -372,6 +387,9 @@ def densidad(o):
         return 0.7
     if n.startswith('Cuadro') or r.startswith(('decorative_book_set', 'standing_picture_frame')):
         return 1.5
+    if sorted(o.dimensions)[1] < 0.03 and any(s.material and base(s.material.name) == 'Junta' for s in o.material_slots):
+        return 4.0  # juntas de 4 mm: a densidad 1 miden menos de un texel, quedan vacías y el relleno las pinta
+        # con la isla vecina (una línea blanca en el placard)
     return 1.0
 
 

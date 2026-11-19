@@ -4,6 +4,10 @@
                                                            mirando por la cámara y guarda 3d/out/suite/suite.blend
   python tools/render/bmcp.py rayo 443 231 [x y ...]       qué objeto hay en ese píxel del render (1800x1350) y qué
                                                            refleja: para encontrar el origen de un brillo raro
+  python tools/render/bmcp.py rayo360 balcony 50 -24 [rumbo inclinación ...]
+                                                           lo mismo desde el punto de un 360° (depto.VIEWS, a la
+                                                           altura de los ojos): rumbo en grados desde el norte, horario,
+                                                           como en las hojas de tools/render/vistas.py
   python tools/render/bmcp.py code archivo.py              ejecuta ese código dentro de Blender
   python tools/render/bmcp.py get_scene_info               cualquier otro comando del complemento (params en JSON)
 
@@ -61,6 +65,30 @@ for (px, py) in {pixeles!r}:
 '''
 
 
+RAYO360 = '''
+import bpy, math, sys
+from mathutils import Vector
+sys.path.insert(0, {tools!r})
+import depto
+sc = bpy.context.scene
+dg = bpy.context.evaluated_depsgraph_get()
+(x, y), _ = depto.VIEWS[{vista!r}]
+o0 = Vector((x, y, depto.EYE))
+for (rumbo, incl) in {dirs!r}:
+    a, e = math.radians(rumbo), math.radians(incl)
+    d = Vector((math.sin(a) * math.cos(e), math.cos(a) * math.cos(e), math.sin(e)))
+    hit, loc, nrm, _, ob, _ = sc.ray_cast(dg, o0, d)
+    if not hit:
+        print((rumbo, incl), 'cielo')
+        continue
+    r = d - 2 * d.dot(nrm) * nrm
+    h2 = sc.ray_cast(dg, loc + nrm * 1e-3, r)
+    h3 = sc.ray_cast(dg, loc + d * 1e-3, d)  # lo que se ve a través, si es vidrio
+    print((rumbo, incl), ob.name, [round(c, 2) for c in loc], 'refleja', h2[4].name if h2[0] else 'cielo',
+          'detrás', h3[4].name if h3[0] else 'cielo')
+'''
+
+
 def enviar(tipo, params):
     s = socket.create_connection(('127.0.0.1', 9876), timeout=1800)
     s.sendall(json.dumps({'type': tipo, 'params': params}).encode())
@@ -83,6 +111,9 @@ if __name__ == '__main__':
     elif cmd == 'rayo':
         pix = [(float(args[i]), float(args[i + 1])) for i in range(0, len(args), 2)]
         r = enviar('execute_code', {'code': RAYO.format(pixeles=pix)})
+    elif cmd == 'rayo360':
+        dirs = [(float(args[i]), float(args[i + 1])) for i in range(1, len(args), 2)]
+        r = enviar('execute_code', {'code': RAYO360.format(tools=str(TOOLS), vista=args[0], dirs=dirs)})
     elif cmd == 'code':
         r = enviar('execute_code', {'code': pathlib.Path(args[0]).read_text(encoding='utf-8')})
     else:

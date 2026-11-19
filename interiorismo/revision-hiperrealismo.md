@@ -1,53 +1,62 @@
 # Revisión del departamento completo (19-nov-2026)
 
-Revisión de los seis 360° que muestra el sitio (`img/depto3d/pano-*.webp`). Cada uno se miró en seis vistas de 75°, como las vería alguien parado en el punto (`tools/render/vistas.py`). Las hojas están en `3d/out/revision/`; `hallazgos.jpg` junta los doce defectos más claros.
+Estado de los seis 360° y del caminar libre que muestra el sitio. El criterio es el de `referencias/hiperrealismo-metodo.md`, en la carpeta del manual. La primera revisión (doce defectos, hojas en `3d/out/revision/`) quedó resuelta en las pasadas de abajo.
 
-El criterio es el de `referencias/hiperrealismo-metodo.md`, en la carpeta del manual. Las causas marcadas «a confirmar» son probables; se confirman con `bmcp.py rayo` antes de arreglarlas.
+## Estado (19-nov-2026, segunda pasada)
 
-## Lo que pesa más: el resto del departamento todavía no tiene el método
+El método ya se aplica al departamento entero: `depto.build()` llama a `habitacion.departamento()`, así los 360° y el recorrido horneado salen de la misma escena.
 
-Todo lo que se corrigió en la suite vive en `tools/habitacion.py`, que trabaja la suite sola. El resto del departamento, sus 360° y el recorrido 3D horneado siguen con los valores viejos de `tools/depto.py`:
+**Resuelto, con la causa confirmada:**
 
-- **Sol a 11° con ángulo de 0,8°:** deja franjas largas y duras en pisos y muebles.
-- **Paredes con albedo 0,86 y lisas:** el cuarto queda chato.
-- **Lámparas a 30 W.**
-- **Telas teñidas a ojo:** quedan grises.
+| # | Defecto | Causa | Arreglo |
+|---|---|---|---|
+| 4 y 6 | Vidrios negros | Reflexión total en la cara de salida | Reflejo solo en la cara de entrada |
+| 8 | Rendija de luz | Hoja de la puerta al ras del vano | La hoja entra 2 cm en el muro |
+| 11 | Raya blanca en el baño | Piedra pulida que reflejaba la tira del espejo | Piedra apomazada |
+| 10 | Cuarto negro | Baño 2 sin luz | Luz propia en el baño 2 |
 
-El 360° de la suite que ve el visitante es el viejo: la cama de catálogo con la ropa de cama fundida.
+**Resuelto, a la vista en las pruebas:**
+- 1: aparador, cerámicas y foto en la pared del living.
+- 2: el hogar, apagado. Ni quemada ni anaranjada la llama aguantó de cerca.
+- Nuevo: el contorno brillante de la puerta de entrada (2 cm de luz con el marco hacia el cielo). La hoja ahora entra en el muro.
+- 3: mesada de una pieza.
+- 5: jardineras con tierra, pasto y arbusto.
+- 7: la suite trabajada y el punto de vista movido a la esquina de la puerta.
+- 9: la cama del dormitorio 2 rehecha y vestida.
+- 12: bachas de cerámica, toalla simulada y nicho con fondo y luz.
 
-**Arreglo:**
-1. Llevar a `depto.py` lo que ya está probado (sol suave, cielo de relleno, albedos, variación de paredes y listones, lámparas a 10 W).
-2. Rehacer los seis 360°.
-3. Volver a hornear el recorrido.
+**Recorrido horneado (caminar libre):**
+- Bachas negras por fuera: la pared de la cavidad asomaba por fuera de la de afuera. Ahora el fondo se cierra al 85 %; confirmado con un rayo.
+- El GLB pasó de 12,9 a 22,2 MB por las telas y el respaldo. El decimado ahora agrupa las piezas armadas por nombre y ambiente; el peso final está en «Peso del recorrido», abajo.
+- El grano de las telas en `3d/out/bake-check/` es de la hoja de control (Cycles sin mipmaps). En el visor no aparece.
 
-Un solo cambio mejora todos los ambientes a la vez.
+## Tercera pasada: auditoría objeto por objeto (19-nov-2026)
 
-## Defectos por ambiente
+Cada objeto contra las tablas de síntomas de las áreas del método. Lo medible lo mide `tools/render/auditoria.py` (informe en `3d/out/auditoria/informe.json`); cada marca se confirmó con rayos antes de arreglarla. Lo demás se miró en los seis 360°, en seis vistas cada uno.
 
-| # | Ambiente | Se ve | Causa | Arreglo |
-|---|---|---|---|---|
-| 1 | Living | Pared enorme, vacía y lisa (la del pasillo a la suite) | Nada la ocupa; pintura sin variación | Obra o estante con objetos; pintura con variación y piel de naranja (`superficies()`) |
-| 2 | Living | El fuego del hogar parece dibujado: picos blancos | Emisión de ruido estirado (`fire_mat`) que se quema a blanco | Llama más baja y anaranjada, sin pasar a blanco, con brasas; o hogar apagado con leños, que en una foto de día es lo normal |
-| 3 | Cocina | Los colgantes de cobre tienen un disco blanco quemado abajo | Emisor plano y muy fuerte a la vista | Difusor que no se vea de frente, o bajar la potencia a la de una lámpara real |
-| 3 | Cocina | La mesada negra de la isla está partida en baldosas | Textura de piedra con juntas | Piedra de una sola pieza, sin juntas, con el reflejo suave de una mesada pulida |
-| 4 | Balcón | La baranda de vidrio se ve como una placa negra (o blanca) con un borde curvo | A confirmar: el vidrio refleja algo oscuro en ángulo rasante; la curva es el límite del Fresnel | Vidrio que refleje cielo y lago (que el fondo sea visible en reflejos) y con un tinte verdoso en el canto |
-| 5 | Balcón | Jardineras de madera vacías, negras por dentro | Faltan tierra y plantas | Tierra y plantas de Poly Haven (CC0), o sacarlas |
-| 6 | Living y cocina | El vidrio de la puerta corrediza es un espejo negro | La misma causa que el 4 | Lo mismo que el 4 |
-| 6 | Living y cocina | Puntos blancos en el vidrio y el piso (reflejos de los spots del techo) | Spots chicos y piso con barniz | Spots más grandes (radio) o más bajos; menos barniz en el piso, como en los listones |
-| 7 | Suite | El 360° es el viejo, y el punto mira medio cuarto de placard y paredes | El 360° es anterior al trabajo de la suite | Rehacer el 360° con `habitacion.py` y elegir puntos de vista como en `camara()`. Pendiente la idea de puntos fijos de 360° más videos de Cycles entre puntos |
-| 8 | Dormitorio 2 | Una rendija de luz vertical en la pared | A confirmar: una junta entre dos piezas de muro deja pasar el sol | Solapar los muros o cerrar la junta |
-| 9 | Dormitorio 2 | La cama es un bloque blanco, con almohadas simples y un almohadón naranja con pompones | Cama de catálogo con la ropa de cama fundida | `ropa()` de la suite: acolchado simulado, almohadas que caen, frazada |
-| 9 | Dormitorio 2 | Oscuro y plano; los veladores dejan halos en la pared verde | Poca luz de ventana y lámparas sin control | Sol y cielo como en la suite; veladores a 10 W |
-| 10 | Dormitorio 2 | La puerta da a un cuarto negro | El cuarto de atrás no tiene luz ni está en el recorte | Luz en ese cuarto, o la puerta entornada |
-| 11 | Baño | Una raya blanca fina cruza las paredes | A confirmar: reflejo de la tira de luz del espejo en la piedra brillante | Piedra más mate (honed) o una tira de luz más ancha y suave |
-| 11 | Baño | Las juntas de las placas son líneas negras de un píxel, cortadas | Juntas dibujadas en la textura, sin profundidad | Juntas de 2–3 mm como geometría o relieve, con un color de pastina |
-| 11 | Baño | El nicho de la ducha es un rectángulo negro plano | El nicho no tiene fondo ni luz | Nicho con profundidad, la misma piedra adentro y algo de luz |
-| 12 | Baño | Piletas de plástico blanco puro; la toalla es una caja | Albedo 1 sin variación; la toalla no tiene simulación | Cerámica de albedo ~0,8 con reflejo, toalla simulada colgando de la barra; un par de objetos (jabón, plantita) |
-| — | Baño | Oscuro, sin luz de ventana | No tiene ventana | Spots más cálidos y, si el baño tiene una, luz de afuera |
+**Fallaban y se arreglaron:**
 
-## Orden propuesto
+| Objeto | Lección | Se veía | Arreglo |
+|---|---|---|---|
+| Piso y maderas miel | Barniz | Raya blanca en el piso del living (la tira LED de la cocina) y puntitos bajo los spots | Barniz satinado: rugosidad de capa 0,3 |
+| Cortinas (las seis) | Albedo ≤ 0,85 | Voile de 0,93 y 0,98 | 0,80 y 0,85 |
+| Veladores del dormitorio 2 | Contacto | A 1,4 cm de la mesa de luz | `apoyar()` |
+| Jarrón de la mesa del comedor | Contacto | A 7,7 cm de la mesa | `apoyar()` |
+| Cama de la suite | Contacto | La base a 6 cm del piso, sin nada abajo | Zócalo hundido en sombra |
+| Banco de la ducha | Modelo pobre | Una caja de roble | Taburete plegable de Poly Haven (CC0) |
+| Respaldo (recorrido) | Decimado | Canales retorcidos | Vértices soldados |
+| Juntas del placard (recorrido) | Texel | Una junta blanca | Densidad ×4 en tiras finas |
 
-1. Llevar el método a `depto.py` (sol, cielo, albedos, paredes, lámparas, vidrios) y rehacer los 360°. Arregla el 1, el 4, el 6, el 7 y buena parte del 9 y del 11.
-2. Defectos puntuales: rendija (8), cuarto negro (10), fuego (2), colgantes (3), mesada (3), jardineras (5), baño (11 y 12).
-3. Ambientación: la pared vacía del living y la cama del dormitorio 2 con `ropa()`.
-4. Cada ambiente pasa por la lupa del método antes de reemplazar su 360° en el sitio.
+**Cumplen:** luces (veladores a 10 W, una luz en cada ambiente), vidrios (reflejo solo en la cara de entrada), bachas, nicho, toalla, almohadas y frazada apoyadas, hogar apagado, jardineras, puertas metidas en el muro, ropa de cama dentro de su rango (picos de 0,92 a 0,95; el vivo de una europea llega a 0,99, un tubo de 9 mm).
+
+**Falsos positivos de la auditoría:** lo que cuelga (cuadros, manijas, rieles, horno en su columna, bacha de la cocina), las almohadas inclinadas (su caja no toca), frazadas que cuelgan, juntas sobre los frentes y las caras al revés de leños, puerta y zócalos, que `enderezar()` corrige en el horneado.
+
+**Regla corregida:** los 360° quedan a 1,55 m, a la altura del caminar libre (área 2 del método).
+
+**Peso del recorrido** (19-nov-2026): GLB de 16,5 MB, 547.000 triángulos (antes del método eran 12,9 MB; con las telas sin agrupar llegó a 22,2). Los créditos de ABO quedaron iguales a los 23 modelos que hay en la escena.
+
+**Abierto:**
+- La foto del lago (ventanas y cuadros) puede ser de IA `[verificar]`: si lo es, rompe la regla 1. Entra con el trabajo del exterior.
+- Los colgantes de la cocina se ven muy brillantes de abajo, aunque menos que antes.
+- Las juntas finas del baño: líneas negras de un píxel, sin profundidad.
+- La vista por la ventana sigue lavada.

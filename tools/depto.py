@@ -20,6 +20,10 @@ import bmesh
 import bpy
 from mathutils import Matrix, Vector
 
+if __name__ == '__main__':  # que `import depto` desde habitacion.py dé este mismo módulo, no una segunda copia
+    sys.modules['depto'] = sys.modules[__name__]
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))  # para build(): import habitacion
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 # fuera del proyecto: las rutas de las texturas de Poly Haven superan el límite de 260 caracteres de Windows
 ASSETS = pathlib.Path(os.environ.get('LENGA3D', pathlib.Path(os.environ.get('LOCALAPPDATA', '~')) / 'lenga3d')).expanduser() / 'assets'
@@ -35,7 +39,7 @@ VIEWS = {
     'living': ((6.3, -3.2), -55),
     'kitchen': ((9.7, -1.25), 150),
     'balcony': ((5.2, 1.25), 0),
-    'suite': ((2.6, -6.9), -135),
+    'suite': ((4.0, -6.75), -140),  # desde la esquina de la puerta, la cama en tres cuartos (como la foto fija)
     'bedroom': ((11.1, -6.8), 135),
     'bath': ((6.3, -6.95), 180),
 }
@@ -44,8 +48,8 @@ LINKS = {
     ('living', 'kitchen'): [],
     ('living', 'balcony'): [(4.5, -0.45), (4.4, 0.55), (4.8, 1.05)],
     ('kitchen', 'balcony'): [(9.1, -0.45), (9.0, 0.55), (7.6, 1.15)],
-    ('living', 'suite'): [(4.8, -4.25), (4.5, -5.0), (4.5, -6.1), (3.6, -6.75)],
-    ('suite', 'bath'): [(4.0, -6.55), (5.0, -6.45), (5.7, -6.65)],
+    ('living', 'suite'): [(4.8, -4.25), (4.5, -5.0), (4.5, -6.1)],
+    ('suite', 'bath'): [(5.0, -6.45), (5.7, -6.65)],
     ('kitchen', 'bedroom'): [(10.8, -2.7), (11.0, -4.3), (12.25, -4.75), (12.25, -6.1)],
 }
 
@@ -187,8 +191,19 @@ def glass_mat(name='Vidrio', tint=(0.92, 0.96, 0.95)):
     gl.inputs['Roughness'].default_value = 0.0
     lw = N.new('ShaderNodeLayerWeight')
     lw.inputs['Blend'].default_value = 0.12
+    # el reflejo solo en la cara de entrada: en la de salida el Fresnel se invierte y, pasados ~62°, da reflexión
+    # total; el rayo rebota adentro del vidrio hasta el límite de rebotes y sale negro (las barandas y las hojas
+    # corredizas se veían como espejos negros con un borde curvo)
+    frente = N.new('ShaderNodeMath')
+    frente.operation = 'MULTIPLY'
+    atras = N.new('ShaderNodeMath')
+    atras.operation = 'SUBTRACT'
+    atras.inputs[0].default_value = 1.0
+    L.new(N.new('ShaderNodeNewGeometry').outputs['Backfacing'], atras.inputs[1])
+    L.new(lw.outputs['Fresnel'], frente.inputs[0])
+    L.new(atras.outputs[0], frente.inputs[1])
     mix = N.new('ShaderNodeMixShader')
-    L.new(lw.outputs['Fresnel'], mix.inputs[0])
+    L.new(frente.outputs[0], mix.inputs[0])
     L.new(tr.outputs[0], mix.inputs[1])
     L.new(gl.outputs[0], mix.inputs[2])
     lp = N.new('ShaderNodeLightPath')
@@ -836,7 +851,9 @@ def leno(x0, x1, y, z, r):
 def puerta_entrada():
     """Puerta de entrada desde el palier, en el muro oeste (cerrada), con marco y manija de hierro negro."""
     ya, yb = -5.05, -4.15
-    box('Puerta de entrada', -0.03, ya + 0.02, 0, 0.03, yb - 0.02, 2.18, M['roble_osc'], bevel=0.004)
+    # la hoja se mete 2 cm en el muro por los tres lados: con 2 cm de luz con el marco, del otro lado está el cielo
+    # y el contorno de la puerta se veía como una línea blanca
+    box('Puerta de entrada', -0.03, ya - 0.02, 0, 0.03, yb + 0.02, 2.22, M['roble_osc'], bevel=0.004)
     for (y0_, y1_, za, zb) in [(ya - 0.05, ya + 0.02, 0, 2.25), (yb - 0.02, yb + 0.05, 0, 2.25), (ya - 0.05, yb + 0.05, 2.18, 2.25)]:
         box('Marco entrada', 0.1, y0_, za, 0.14, y1_, zb, M['blanco'], bevel=0.004)
     box('Manija', 0.03, yb - 0.17, 0.98, 0.09, yb - 0.15, 1.0, M['negro'])
@@ -925,7 +942,9 @@ def mueble(slot, x, y, rot=0, w=None, h=None, z=0.0, pick=None, colgar=False, lu
 
 
 # ------------------------------------------------------------------ armado
-def build():
+def build(real=True):
+    """real: le aplica al departamento el método de hiperrealismo (habitacion.departamento()): la suite trabajada,
+    luz de día con sol suave, albedos reales y los arreglos de cada ambiente. False: el armado crudo."""
     sc = reset()
     materials()
     t, te = 0.12, 0.25
@@ -953,7 +972,7 @@ def build():
     wall('Tabique estar', (0, -5.6), (13, -5.6), t, [(4.05, 4.95, 2.2, 0), (11.8, 12.7, 2.2, 0)])
     wall('Tabique suite', (5, -5.6), (5, -10), t, [(0.45, 1.25, 2.2, 0), (3.0, 3.8, 2.2, 0)])
     wall('Tabique baño', (5, -8), (7.4, -8), t)
-    wall('Tabique vestidor', (7.4, -5.6), (7.4, -10), t)
+    wall('Tabique vestidor', (7.4, -5.6), (7.4, -10), t, [(0.4, 1.0, 1.4, 1.1)])  # hueco del nicho de la ducha
     wall('Tabique suite 2', (9, -5.6), (9, -10), t, [(0.6, 1.4, 2.2, 0)])
 
     # balcón y losas
@@ -1094,12 +1113,17 @@ def build():
                 uv.data[li].uv = (0.3 + 0.4 * (co.x - 9.64) / 1.42, 0.25 + 0.5 * (co.z - 1.14) / 0.77)
 
     # puertas abiertas (hojas contra el muro)
-    for (x0, y0, x1, y1) in [(3.13, -5.54, 4.03, -5.5), (11.8, -5.66, 11.84, -6.55)]:
+    # la de la segunda suite entra en el vano hasta la mitad del muro: al ras, por la ranura con el marco se veía
+    # una línea de luz del pasillo de piso a techo
+    for (x0, y0, x1, y1) in [(3.13, -5.54, 4.03, -5.5), (11.8, -5.6, 11.84, -6.55)]:
         box('Puerta', x0, y1, 0, x1, y0, 2.2, M['blanco'], bevel=0.003)
 
     sky_and_sun()
     backdrop()
     portals()
+    if real:
+        import habitacion
+        habitacion.departamento()
     return sc
 
 
