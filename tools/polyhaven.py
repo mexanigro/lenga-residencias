@@ -68,6 +68,9 @@ for name, aid in AMBIENTCG.items():
 # fotos de los cuadros: recortes de panorámicas tonemapeadas de Poly Haven (CC0). La del lago de antes era de IA
 CUADROS = {'cuadro-lago.jpg': ('bell_park_pier', (5200, 1560, 1500, 900)),
            'cuadro-montana.jpg': ('champagne_castle_1', (1000, 1600, 1700, 922))}
+# panorámica de la vista por las ventanas: la usa tools/vista.py entera
+get(files('montorfano')['tonemapped']['url'], OUT / 'fotos' / 'montorfano.jpg')
+print('foto montorfano.jpg')
 for out, (hdri, (x, y, w, h)) in CUADROS.items():
     dest = OUT / 'fotos' / out
     if not dest.exists():

@@ -94,9 +94,9 @@ Pedido del humano: mejorar las almohadas de las dos suites y cada objeto y mater
 | Piel de oveja como un disco blanco; manta del sofá escondida | Objetos falsos | Se sacaron |
 | Planta debajo del vanitory | Puesta en el piso | Sobre la mesada |
 | Fotos de los cuadros (living y segunda suite) | La foto del lago mide 2752 × 1536, la medida de Nano Banana: casi seguro IA (regla 1) | Recortes de panorámicas de Poly Haven (CC0) |
+| Vista por las ventanas, de IA y lavada | La misma foto del lago | `tools/vista.py`: panorámica real de Poly Haven (montorfano, Lago Maggiore) con el lago renderizado en Cycles, que refleja las montañas |
 
 **Peso del recorrido** (20-nov-2026, quinta pasada): GLB de 17,7 MB, 590.000 triángulos. Antes del método eran 12,9 MB, con las telas sin agrupar llegó a 22,2 y el 19-nov quedó en 16,5; las cortinas con caída y el acolchado doblado sumaron 1,3 MB. Las almohadas, griferías, bacha y leña nuevas no lo cambiaron. Los créditos de ABO quedaron iguales a los 22 modelos que hay en la escena.
 
 **Abierto:**
-- La vista por las ventanas usa la misma foto del lago, casi seguro de IA (2752 × 1536): rompe la regla 1 en el sitio publicado. Se reemplaza con el trabajo del exterior, junto con la vista lavada.
 - Los difusores de los colgantes de la cocina se ven muy brillantes de abajo, aunque menos que antes.

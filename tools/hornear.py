@@ -1077,12 +1077,11 @@ def componer(sc, zona, cache, dest):
 
 def fondo_vista(sc, dest):
     """La foto del fondo pasa por el mismo manejo de color que en los panoramas (emisión × 1,6 → AgX)."""
-    p = ROOT / 'img' / 'originales' / 'vista-lago.jpg'
-    im = bpy.data.images.load(str(p), check_existing=True)
+    im = bpy.data.images.load(str(depto.VISTA), check_existing=True)
     a = srgb_a_lineal(leer(im)[..., :3]) * VISTA_FUERZA
     w = a.shape[1]
     if w > 4096:
-        raise SystemExit('vista-lago.jpg más ancha que 4096: hay que achicarla')
+        raise SystemExit(f'{depto.VISTA.name} más ancha que 4096: hay que achicarla')
     guardar(sc, a, dest / 'vista.webp', 85)
     # agua: el color de la franja de abajo de la foto, para que el plano del lago siga a la foto sin corte
     fila = a[: max(2, a.shape[0] // 30)].reshape(-1, 3).mean(0)

@@ -28,6 +28,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 # fuera del proyecto: las rutas de las texturas de Poly Haven superan el límite de 260 caracteres de Windows
 ASSETS = pathlib.Path(os.environ.get('LENGA3D', pathlib.Path(os.environ.get('LOCALAPPDATA', '~')) / 'lenga3d')).expanduser() / 'assets'
 OUT = ROOT / '3d' / 'out'
+# la vista por las ventanas: foto real (Poly Haven, CC0) con el lago renderizado, de tools/vista.py
+VISTA = ASSETS / 'fotos' / 'vista.jpg'
 DIMS = json.loads((ASSETS / 'tex' / 'dims.json').read_text())
 
 H = 2.75     # alto libre interior
@@ -1103,7 +1105,7 @@ def build(real=True):
         xx = 9.35 + i * 0.5
         box('Cómoda junta', xx - 0.002, -6.125, 0.14, xx + 0.002, -6.11, 0.72, M['sombra'])
     ph_model('ceramic_vase_02', 9.75, -5.9, height=0.3, z=0.74)
-    art3 = ROOT / 'img' / 'originales' / 'vista-lago.jpg'
+    art3 = ASSETS / 'fotos' / 'cuadro-montana.jpg'  # habitacion.cuadros() le ajusta el recorte
     if art3.exists():
         box('Marco suite 2', 9.6, -5.7, 1.1, 11.1, -5.66, 1.95, M['roble_osc'])
         o = box('Cuadro suite 2', 9.64, -5.705, 1.14, 11.06, -5.7, 1.91, photo_mat('Foto 3', art3))
@@ -1160,11 +1162,11 @@ def sky_and_sun(elev=11.0, azim=-48.0):
 
 
 def backdrop(radius=400.0):
-    """Vista del lago y la cordillera: foto panorámica de 180° en un cilindro lejano (espejada atrás)."""
-    p = ROOT / 'img' / 'originales' / 'vista-lago.jpg'
-    if not p.exists():
-        p = ROOT / 'img' / 'originales' / 'aerea-2.png'
-    im = bpy.data.images.load(str(p), check_existing=True)
+    """Vista del lago y la cordillera: foto panorámica de 180° en un cilindro lejano (espejada atrás). La foto es
+    VISTA, de tools/vista.py: alto lineal en tan(φ), con el horizonte en el medio, a la altura de los ojos."""
+    if not VISTA.exists():
+        raise SystemExit(f'Falta {VISTA}: correr tools/polyhaven.py y después tools/vista.py')
+    im = bpy.data.images.load(str(VISTA), check_existing=True)
     iw, ih = im.size
     span = math.pi  # la foto cubre 180°
     height = radius * span * ih / iw

@@ -1736,7 +1736,7 @@ def aparador_living():
     D.ph_model('ceramic_vase_01', 5.6, -5.3, height=0.34, z=0.62)
     D.ph_model('ceramic_vase_02', 5.85, -5.28, height=0.22, z=0.62)
     D.ph_model('decorative_book_set_01', 6.85, -5.3, rot=8, height=0.08, z=0.62)
-    foto = D.ROOT / 'img' / 'originales' / 'vista-lago.jpg'
+    foto = D.ASSETS / 'fotos' / 'cuadro-lago.jpg'  # cuadros() le ajusta el recorte
     if foto.exists():
         D.box('Marco living', 5.45, -5.54, 1.05, 7.05, -5.5, 2.05, mat('Madera tostada'), bevel=0.004)
         o = D.box('Cuadro living', 5.5, -5.501, 1.1, 7.0, -5.497, 2.0, D.photo_mat('Foto living', foto))
