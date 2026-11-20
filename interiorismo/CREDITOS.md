@@ -35,4 +35,5 @@ Modelos y materiales de dominio público de [Poly Haven](https://polyhaven.com) 
 
 - Modelos: ceramic_vase_01, ceramic_vase_02, ceramic_vase_03, ceramic_vase_04, decorative_book_set_01, folding_wooden_stool, grass_medium_01, outdoor_table_chair_set_01, planter_box_01, potted_plant_01, potted_plant_02, potted_plant_04, shrub_04, wooden_bowl_01, wooden_bowl_02
 - Cielo: overcast_soil_puresky (HDRI de Poly Haven)
-- Materiales: bath_stone, black_metal, firewood_logs, floor_wood_honey, floor_wood_plank_alt, granite_dark, knit_rust, leather_cognac, linen_natural, oak_slats, plaid_green, rug_weave, sheepskin_teddy, stone_ledge, stone_ledge_alt, terry_towel, tile_backsplash, wool_cream
+- Fotos de los cuadros: recortes de las panorámicas bell_park_pier y champagne_castle_1 (HDRI de Poly Haven, versión JPG)
+- Materiales: bark_brown_02, black_metal, floor_wood_honey, floor_wood_plank_alt, granite_dark, knit_rust, leather_cognac, linen_natural, oak_slats, plaid_green, rug_weave, stone_ledge, stone_ledge_alt, terry_towel, tile_backsplash, travertino_beige (Travertine001), travertino_crema (Travertine009), wool_cream

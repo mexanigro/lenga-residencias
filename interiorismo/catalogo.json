@@ -952,9 +952,9 @@
    ]
   },
   "firewood": {
-   "pick": "firewood_logs",
+   "pick": "bark_brown_02",
    "runner_up": "dead_tree_trunk",
-   "notes": "No firewood-stack model exists in the allowed sources.",
+   "notes": "Logs are scripted (habitacion.lena()): bark_brown_02 (Poly Haven, CC0) on the sides and procedural rings on the cut. The firewood_logs photo projected on cylinders read as stone.",
    "candidates": [
     {
      "id": "firewood_logs",

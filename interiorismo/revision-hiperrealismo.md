@@ -68,10 +68,35 @@ Cada falla se midió con rayos (`asentar()` imprime cuánto bajó cada pieza) y 
 
 **Regla corregida:** los 360° quedan a 1,55 m, a la altura del caminar libre (área 2 del método).
 
-**Peso del recorrido** (20-nov-2026): GLB de 17,8 MB, 586.000 triángulos. Antes del método eran 12,9 MB, con las telas sin agrupar llegó a 22,2 y el 19-nov quedó en 16,5; las cortinas con caída y el acolchado doblado suman 1,3 MB. Los créditos de ABO quedaron iguales a los 22 modelos que hay en la escena.
+## Quinta pasada: almohadas y objeto por objeto (20-nov-2026)
+
+Pedido del humano: mejorar las almohadas de las dos suites y cada objeto y material del departamento. Cada objeto se fotografió de cerca con la luz de la escena (`tools/render/objetos.py`, 135 fotos en `3d/out/objetos/`) y se comparó contra las tablas del método.
+
+| Se veía | Causa | Arreglo |
+|---|---|---|
+| Almohadas como bolsas o piedras | Cubo inflado de 12 cm: costados rectos | Dos paños cosidos, inflados a volumen fijo (las cuatro camas de almohadas) |
+| Almohadas colgadas o arrugadas | Freno del aire con 1 kg en miles de vértices; un paño atravesaba al otro | Un décimo de freno al caer y choque propio |
+| Paredes del baño con rayas de un píxel y marcas de lápiz | Foto de baldosas con juntas dibujadas, agrandada | Travertino en placas de 60 × 120 con junta hundida |
+| Piso y mesada del baño con líneas verdes | La piedra era una vereda con musgo | Travertino en 60 × 60 y mesada de una pieza |
+| Muro blanco entre la mesada y el espejo | La piedra no seguía detrás de las bachas | Salpicadero de travertino |
+| Toalla como chapa acanalada | Simulada desde una fila fija y encogida | Doblada sobre la barra, con franja lisa |
+| Bacha de la cocina como placa negra | Caja apoyada sobre la mesada | Hueco recto y bacha de acero bajo mesada |
+| Griferías como palos | Cilindros sin pico | Cuello de cisne en la cocina; monocomando con pico en el baño |
+| Ducha sin canilla, flor como tapa de olla | Faltaban; disco de 3 cm | Monocomando, flor de 8 mm y rejilla lineal |
+| Horno como una tele; anafe como placa negra | Vidrio solo | Manija de acero; zonas y controles serigrafiados |
+| Leños como piedra | Foto de una pila en cilindros de 12 caras | Corteza, anillos, veta en la cara partida y sección irregular; asentados uno sobre otro (había hasta 10 cm de aire) |
+| Caños de las griferías con vértices repetidos (auditoría) | Las tapas de la curva quedan sueltas al pasarla a malla | Soldadas |
+| Frascos del nicho como cilindros | Objetos simples | Dosificadores con bomba |
+| Asiento del banco manchado | Manchas y costura de la foto del cuero | Color parejo con 35 % del dibujo |
+| Colgantes como espejos curvos | Bronce a 0,25 | Bronce cepillado, 0,42 |
+| Piso como parquet de bloques | ±7 % por tabla sobre el ±5 % de la foto | ±3 % |
+| Cortinas como lamas vistas de costado | Pliegues iguales | Fondo y corrimiento por medio pliegue |
+| Piel de oveja como un disco blanco; manta del sofá escondida | Objetos falsos | Se sacaron |
+| Planta debajo del vanitory | Puesta en el piso | Sobre la mesada |
+| Fotos de los cuadros (living y segunda suite) | La foto del lago mide 2752 × 1536, la medida de Nano Banana: casi seguro IA (regla 1) | Recortes de panorámicas de Poly Haven (CC0) |
+
+**Peso del recorrido** (20-nov-2026, quinta pasada): GLB de 17,7 MB, 590.000 triángulos. Antes del método eran 12,9 MB, con las telas sin agrupar llegó a 22,2 y el 19-nov quedó en 16,5; las cortinas con caída y el acolchado doblado sumaron 1,3 MB. Las almohadas, griferías, bacha y leña nuevas no lo cambiaron. Los créditos de ABO quedaron iguales a los 22 modelos que hay en la escena.
 
 **Abierto:**
-- La foto del lago (ventanas y cuadros) puede ser de IA `[verificar]`: si lo es, rompe la regla 1. Entra con el trabajo del exterior.
-- Los colgantes de la cocina se ven muy brillantes de abajo, aunque menos que antes.
-- Las juntas finas del baño: líneas negras de un píxel, sin profundidad.
-- La vista por la ventana sigue lavada.
+- La vista por las ventanas usa la misma foto del lago, casi seguro de IA (2752 × 1536): rompe la regla 1 en el sitio publicado. Se reemplaza con el trabajo del exterior, junto con la vista lavada.
+- Los difusores de los colgantes de la cocina se ven muy brillantes de abajo, aunque menos que antes.

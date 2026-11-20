@@ -11,15 +11,17 @@ OUT = pathlib.Path(os.environ.get('LENGA3D', pathlib.Path(os.environ.get('LOCALA
 UA = {'User-Agent': 'lenga-portfolio-build/1.0'}
 
 TEXTURES = ['laminate_floor_02', 'white_oak_veneer', 'marble_01', 'long_white_tiles', 'wood_floor_deck',
-            'poly_wool_herringbone', 'rough_linen', 'white_plaster_02', 'smooth_concrete_floor', 'terrazzo_tiles']
+            'poly_wool_herringbone', 'rough_linen', 'white_plaster_02', 'smooth_concrete_floor', 'terrazzo_tiles',
+            'bark_brown_02']  # corteza de los leños del hogar
 MODELS = ['mid_century_lounge_chair', 'modern_arm_chair_01', 'potted_plant_04', 'potted_plant_01', 'potted_plant_02',
           'outdoor_table_chair_set_01', 'decorative_book_set_01', 'ceramic_vase_02', 'ceramic_vase_03',
           'wooden_bowl_01', 'side_table_01', 'throw_pillows_01', 'standing_picture_frame_01', 'planter_box_01',
           'grass_medium_01', 'shrub_04',  # pasto y arbusto para las jardineras del balcón
           'folding_wooden_stool']  # banco de la ducha: la caja de roble no aguantaba la mirada
 MAPS = ['Diffuse', 'Rough', 'nor_gl', 'arm']
-# ambientCG: nombre local -> id. Alfombra de lana tejida en canasta: la bereber lisa se leía como una placa gris
-AMBIENTCG = {'rug_weave': 'Carpet014'}
+# ambientCG: nombre local -> id. Alfombra de lana tejida en canasta: la bereber lisa se leía como una placa gris.
+# Travertinos sin juntas para el baño (las juntas las dibuja el material): la piedra de antes era una vereda con musgo
+AMBIENTCG = {'rug_weave': 'Carpet014', 'travertino_crema': 'Travertine009', 'travertino_beige': 'Travertine001'}
 ACG_MAPS = {'Color': 'Diffuse', 'Roughness': 'Rough', 'NormalGL': 'nor_gl', 'Displacement': 'disp'}
 
 
@@ -62,3 +64,17 @@ for name, aid in AMBIENTCG.items():
                         dest.mkdir(parents=True, exist_ok=True)
                         (dest / f'{v}.jpg').write_bytes(f.read(n))
     print('tex', name)
+
+# fotos de los cuadros: recortes de panorámicas tonemapeadas de Poly Haven (CC0). La del lago de antes era de IA
+CUADROS = {'cuadro-lago.jpg': ('bell_park_pier', (5200, 1560, 1500, 900)),
+           'cuadro-montana.jpg': ('champagne_castle_1', (1000, 1600, 1700, 922))}
+for out, (hdri, (x, y, w, h)) in CUADROS.items():
+    dest = OUT / 'fotos' / out
+    if not dest.exists():
+        from PIL import Image
+        Image.MAX_IMAGE_PIXELS = None
+        src = OUT / 'fotos' / f'{hdri}.jpg'
+        get(files(hdri)['tonemapped']['url'], src)
+        Image.open(src).convert('RGB').crop((x, y, x + w, y + h)).save(dest, quality=92)
+    print('foto', out)
+

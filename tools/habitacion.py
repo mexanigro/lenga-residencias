@@ -212,30 +212,86 @@ def terminar(o, material, grosor=0.008, arriba=False):
     o.data.materials.append(material)
 
 
-def almohada(nombre, ancho, alto, grueso, material, lugar, presion=2.0, encoge=0.03, vivo=None, rigidez=15, flexion=0.05):
-    """Almohada que se infla mientras cae sobre lo que ya hay en la cama (lugar: x, y, z, giro x, giro z en grados).
-    Antes se inflaba en el aire y se ubicaba girada: flotaba, rígida, y todas iguales.
-    vivo: material del cordón de la costura (almohadones y europeas); None, sin cordón.
-    rigidez, flexion: las de la tela al asentarse; el cuero necesita ~3 y ~40 veces más o se dobla como una
-    cartera vacía."""
-    bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 0))
-    o = bpy.context.object
-    o.name = nombre
-    o.data.transform(Matrix.Diagonal((ancho, alto, grueso, 1)))
-    bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.subdivide(number_cuts=19)  # 20 tramos: queda una fila de vértices justo en la costura
-    bpy.ops.object.mode_set(mode='OBJECT')
-    costura = o.vertex_groups.new(name='costura')
-    costura.add([v.index for v in o.data.vertices if abs(v.co.z) < 1e-5], 1.0, 'REPLACE')
+def panos(nombre, ancho, alto, paso=0.015, comba=0.012):
+    """Dos paños de tela cosidos por el borde, como se hace una almohada: una malla cerrada en el plano xy cuyos
+    vértices del borde son de los dos paños (la costura, grupo 'costura'). Los de adentro arrancan apenas abombados
+    para que el inflado empiece parejo."""
+    import bmesh
+    nx, ny = max(4, round(ancho / paso)), max(4, round(alto / paso))
+    bm, vs = bmesh.new(), {}
+
+    def v(i, j, s):
+        borde = i in (0, nx) or j in (0, ny)
+        k = (i, j, 0 if borde else s)
+        if k not in vs:
+            x, y = (i / nx - 0.5) * ancho, (j / ny - 0.5) * alto
+            vs[k] = bm.verts.new((x, y, 0 if borde else s * comba * (1 - (2 * x / ancho) ** 2) * (1 - (2 * y / alto) ** 2)))
+        return vs[k]
+    for s in (1, -1):
+        for i in range(nx):
+            for j in range(ny):
+                q = [v(i, j, s), v(i + 1, j, s), v(i + 1, j + 1, s), v(i, j + 1, s)]
+                bm.faces.new(q if s > 0 else q[::-1])
+    bm.verts.index_update()
+    borde = [vv.index for k, vv in vs.items() if k[2] == 0]
+    me = bpy.data.meshes.new(nombre)
+    bm.to_mesh(me)
+    bm.free()
+    o = bpy.data.objects.new(nombre, me)
+    sc().collection.objects.link(o)
+    o.vertex_groups.new(name='costura').add(borde, 1.0, 'REPLACE')
+    return o
+
+
+TELA_ALMOHADA = dict(tension=30, compresion=20, corte=12, flexion=1.0, volumen=0.32, presion=3.0, propia=True)
+
+
+def inflar(o, frames, gravedad, volumen, encoge=0.0, calidad=8, tela=None):
+    """Tela cerrada que se infla hasta `volumen` (m³) y no se estira: tracción alta, compresión y flexión bajas,
+    así sobra tela donde la presión no llega (esquinas, costura) y se arruga como una funda. 1 kg en total."""
+    cl = o.modifiers.new('tela', 'CLOTH')
+    s = cl.settings
+    s.quality = calidad
+    s.mass = 1.0 / len(o.data.vertices)
+    t = {**TELA_ALMOHADA, **(tela or {})}
+    s.tension_stiffness, s.compression_stiffness = t['tension'], t['compresion']
+    s.shear_stiffness, s.bending_stiffness = t['corte'], t['flexion']
+    s.shrink_min = encoge
+    s.effector_weights.gravity = gravedad
+    # freno del aire: con 1 kg repartido en miles de vértices, el de Blender (1) les da una velocidad límite de
+    # centímetros por segundo y al caer la almohada quedaba colgada en el aire. Sin freno, al inflarse contra las
+    # otras salía despedida. Freno pleno mientras se infla (sin peso) y un décimo al caer
+    s.air_damping = 1.0 if gravedad == 0 else 0.1
+    s.use_pressure, s.use_pressure_volume = True, True
+    s.target_volume, s.pressure_factor, s.uniform_pressure_force = volumen, t['presion'], 0.0
+    c = cl.collision_settings
+    c.collision_quality, c.distance_min = 4, 0.004
+    c.use_self_collision, c.self_distance_min = t['propia'], 0.003  # sin esto, acostada, un paño atraviesa al otro
+    cl.point_cache.frame_start, cl.point_cache.frame_end = 1, frames
+    sc().frame_start, sc().frame_end = 1, frames
+    for f in range(1, frames + 1):
+        sc().frame_set(f)
+    bpy.ops.object.select_all(action='DESELECT')
+    o.select_set(True)
+    bpy.context.view_layer.objects.active = o
+    bpy.ops.object.modifier_apply(modifier='tela')
+    sc().frame_set(1)
+
+
+def almohada(nombre, ancho, alto, grueso, material, lugar, vivo=None, encoge=0.02, paso=0.015, tela=None):
+    """Almohada de dos paños cosidos que se infla en su lugar y después cae sobre lo que ya hay en la cama (lugar: x,
+    y, z, giro x, giro z en grados). grueso: el alto que toma en el centro; se infla al volumen de una lente de ese
+    alto (0,45 del prisma), no hasta reventar. Antes era un cubo inflado de 12 cm: los costados quedaban rectos y la
+    almohada se leía como una piedra; con dos paños la costura queda filosa y las esquinas hacen orejas.
+    vivo: material del cordón de la costura (almohadones y europeas); None, sin cordón. tela: cambios a TELA_ALMOHADA."""
+    o = panos(nombre, ancho, alto, paso)
     x, y, z, rx, rz = lugar
     # coordenadas del mundo en la malla y el objeto en el origen (ver plano())
     o.data.transform(Matrix.Translation((x, y, z)) @ Matrix.Rotation(math.radians(rz), 4, 'Z')
                      @ Matrix.Rotation(math.radians(rx), 4, 'X'))
-    # se infla sin peso, en su lugar; después se asienta con el peso real (~1 kg) sin perder el relleno
-    # (el inflado es siempre de tela: con la rigidez del cuero no se infla y queda doblado)
-    simular(o, 14, gravedad=0.0, presion=presion, calidad=6, rigidez=15, flexion=0.05, encoge=encoge, propia=False)
-    simular(o, 40, gravedad=1.0, presion=0.3, calidad=6, rigidez=rigidez, flexion=flexion, propia=False,
-            masa=1.0 / len(o.data.vertices))
+    vol = TELA_ALMOHADA['volumen'] * ancho * alto * grueso
+    inflar(o, 30, 0.0, vol, encoge=encoge, tela=tela)  # sin peso, en su lugar
+    inflar(o, 40, 1.0, vol, tela=tela)  # con su kilo, se asienta sin perder el relleno
     o.modifiers.new('choque', 'COLLISION')  # la que cae después se apoya en esta
     o.collision.thickness_outer = 0.004
     o.collision.cloth_friction = 40
@@ -464,15 +520,15 @@ def ropa(cx=CAMA_X, fondo=PARED_Y + 0.11, pie=PARED_Y + 0.11 + 2.12, ancho=2.0, 
     # acolchado y se ve una franja de sábana en sombra debajo, como si flotaran. Así el borde de abajo de las de
     # dormir apoya en la sábana, justo antes del doblez del acolchado (que empieza a 55 cm del respaldo)
     for i, s in enumerate((-1, 1)):
-        almohada(f'Europea{sufijo} {i}', 0.65, 0.65, 0.12, blanco, (cx + s * 0.40 * k, fondo + 0.14, z + 0.35, -82, s * 2),
+        almohada(f'Europea{sufijo} {i}', 0.65, 0.65, 0.18, blanco, (cx + s * 0.40 * k, fondo + 0.14, z + 0.35, -82, s * 2),
                  vivo=blanco)
     for i, s in enumerate((-1, 1)):
-        almohada(f'Almohada{sufijo} {i}', 0.74, 0.5, 0.13, blanco, (cx + s * 0.42 * k, fondo + 0.45, z + 0.27, -55, -s * 3),
-                 encoge=0.0)  # funda floja: arrugas
+        almohada(f'Almohada{sufijo} {i}', 0.72, 0.5, 0.20, blanco, (cx + s * 0.42 * k, fondo + 0.45, z + 0.27, -55, -s * 3))
     # un solo almohadón, de lino, sobre el doblez del acolchado: el de cuero se leía como una piedra y el escocés,
     # parado en una punta, sobraba
-    almohada(f'Lumbar{sufijo}', 0.55, 0.32, 0.11, mat(lumbar), (cx + 0.04, fondo + 0.70, z + 0.26, -66, 2),
-             vivo=mat(lumbar))
+    # alargado, con corte 12 y flexión 1 se retorcía en diagonal (una esquina hundida como un pellizco)
+    almohada(f'Lumbar{sufijo}', 0.55, 0.32, 0.16, mat(lumbar), (cx + 0.02, fondo + 0.76, z + 0.24, -62, 2),
+             vivo=mat(lumbar), tela=dict(corte=30, flexion=3.0))
     bpy.data.objects.remove(choque)
     print('ROPA LISTA', sufijo)
 
@@ -681,10 +737,11 @@ def superficies():
 
 
 def piso(ancho=0.185, largo=1.9, junta=0.0008):
-    """Piso de tablas de 18,5 × 190 cm: cada tabla toma otro pedazo de la foto, ±7 % de tono y ±10 % de rugosidad, con
+    """Piso de tablas de 18,5 × 190 cm: cada tabla toma otro pedazo de la foto, ±3 % de tono y ±5 % de rugosidad, con
     una junta oscura de menos de 1 mm y un bisel de 2 mm. La foto sola traía tablas de 9 cm con juntas casi
     invisibles y repartidas a intervalos irregulares: el piso se leía como una sola superficie. Se agranda al doble
-    y sus juntas quedan como vetas dentro de cada tabla. Las tablas corren a lo largo de x, hacia las ventanas."""
+    y sus juntas quedan como vetas dentro de cada tabla. Las tablas corren a lo largo de x, hacia las ventanas.
+    Con ±7 % de tono, sumado al de la foto (±5 %), el piso se leía como un parquet de bloques."""
     m = mat('Piso madera miel')
     N, L = m.node_tree.nodes, m.node_tree.links
     if any(n.name == 'Tablas' for n in N):
@@ -736,7 +793,7 @@ def piso(ancho=0.185, largo=1.9, junta=0.0008):
     canto = op('MINIMUM', dx, dy)
     hs = N.new('ShaderNodeHueSaturation')
     L.new(b.inputs['Base Color'].links[0].from_socket, hs.inputs['Color'])
-    L.new(op(None, rgb.outputs['Red'], rango=(0, 1, 0.93, 1.07)), hs.inputs['Value'])
+    L.new(op(None, rgb.outputs['Red'], rango=(0, 1, 0.97, 1.03)), hs.inputs['Value'])
     oscuro = N.new('ShaderNodeMix')
     oscuro.data_type, oscuro.blend_type = 'RGBA', 'MULTIPLY'
     oscuro.inputs[7].default_value = (0.45, 0.45, 0.45, 1)
@@ -744,7 +801,7 @@ def piso(ancho=0.185, largo=1.9, junta=0.0008):
     L.new(hs.outputs['Color'], oscuro.inputs[6])
     L.new(oscuro.outputs[2], b.inputs['Base Color'])
     rs = b.inputs['Roughness'].links[0].from_socket
-    L.new(op('MULTIPLY', rs, op(None, rgb.outputs['Green'], rango=(0, 1, 0.9, 1.1))), b.inputs['Roughness'])
+    L.new(op('MULTIPLY', rs, op(None, rgb.outputs['Green'], rango=(0, 1, 0.95, 1.05))), b.inputs['Roughness'])
     bump = N.new('ShaderNodeBump')  # bisel de 2 mm en el canto de cada tabla
     bump.inputs['Strength'].default_value = 0.5
     bump.inputs['Distance'].default_value = 0.0008
@@ -753,6 +810,114 @@ def piso(ancho=0.185, largo=1.9, junta=0.0008):
         L.new(b.inputs['Normal'].links[0].from_socket, bump.inputs['Normal'])
     L.new(bump.outputs['Normal'], b.inputs['Normal'])
     L.new(bump.outputs['Normal'], b.inputs['Coat Normal'])
+
+
+def losas(nombre, tex, ancho, alto, pared, lum, tam=1.0, junta=0.002, color_junta=(0.42, 0.39, 0.34), pieza=False):
+    """Piedra en placas de ancho × alto (m) con junta de `junta` m, hundida, de color_junta. El material `nombre` se
+    rehace entero con la foto `tex` (sin juntas: ambientCG Travertine), que cubre `tam` m. Cada placa toma otro pedazo
+    de la foto y ±4 % de tono. pared: placas en el plano vertical (x + y, z); si no, en el piso (x, y). lum: luminancia
+    media buscada, lineal. pieza: una sola placa, sin juntas (una mesada). La foto de antes traía las juntas dibujadas:
+    agrandada, eran rayas negras de un píxel, y su piedra era una vereda con musgo en las juntas."""
+    m = mat(nombre) or bpy.data.materials.new(nombre)
+    m.use_nodes = True
+    N, L = m.node_tree.nodes, m.node_tree.links
+    N.clear()
+    b = N.new('ShaderNodeBsdfPrincipled')
+    L.new(b.outputs[0], N.new('ShaderNodeOutputMaterial').inputs[0])
+
+    def op(tipo, a, c=None):
+        n = N.new('ShaderNodeMath')
+        n.operation = tipo
+        for i, v in enumerate((a, c)):
+            if isinstance(v, (int, float)):
+                n.inputs[i].default_value = v
+            elif v is not None:
+                L.new(v, n.inputs[i])
+        return n.outputs[0]
+
+    def rango(v, a, c, d, e):
+        n = N.new('ShaderNodeMapRange')
+        for k, x in zip(('From Min', 'From Max', 'To Min', 'To Max'), (a, c, d, e)):
+            n.inputs[k].default_value = x
+        L.new(v, n.inputs['Value'])
+        return n.outputs['Result']
+
+    p = N.new('ShaderNodeSeparateXYZ')
+    L.new(N.new('ShaderNodeNewGeometry').outputs['Position'], p.inputs[0])
+    h, v = (op('ADD', p.outputs['X'], p.outputs['Y']), p.outputs['Z']) if pared else (p.outputs['X'], p.outputs['Y'])
+    fh, fv = op('DIVIDE', h, ancho), op('DIVIDE', v, alto)
+    cid = N.new('ShaderNodeCombineXYZ')
+    L.new(op('FLOOR', fh), cid.inputs[0])
+    L.new(op('FLOOR', fv), cid.inputs[1])
+    azar = N.new('ShaderNodeTexWhiteNoise')
+    L.new(cid.outputs[0], azar.inputs['Vector'])
+    uv = N.new('ShaderNodeCombineXYZ')  # en el piso se suma z: los cantos de una mesada no quedan rayados
+    L.new(op('DIVIDE', h if pared else op('ADD', h, p.outputs['Z']), tam), uv.inputs[0])
+    L.new(op('DIVIDE', v if pared else op('ADD', v, p.outputs['Z']), tam), uv.inputs[1])
+    corre = N.new('ShaderNodeVectorMath')
+    corre.operation = 'MULTIPLY_ADD'
+    corre.inputs[1].default_value = (0, 0, 0) if pieza else (7.3, 3.1, 0.0)
+    L.new(azar.outputs['Color'], corre.inputs[0])
+    L.new(uv.outputs[0], corre.inputs[2])
+
+    def img(fn, data):
+        n = N.new('ShaderNodeTexImage')
+        n.image = bpy.data.images.load(str(D.ASSETS / 'tex' / tex / fn), check_existing=True)
+        if data:
+            n.image.colorspace_settings.name = 'Non-Color'
+        L.new(corre.outputs[0], n.inputs[0])
+        return n
+    dif = img('Diffuse.jpg', False)
+    media, _ = albedo(dif.image)
+    k = lum / float(media @ np.array([0.2126, 0.7152, 0.0722]))
+    rgb = N.new('ShaderNodeSeparateColor')
+    L.new(azar.outputs['Color'], rgb.inputs[0])
+    tono = N.new('ShaderNodeMix')
+    tono.data_type, tono.blend_type = 'RGBA', 'MULTIPLY'
+    tono.inputs[0].default_value = 1
+    L.new(dif.outputs[0], tono.inputs[6])
+    g = rango(rgb.outputs['Red'], 0, 1, 0.96 * k, 1.04 * k)
+    gc = N.new('ShaderNodeCombineColor')
+    for i in range(3):
+        L.new(g, gc.inputs[i])
+    L.new(gc.outputs[0], tono.inputs[7])
+    # distancia al borde de la placa, en metros
+    dx = op('MULTIPLY', op('MINIMUM', op('FRACT', fh), op('SUBTRACT', 1.0, op('FRACT', fh))), ancho)
+    dy = op('MULTIPLY', op('MINIMUM', op('FRACT', fv), op('SUBTRACT', 1.0, op('FRACT', fv))), alto)
+    canto = op('ADD', op('MINIMUM', dx, dy), 1.0 if pieza else 0.0)  # una pieza: siempre lejos de una junta
+    en_junta = rango(canto, junta * 0.4, junta * 0.6, 1, 0)
+    col = N.new('ShaderNodeMix')
+    col.data_type = 'RGBA'
+    L.new(en_junta, col.inputs[0])
+    L.new(tono.outputs[2], col.inputs[6])
+    col.inputs[7].default_value = (*color_junta, 1)
+    L.new(col.outputs[2], b.inputs['Base Color'])
+    rug = img('Rough.jpg', True)  # apomazada: sin capa de pulido (la tira del espejo se reflejaba como una raya)
+    L.new(op('MAXIMUM', rango(rug.outputs[0], 0, 1, 0.3, 0.75), en_junta), b.inputs['Roughness'])
+    relieve = N.new('ShaderNodeBump')
+    relieve.inputs['Strength'].default_value, relieve.inputs['Distance'].default_value = 0.25, 0.0006
+    L.new(img('disp.jpg', True).outputs[0], relieve.inputs['Height'])
+    bisel = N.new('ShaderNodeBump')  # la junta 1 mm más honda, con el canto apenas redondeado
+    bisel.inputs['Strength'].default_value, bisel.inputs['Distance'].default_value = 0.6, 0.001
+    L.new(rango(canto, junta * 0.5, junta * 0.5 + 0.0015, 0, 1), bisel.inputs['Height'])
+    L.new(relieve.outputs['Normal'], bisel.inputs['Normal'])
+    L.new(bisel.outputs['Normal'], b.inputs['Normal'])
+    print(f'LOSAS {nombre}: {tex}, ganancia {k:.2f}')
+    return m
+
+
+def piedras_bano():
+    """Paredes de travertino crema en placas de 60 × 120 (paradas), piso de travertino beige en 60 × 60 y la mesada
+    del vanitory de una pieza. La mesa ratona y la base de los veladores de catálogo usaban la misma «Piedra baño»."""
+    cal = losas('Caliza baño', 'travertino_crema', 0.6, 1.2, True, 0.55)
+    # entre la mesada y el espejo el muro quedaba con la pintura blanca: la piedra sigue detrás de las bachas
+    borrar([c for o in raices('Salpicadero baño', BANO) for c in hijos(o)])
+    D.box('Salpicadero baño', 5.2, -7.94, 0.86, 7.3, -7.93, 1.05, cal)
+    losas('Piedra baño', 'travertino_beige', 0.6, 0.6, False, 0.42)
+    mesada = losas('Mesada baño', 'travertino_beige', 1, 1, False, 0.42, pieza=True)
+    for o in sc().objects:
+        if o.name.startswith('Vanitory tapa'):
+            o.data.materials[0] = mesada
 
 
 def banco():
@@ -772,6 +937,7 @@ def banco():
                                              size=0.6, rough=0.45)
     # el relieve de la foto a fuerza 1 arrugaba el asiento como papel; un cuero de tapicería es casi liso
     next(n for n in cuero.node_tree.nodes if n.type == 'NORMAL_MAP').inputs['Strength'].default_value = 0.35
+    parejo(cuero, (0.22, 0.105, 0.045), 0.35)
     # chato, bordes redondeados y una comba de 2 cm al centro (la almohada inflada parecía eso)
     bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 0))
     asiento = bpy.context.object
@@ -791,6 +957,28 @@ def banco():
     asiento.data.materials.append(cuero)
     poner(asiento, (x0 + x1) / 2, (y0 + y1) / 2, alto - 0.11 + t / 2)
     print('BANCO LISTO')
+
+
+def parejo(m, color, trama):
+    """Color medio `color` (lineal) y solo `trama` (0..1) del dibujo de la foto. La foto del cuero coñac trae manchas
+    claras y la costura de dos cueros: en el asiento del banco se leían como un cuero gastado y sucio."""
+    N, L = m.node_tree.nodes, m.node_tree.links
+    if any(n.name == 'Parejo' for n in N):
+        return
+    b = next(n for n in N if n.type == 'BSDF_PRINCIPLED')
+    tex = next(n for n in N if n.type == 'TEX_IMAGE' and n.image.colorspace_settings.name != 'Non-Color')
+    media, _ = albedo(tex.image)
+    k = N.new('ShaderNodeMix')
+    k.data_type, k.blend_type = 'RGBA', 'MULTIPLY'
+    k.inputs[0].default_value = 1
+    L.new(tex.outputs[0], k.inputs[6])
+    k.inputs[7].default_value = (*(np.array(color) / media), 1)
+    p = N.new('ShaderNodeMix')
+    p.name, p.data_type = 'Parejo', 'RGBA'
+    p.inputs[0].default_value = trama
+    p.inputs[6].default_value = (*color, 1)
+    L.new(k.outputs[2], p.inputs[7])
+    L.new(p.outputs[2], b.inputs['Base Color'])
 
 
 def alfombra():
@@ -910,13 +1098,25 @@ def cortina(nombre, a, b, m, onda=0.09, hondo=0.10, paso=0.012, filas=54):
     z1, z0 = D.H - 0.035, 0.015
     random.seed(sum(map(ord, nombre)))
     ph = [random.uniform(0, 2 * math.pi) for _ in range(3)]
+    # cada medio pliegue con su fondo (±35 %) y corrido (±18 % de la onda): arriba los carros del riel los tienen
+    # parejos y hacia abajo se desordenan. Con todos iguales, vista de costado se leía como una cortina de lamas
+    nk = int(largo / (lam / 2)) + 3
+    ka = [random.uniform(0.65, 1.35) for _ in range(nk)]
+    kc = [random.uniform(-0.18, 0.18) for _ in range(nk)]
+
+    def suave(vals, t):
+        x = t / (lam / 2)
+        k = min(int(x), nk - 2)
+        f = (1 - math.cos(math.pi * (x - k))) / 2
+        return vals[k] * (1 - f) + vals[k + 1] * f
     vs = []
     for i in range(filas + 1):
         u = i / filas  # 0 arriba, 1 en el ruedo
         for t in tj:
             fondo = 1 + u * (0.15 + 0.12 * math.sin(2 * math.pi * t / (2.7 * lam) + ph[0])
                              + 0.08 * math.sin(2 * math.pi * t / (1.3 * lam) + ph[1]))
-            tt = t + u * 0.12 * lam * math.sin(2 * math.pi * t / (3.4 * lam) + ph[2])
+            fondo *= 1 + (suave(ka, t) - 1) * (0.35 + 0.65 * u)
+            tt = t + u * 0.12 * lam * math.sin(2 * math.pi * t / (3.4 * lam) + ph[2]) + u * lam * suave(kc, t)
             q = a + d * t + nrm * (A * math.sin(2 * math.pi * tt / lam) * fondo)
             vs.append((q.x, q.y, z1 - u * (z1 - z0)))
     w = nc + 1
@@ -1039,21 +1239,80 @@ def bacha(x, y, z, r=0.2, h=0.14):
     return o
 
 
-def toalla():
-    """Toalla de rizo colgando del toallero, simulada: la de antes era una caja. Queda fija solo la fila de arriba,
-    la que apoya sobre la barra."""
+def toalla(x0=5.27, x1=5.68, yc=-5.725, arriba=1.22, adelante=0.80, atras=0.86, r=0.029, grosor=0.007):
+    """Toalla de rizo doblada sobre el toallero (barra de 5 cm en yc, con su cara de arriba en `arriba`): la capa de
+    adelante cuelga hasta `adelante` y la de atrás un poco menos, con la vuelta redonda sobre la barra, ondas suaves
+    y una franja tejida lisa cerca de cada punta. Simulada desde una fila fija y encogida se arrugaba en estrías
+    parejas, como una chapa acanalada; una toalla de rizo es gruesa y cuelga casi lisa."""
     borrar([c for o in raices('Toalla', BANO) for c in hijos(o)])
     rizo = mat('Toalla rizo') or D.pbr('Toalla rizo', D.tx('terry_towel', 'rough_linen'), size=0.25,
                                        tint=(0.8, 0.78, 0.74, 1.9), sheen=0.6, rough=0.95, nstr=1.5)
     ajustar_albedo(rizo, (0.78, 0.76, 0.72))
-    x0, x1, y, z0, z1 = 5.27, 5.68, -5.765, 0.76, 1.235
-    t = plano('Toalla', x0, x1, z0, z1, 0, 40, 46, amp=0.0)
-    for v in t.data.vertices:  # el plano nace horizontal: se para en x-z, delante de la barra
-        v.co.y, v.co.z = y + 0.004 * math.sin(v.co.x * 41) * math.sin(v.co.y * 23), v.co.y
-    g = t.vertex_groups.new(name='pin')
-    g.add([v.index for v in t.data.vertices if v.co.z > z1 - 0.012], 1.0, 'REPLACE')
-    simular(t, 30, calidad=8, encoge=0.03, pin=True)
-    terminar(t, rizo, grosor=0.006)
+    franja(rizo)
+    zc = arriba + grosor / 2 - r
+    largo_f, largo_v, largo_a = zc - adelante, math.pi * r, zc - atras
+    total, nx = largo_f + largo_v + largo_a, 28
+    ns = round(total / 0.01)
+    random.seed(11)
+    ph = [random.uniform(0, 2 * math.pi) for _ in range(4)]
+    vs, marca = [], []
+    for j in range(ns + 1):
+        s = total * j / ns
+        for i in range(nx + 1):
+            u = i / nx
+            x = x0 + u * (x1 - x0)
+            # ondas: nada sobre la barra, hasta ~5 mm abajo; la punta apenas se abre
+            if s < largo_f:
+                h = (largo_f - s) / largo_f
+            elif s > largo_f + largo_v:
+                h = (s - largo_f - largo_v) / largo_a
+            else:
+                h = 0.0
+            onda = h ** 1.5 * (0.004 * math.sin(2 * math.pi * 1.4 * u + ph[0] + 3 * h)
+                               + 0.002 * math.sin(2 * math.pi * 3.1 * u + ph[1]))
+            onda += h ** 3 * 0.004 * (2 * u - 1) ** 2  # los costados de la punta se despegan
+            if s < largo_f:  # adelante, mirando al baño
+                y, z = yc - r - onda, zc - (largo_f - s)
+            elif s > largo_f + largo_v:
+                y, z = yc + r + onda, zc - (s - largo_f - largo_v)
+            else:
+                a = (s - largo_f) / r
+                y, z = yc - r * math.cos(a), zc + r * math.sin(a)
+            vs.append((x, y, z))
+            d = min(s, total - s)
+            marca.append(1.0 if 0.045 < d < 0.085 else 0.0)
+    w = nx + 1
+    caras = [(j * w + i, j * w + i + 1, (j + 1) * w + i + 1, (j + 1) * w + i) for j in range(ns) for i in range(nx)]
+    me = bpy.data.meshes.new('Toalla')
+    me.from_pydata(vs, [], caras)
+    at = me.attributes.new('franja', 'FLOAT', 'POINT')
+    at.data.foreach_set('value', marca)
+    t = bpy.data.objects.new('Toalla', me)
+    sc().collection.objects.link(t)
+    bpy.context.view_layer.objects.active = t
+    terminar(t, rizo, grosor=grosor)
+    t.modifiers['grosor'].offset = 0.0
+
+
+def franja(m):
+    """Franja tejida lisa de la toalla (atributo 'franja' de la malla): menos rizo, un poco más oscura y menos áspera."""
+    N, L = m.node_tree.nodes, m.node_tree.links
+    if any(n.name == 'Franja' for n in N):
+        return
+    b = next(n for n in N if n.type == 'BSDF_PRINCIPLED')
+    at = N.new('ShaderNodeAttribute')
+    at.name, at.attribute_name = 'Franja', 'franja'
+    col = N.new('ShaderNodeMix')
+    col.data_type, col.blend_type = 'RGBA', 'MULTIPLY'
+    L.new(at.outputs['Fac'], col.inputs[0])
+    L.new(b.inputs['Base Color'].links[0].from_socket, col.inputs[6])
+    col.inputs[7].default_value = (0.9, 0.89, 0.87, 1)
+    L.new(col.outputs[2], b.inputs['Base Color'])
+    nm = next(n for n in N if n.type == 'NORMAL_MAP')
+    menos = N.new('ShaderNodeMapRange')
+    menos.inputs['To Min'].default_value, menos.inputs['To Max'].default_value = nm.inputs['Strength'].default_value, 0.3
+    L.new(at.outputs['Fac'], menos.inputs['Value'])
+    L.new(menos.outputs['Result'], nm.inputs['Strength'])
 
 
 def nicho():
@@ -1071,8 +1330,362 @@ def nicho():
     D.box('Nicho luz', x0 + 0.004, y0 + 0.01, z1 - 0.008, x1 - 0.01, y1 - 0.01, z1 - 0.002, luz)
     # del lado del baño 2 el hueco del tabique se tapa con la pared (por la puerta de la segunda suite se veía)
     D.box('Nicho tapa', 7.452, y0 - 0.02, z0 - 0.02, 7.462, y1 + 0.02, z1 + 0.02, mat('Pared'))
-    for (yy, h, r) in ((-6.42, 0.19, 0.028), (-6.33, 0.15, 0.025)):
-        D.cyl('Nicho frasco', 7.37, yy, z0, z0 + h, r, mat('Cerámica'), bevel=0.004)
+    for (yy, h, r) in ((-6.42, 0.19, 0.027), (-6.33, 0.15, 0.024)):
+        frasco(7.366, yy, z0, h, r, mat('Cerámica'), mat('Metal negro'))
+
+
+COCINA = ((7.6, -5.6), (13.0, 0.0))
+
+
+def tubo(nombre, puntos, radio, material):
+    """Caño redondo por los puntos (polilínea densa), con tapas, ya pasado a malla (el horneado toma solo mallas)."""
+    cu = bpy.data.curves.new(nombre, 'CURVE')
+    cu.dimensions = '3D'
+    sp = cu.splines.new('POLY')
+    sp.points.add(len(puntos) - 1)
+    for p, q in zip(sp.points, puntos):
+        p.co = (*q, 1)
+    cu.bevel_depth, cu.bevel_resolution, cu.use_fill_caps = radio, 4, True
+    o = bpy.data.objects.new(nombre, cu)
+    sc().collection.objects.link(o)
+    o.data.materials.append(material)
+    bpy.ops.object.select_all(action='DESELECT')
+    o.select_set(True)
+    bpy.context.view_layer.objects.active = o
+    bpy.ops.object.convert(target='MESH')
+    import bmesh
+    bm = bmesh.new()  # las tapas de la curva quedan sueltas: se sueldan (el decimado del horneado necesita mallas sanas)
+    bm.from_mesh(o.data)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+    bm.to_mesh(o.data)
+    bm.free()
+    bpy.ops.object.shade_smooth()
+    return o
+
+
+def arco(c, r, a0, a1, plano='yz', n=24):
+    """Puntos de un arco de centro c y radio r entre los ángulos a0 y a1 (grados), en el plano dado."""
+    out = []
+    for i in range(n + 1):
+        a = math.radians(a0 + (a1 - a0) * i / n)
+        d = Vector((0, math.cos(a), math.sin(a))) if plano == 'yz' else Vector((math.cos(a), 0, math.sin(a)))
+        out.append(tuple(Vector(c) + r * d))
+    return out
+
+
+def acero():
+    m = mat('Acero cepillado') or D.pbr('Acero cepillado', color=(0.62, 0.61, 0.59), rough=0.3, metal=1.0)
+    m['metal'] = 1  # el horneado lo toma como metal
+    return m
+
+
+def griferias():
+    """Bacha de la cocina con hueco (era una placa negra apoyada sobre la mesada), grifería de cuello de cisne y
+    griferías de las bachas del baño con su pico y su palanca (eran palos negros sin pico)."""
+    negro = mat('Metal negro')
+    borrar([c for o in raices(('Bacha', 'Grifería'), COCINA) + raices('Grifería', BANO) for c in hijos(o)])
+    yb = -5.6 + 0.06
+    x0, x1, y0, y1, z, hondo = 10.57, 11.23, yb + 0.12, yb + 0.50, 0.88, 0.2
+    import bmesh
+
+    def caja(a, b, c, d, e, f, radio=0.0):
+        bm = bmesh.new()
+        bmesh.ops.create_cube(bm, size=1.0)
+        bmesh.ops.scale(bm, vec=(b - a, d - c, f - e), verts=bm.verts)
+        bmesh.ops.translate(bm, vec=((a + b) / 2, (c + d) / 2, (e + f) / 2), verts=bm.verts)
+        if radio:
+            bmesh.ops.bevel(bm, geom=[x for x in bm.edges if abs(x.verts[0].co.z - x.verts[1].co.z) > 1e-4],
+                            offset=radio, segments=3, affect='EDGES')
+        return bm
+    # el hueco en la mesada, recto y 3 mm más chico que la bacha (bajo mesada, la piedra pisa el borde), y un
+    # bolsillo en el bajo mesada, que es un bloque macizo hasta la mesada: sin él, por el hueco se veía la tapa verde
+    # del mueble y la bacha quedaba adentro. Primero se aplica el bisel de cada pieza; las esquinas redondeadas en
+    # la piedra salían escalonadas
+    for nombre, cuanto, (za, zb) in (('Mesada', 0.003, (z - 0.05, z + 0.12)),
+                                     ('Bajo mesada', -0.002, (z - hondo - 0.01, z + 0.12))):
+        pieza = next(o for o in raices(nombre, COCINA))
+        bpy.ops.object.select_all(action='DESELECT')
+        pieza.select_set(True)
+        bpy.context.view_layer.objects.active = pieza
+        for md in list(pieza.modifiers):
+            bpy.ops.object.modifier_apply(modifier=md.name)
+        bm = caja(x0 + cuanto, x1 - cuanto, y0 + cuanto, y1 - cuanto, za, zb)
+        me = bpy.data.meshes.new('Hueco')
+        bm.to_mesh(me)
+        bm.free()
+        hueco = bpy.data.objects.new('Hueco', me)
+        sc().collection.objects.link(hueco)
+        bo = pieza.modifiers.new('hueco', 'BOOLEAN')
+        bo.object, bo.operation, bo.solver = hueco, 'DIFFERENCE', 'EXACT'
+        bpy.ops.object.modifier_apply(modifier='hueco')
+        bpy.data.objects.remove(hueco)
+    # la bacha de acero: caja abierta arriba, esquinas de 1 cm y fondo redondeado
+    bm = caja(x0, x1, y0, y1, z - hondo, z, radio=0.01)
+    bm.normal_update()
+    bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.normal.z > 0.9], context='FACES')
+    bmesh.ops.bevel(bm, geom=[e for e in bm.edges if e.is_manifold and abs(e.verts[0].co.z - e.verts[1].co.z) < 1e-4
+                              and e.verts[0].co.z < z - hondo + 1e-3], offset=0.012, segments=3, affect='EDGES')
+    me = bpy.data.meshes.new('Bacha')
+    bm.to_mesh(me)
+    bm.free()
+    ba = bpy.data.objects.new('Bacha', me)
+    sc().collection.objects.link(ba)
+    ac = acero()
+    ba.data.materials.append(ac)
+    so = ba.modifiers.new('chapa', 'SOLIDIFY')
+    so.thickness, so.offset = 0.0012, 1.0
+    for p in me.polygons:
+        p.use_smooth = True
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    D.cyl('Bacha desagüe', cx, cy, z - hondo, z - hondo + 0.003, 0.042, ac)
+    D.cyl('Bacha desagüe fondo', cx, cy, z - hondo + 0.003, z - hondo + 0.004, 0.03, mat('Junta'))
+    # grifería de cuello de cisne, negra mate como la de antes, detrás de la bacha
+    fx, fy, fz = 10.9, yb + 0.07, 0.92
+    D.cyl('Grifería base', fx, fy, fz, fz + 0.045, 0.026, negro, bevel=0.003)
+    r = (cy - fy) / 2
+    cuello = [(fx, fy, fz + 0.04), (fx, fy, fz + 0.30)] + arco((fx, fy + r, fz + 0.30), r, 180, 0)[1:]
+    cuello += [(fx, fy + 2 * r, fz + 0.20)]
+    tubo('Grifería', cuello, 0.011, negro)
+    D.cyl('Grifería pico', fx, fy + 2 * r, fz + 0.185, fz + 0.205, 0.0135, negro, bevel=0.002)
+    tubo('Grifería palanca', [(fx + 0.02, fy, fz + 0.10), (fx + 0.085, fy, fz + 0.125)], 0.0055, negro)
+    # baño: monocomando alto para bacha de apoyo, con su pico hacia el centro de la bacha y la palanca de costado
+    yv = -8.0 + 0.06
+    for xx in (5.75, 6.75):
+        D.cyl('Grifería', xx, yv + 0.04, 0.86, 1.17, 0.016, negro, bevel=0.002)
+        pico = [(xx, yv + 0.04, 1.155)] + [(xx, yv + 0.04 + 0.15 * t, 1.155 - 0.012 * t * t) for t in (0.3, 0.6, 1.0)]
+        tubo('Grifería pico', pico, 0.0085, negro)
+        # palanca arriba, apenas inclinada: de costado y a la altura del pico se leía como una cruz
+        tubo('Grifería palanca', [(xx, yv + 0.04, 1.17), (xx + 0.012, yv + 0.04, 1.225)], 0.0045, negro)
+    print('GRIFERÍAS LISTAS')
+
+
+def torno(nombre, perfil, x, y, z, material, seg=40):
+    """Pieza de revolución: perfil [(radio, alto), ...] de abajo hacia arriba, girado sobre el eje z en (x, y, z)."""
+    import bmesh
+    bm = bmesh.new()
+    vs = [bm.verts.new((r, 0, h)) for r, h in perfil]
+    es = [bm.edges.new((a, b)) for a, b in zip(vs, vs[1:])]
+    bmesh.ops.spin(bm, geom=vs + es, cent=(0, 0, 0), axis=(0, 0, 1), angle=2 * math.pi, steps=seg,
+                   use_merge=True)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+    bmesh.ops.translate(bm, vec=(x, y, z), verts=bm.verts)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    me = bpy.data.meshes.new(nombre)
+    bm.to_mesh(me)
+    bm.free()
+    o = bpy.data.objects.new(nombre, me)
+    sc().collection.objects.link(o)
+    o.data.materials.append(material)
+    for p in me.polygons:
+        p.use_smooth = True
+    return o
+
+
+def frasco(x, y, z, alto, r, material, bomba):
+    """Dosificador de cerámica con hombro redondeado, cuello y bomba negra con su pico (eran dos cilindros lisos)."""
+    perfil = [(0, 0), (r - 0.003, 0), (r, 0.003), (r, alto * 0.78)]
+    perfil += [(r * math.cos(a) + 0.0, alto * 0.78 + r * 0.55 * math.sin(a)) for a in np.linspace(0.15, 1.35, 6)]
+    perfil += [(0.011, alto * 0.78 + r * 0.55), (0.011, alto * 0.86), (0, alto * 0.86)]
+    torno('Nicho frasco', perfil, x, y, z, material)
+    top = z + alto * 0.86
+    torno('Nicho frasco bomba', [(0, 0), (0.009, 0), (0.009, 0.012), (0.004, 0.014), (0.004, 0.03), (0.0125, 0.03),
+                                 (0.0125, 0.042), (0, 0.042)], x, y, top, bomba, seg=24)
+    tubo('Nicho frasco pico', [(x, y, top + 0.036), (x - 0.03, y, top + 0.036), (x - 0.036, y, top + 0.03)], 0.003, bomba)
+
+
+def ducha_y_horno():
+    """Lo que faltaba: el monocomando de la ducha en la pared (había flor y caño, sin canilla), una flor fina y la
+    manija del horno (una placa de vidrio negro sola se leía como una tele)."""
+    negro = mat('Metal negro')
+    borrar([c for o in raices(('Ducha', 'Horno manija'), BANO) + raices('Horno manija', COCINA) for c in hijos(o)])
+    # flor de lluvia de 8 mm (era un disco de 3 cm, una tapa de olla) y su caño hasta el techo
+    D.cyl('Ducha', 6.7, -6.2, 2.30, 2.308, 0.15, negro, bevel=0.002)
+    D.cyl('Ducha caño', 6.7, -6.2, 2.308, D.H, 0.01, negro)
+    dg = bpy.context.evaluated_depsgraph_get()
+    ok, loc, n, *_ = sc().ray_cast(dg, Vector((6.7, -6.2, 1.05)), Vector((0, 1, 0)))  # cara de la pared norte
+    if ok:
+        y = loc.y
+        o = torno('Ducha mezcladora', [(0, 0), (0.07, 0), (0.07, 0.006), (0.066, 0.009), (0, 0.009)], 0, 0, 0, negro)
+        o.data.transform(Matrix.Translation((6.7, y, 1.05)) @ Matrix.Rotation(math.radians(90), 4, 'X'))
+        tubo('Ducha mezcladora palanca', [(6.7, y - 0.009, 1.05), (6.7, y - 0.035, 1.05), (6.77, y - 0.04, 1.05)],
+             0.006, negro)
+    # la planta del baño estaba en el piso, metida debajo del vanitory flotante: va sobre la mesada, en la punta
+    for o in raices('potted_plant_01', BANO):
+        ms = [c for c in hijos(o) if c.type == 'MESH']
+        lo = Vector([min(wbox(c)[0][i] for c in ms) for i in range(3)])
+        hi = Vector([max(wbox(c)[1][i] for c in ms) for i in range(3)])
+        k = 0.32 / (hi.z - lo.z)
+        o.scale = o.scale * k
+        bpy.context.view_layer.update()
+        lo = Vector([min(wbox(c)[0][i] for c in ms) for i in range(3)])
+        hi = Vector([max(wbox(c)[1][i] for c in ms) for i in range(3)])
+        o.location += Vector((7.13 - (lo.x + hi.x) / 2, -7.74 - (lo.y + hi.y) / 2, 0.86 - lo.z))
+    # rejilla lineal de acero junto a la pared del fondo de la ducha (un receptáculo sin desagüe no existe)
+    D.box('Ducha rejilla', 6.1, -5.76, 0.02, 7.24, -5.71, 0.0215, acero(), bevel=0.0005)
+    yb = -5.6 + 0.06
+    yh = yb + 0.645  # frente del horno
+    for xx in (8.24, 8.82):
+        tubo('Horno manija', [(xx, yh, 1.575), (xx, yh + 0.035, 1.575)], 0.005, acero())
+    tubo('Horno manija', [(8.22, yh + 0.035, 1.575), (8.84, yh + 0.035, 1.575)], 0.008, acero())
+
+
+def cuadros():
+    """Fotos reales en los cuadros: recortes de panorámicas de Poly Haven (CC0, bell_park_pier y champagne_castle_1),
+    bajadas por tools/polyhaven.py a assets/fotos. La foto del lago de antes (2752 × 1536, la medida de Nano Banana)
+    era casi seguro de IA, y la regla 1 no deja mostrar nada generado en la web final."""
+    for nombre, foto, espejo in (('Cuadro living', 'cuadro-lago.jpg', True), ('Cuadro suite 2', 'cuadro-montana.jpg', False)):
+        o = sc().objects.get(nombre)
+        p = D.ASSETS / 'fotos' / foto
+        if not o or not p.exists():
+            continue
+        m = o.data.materials[0]
+        next(n for n in m.node_tree.nodes if n.type == 'TEX_IMAGE').image = bpy.data.images.load(str(p), check_existing=True)
+        pts = [o.matrix_world @ v.co for v in o.data.vertices]
+        x0, x1 = min(q.x for q in pts), max(q.x for q in pts)
+        z0, z1 = min(q.z for q in pts), max(q.z for q in pts)
+        uv = o.data.uv_layers.active or o.data.uv_layers.new()
+        for poly in o.data.polygons:  # el cuadro está en un plano x-z; espejo: se mira hacia -y (la derecha es -x)
+            for li in poly.loop_indices:
+                q = o.matrix_world @ o.data.vertices[o.data.loops[li].vertex_index].co
+                u = (q.x - x0) / (x1 - x0)
+                uv.data[li].uv = (1 - u if espejo else u, (q.z - z0) / (z1 - z0))
+
+
+def lena():
+    """Leños de verdad en la pila del hogar: corteza (Poly Haven, CC0) a escala de un leño, la cara cortada con
+    anillos, la sección irregular y uno de cada tres partido al medio. Eran cilindros de 12 caras con la foto de una
+    pila de leña proyectada encima: se leían como piedra."""
+    viejos = [o for o in sc().objects if o.name.startswith('Leño')]
+    datos = []
+    for o in viejos:  # acostados a lo largo de x
+        lo, hi = wbox(o)
+        datos.append((lo.x, hi.x, (lo.y + hi.y) / 2, (lo.z + hi.z) / 2, (hi.z - lo.z) / 2))
+    borrar(viejos)
+    corteza = mat('Corteza') or D.pbr('Corteza', 'bark_brown_02', size=0.3, nstr=1.4, rough=0.9)
+    def madera(nombre, tipo, eje, escala, distorsion):
+        """Cara cortada: anillos alrededor del eje del leño (su z local); cara partida: veta a lo largo."""
+        m = mat(nombre)
+        if m:
+            return m
+        m = bpy.data.materials.new(nombre)
+        m.use_nodes = True
+        N, L = m.node_tree.nodes, m.node_tree.links
+        b = N['Principled BSDF']
+        b.inputs['Roughness'].default_value = 0.85
+        ondas = N.new('ShaderNodeTexWave')
+        ondas.wave_type = tipo
+        if tipo == 'RINGS':
+            ondas.rings_direction = eje
+        else:
+            ondas.bands_direction = eje
+        ondas.inputs['Scale'].default_value = escala
+        ondas.inputs['Distortion'].default_value = distorsion
+        ondas.inputs['Detail'].default_value = 3
+        ondas.inputs['Detail Scale'].default_value = 1.5
+        L.new(N.new('ShaderNodeTexCoord').outputs['Object'], ondas.inputs['Vector'])
+        rampa = N.new('ShaderNodeValToRGB')
+        rampa.color_ramp.elements[0].color = (0.19, 0.11, 0.05, 1)
+        rampa.color_ramp.elements[1].color = (0.32, 0.21, 0.11, 1)
+        L.new(ondas.outputs['Fac'], rampa.inputs['Fac'])
+        L.new(rampa.outputs['Color'], b.inputs['Base Color'])
+        return m
+    # con distorsión 9 los anillos parecían huellas digitales; parejos y claros, el dibujo de un leño
+    corte = madera('Leña corte', 'RINGS', 'Z', 30, 3.5)
+    partida = madera('Leña partida', 'BANDS', 'X', 25, 6)
+    import bmesh
+    random.seed(5)
+    for i, (x0, x1, y, z, r) in enumerate(datos):
+        bm = bmesh.new()
+        bmesh.ops.create_cone(bm, cap_ends=True, segments=22, radius1=r, radius2=r * random.uniform(0.88, 1.0),
+                              depth=x1 - x0)
+        ph = [random.uniform(0, 6.3) for _ in range(3)]
+        partido = i % 3 == 1
+        for v in bm.verts:  # eje en z mientras se arma
+            a = math.atan2(v.co.y, v.co.x)
+            k = 1 + 0.07 * math.sin(2 * a + ph[0]) + 0.04 * math.sin(5 * a + ph[1]) + 0.03 * math.sin(3 * v.co.z / r + ph[2])
+            v.co.x, v.co.y = v.co.x * k, v.co.y * k
+            if partido and v.co.y > r * 0.1:
+                v.co.y = r * 0.1
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
+        me = bpy.data.meshes.new('Leño')
+        bm.to_mesh(me)
+        bm.free()
+        o = bpy.data.objects.new('Leño', me)
+        sc().collection.objects.link(o)
+        for m in (corteza, corte, partida):
+            o.data.materials.append(m)
+        for p in me.polygons:
+            plana = partido and p.normal.y > 0.9
+            p.use_smooth = abs(p.normal.z) < 0.7 and not plana
+            p.material_index = 1 if abs(p.normal.z) > 0.7 else 2 if plana else 0
+        # eje a lo largo de x y el lado partido hacia abajo o de costado, al azar
+        o.rotation_mode = 'ZYX'  # primero gira sobre su eje, después se acuesta a lo largo de x
+        o.rotation_euler = (0, math.radians(90), random.uniform(0, 6.3))
+        o.location = ((x0 + x1) / 2, y, z)
+    # de abajo hacia arriba, cada leño baja hasta apoyar: con los partidos y los radios distintos, los de arriba
+    # quedaban hasta 10 cm en el aire
+    for o in sorted([o for o in sc().objects if o.name.startswith('Leño')], key=lambda o: o.location.z):
+        bpy.context.view_layer.update()
+        dg = bpy.context.evaluated_depsgraph_get()
+        vs = [o.matrix_world @ v.co for v in o.data.vertices]
+        z0 = min(v.z for v in vs)
+        gap = 0.2
+        for p in [v for v in vs if v.z < z0 + 0.3 * (max(v.z for v in vs) - z0)]:
+            ok, loc, *_r, ob, _m = sc().ray_cast(dg, p + Vector((0, 0, 0.002)), Vector((0, 0, -1)))
+            while ok and ob == o:
+                ok, loc, *_r, ob, _m = sc().ray_cast(dg, loc - Vector((0, 0, 1e-4)), Vector((0, 0, -1)))
+            if ok:
+                gap = min(gap, p.z - loc.z)
+        if 0.002 < gap < 0.2:
+            o.location.z -= gap - 0.001
+    print('LEÑA LISTA', len(datos))
+
+
+def anafe():
+    """Las cuatro zonas de inducción y los controles serigrafiados en gris sobre el vidrio negro: liso, el anafe era
+    una placa negra sin nada."""
+    m = mat('Anafe') or mat('Vitrocerámica').copy()
+    m.name = 'Anafe'
+    for o in raices('Anafe', COCINA):
+        o.data.materials[0] = m
+    N, L = m.node_tree.nodes, m.node_tree.links
+    if any(n.name == 'Serigrafía' for n in N):
+        return
+    b = next(n for n in N if n.type == 'BSDF_PRINCIPLED')
+    pos = N.new('ShaderNodeNewGeometry').outputs['Position']
+    marcas = None
+    zonas = [((9.03, -3.71), 0.095), ((9.03, -3.47), 0.075), ((9.42, -3.71), 0.075), ((9.42, -3.47), 0.095)]
+    for (x, y), r in zonas + [((9.13 + 0.05 * i, -3.825), 0.0) for i in range(5)]:
+        d = N.new('ShaderNodeVectorMath')
+        d.operation = 'DISTANCE'
+        d.inputs[1].default_value = (x, y, 0.952)
+        L.new(pos, d.inputs[0])
+        a = N.new('ShaderNodeMath')
+        a.operation = 'SUBTRACT'
+        a.inputs[1].default_value = r
+        L.new(d.outputs['Value'], a.inputs[0])
+        ab = N.new('ShaderNodeMath')
+        ab.operation = 'ABSOLUTE'
+        L.new(a.outputs[0], ab.inputs[0])
+        lt = N.new('ShaderNodeMath')
+        lt.operation = 'LESS_THAN'
+        lt.inputs[1].default_value = 0.0012 if r else 0.005  # anillo de 2,4 mm o punto de 1 cm
+        L.new(ab.outputs[0], lt.inputs[0])
+        if marcas is None:
+            marcas = lt.outputs[0]
+        else:
+            mx = N.new('ShaderNodeMath')
+            mx.operation = 'MAXIMUM'
+            L.new(marcas, mx.inputs[0])
+            L.new(lt.outputs[0], mx.inputs[1])
+            marcas = mx.outputs[0]
+    col = N.new('ShaderNodeMix')
+    col.name = 'Serigrafía'
+    col.data_type = 'RGBA'
+    L.new(marcas, col.inputs[0])
+    col.inputs[6].default_value = b.inputs['Base Color'].default_value
+    col.inputs[7].default_value = (0.16, 0.16, 0.16, 1)
+    L.new(col.outputs[2], b.inputs['Base Color'])
 
 
 def mata(asset, parte, x, y, z, alto, rot=0.0):
@@ -1157,13 +1770,19 @@ def arreglos():
     jardineras()
     # 10 el baño 2 sin luz se veía como un cuarto negro por la puerta de la segunda suite
     D.downlight(8.2, -7.2, 6)
-    # 11 la piedra del baño, pulida, reflejaba el espejo y su tira de luz como una raya blanca: piedra apomazada
-    for nombre, ganancia in (('Caliza baño', 1.0), ('Piedra baño', 0.85)):
-        m = mat(nombre)
-        b = next(n for n in m.node_tree.nodes if n.type == 'BSDF_PRINCIPLED')
-        b.inputs['Coat Weight'].default_value = 0.0
-        if b.inputs['Roughness'].links:
-            b.inputs['Roughness'].links[0].from_node.inputs[1].default_value = ganancia
+    # 11 piedra del baño: travertino en placas con su junta, apomazado (pulida reflejaba la tira del espejo)
+    piedras_bano()
+    # la piel de oveja era un disco plano con la foto de la lana (una mancha blanca junto al hogar) y la manta
+    # doblada del sofá, una caja escondida en el asiento: se sacan (un objeto falso pesa más que un hueco)
+    borrar([c for o in raices(('Piel de oveja', 'Manta sofá'), LIVING) for c in hijos(o)])
+    # fotos reales en los cuadros, leña, bacha de la cocina con hueco, griferías con pico y palanca, anafe con zonas
+    cuadros()
+    lena()
+    griferias()
+    anafe()
+    ducha_y_horno()
+    # colgantes de la cocina: bronce pulido (0,25) devolvía la cocina como un espejo curvo; bronce cepillado
+    next(n for n in mat('Bronce').node_tree.nodes if n.type == 'BSDF_PRINCIPLED').inputs['Roughness'].default_value = 0.42
     # 12 baño: bachas de cerámica, toalla colgada, nicho con fondo
     yb = -8.0 + 0.06
     borrar([c for o in raices('Bacha', BANO) for c in hijos(o)])

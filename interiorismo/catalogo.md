@@ -14,7 +14,7 @@ Fuentes: solo Poly Haven y ambientCG (CC0) y Amazon Berkeley Objects (CC BY 4.0,
 - **table_lamp ×2**: `B075X1T517` (base cerámica gris con textura de piedra, pantalla de lino). Alternativa: `B07QJLF9XP` (cerámica crema).
 - **throw_blanket**: no hay modelo libre, la tenés que modelar (plegada o con cloth sim). Materiales listos: `knit_rust` (Otoño) y `plaid_green` (Bosque).
 - **cushions**: `B07JLGCKPV` (cuero coñac), `B07JM1VM9Q` (lino con banda verde), `B07JLZC7FK` (terracota) y `B07BMTXJ1V` (piel sintética crema). `throw_pillows_01` es demasiado étnico: usalo solo retexturizado. El toque Lago sale de retexturizar uno con `rough_linen`.
-- **firewood**: no hay modelo de pila. Va el material `firewood_logs` (ambientCG Logs001) en una caja dentro del nicho; si no, cortás `dead_tree_trunk` en troncos de 40 cm.
+- **firewood**: no hay modelo de pila. Los leños se arman por script (`lena()` de `habitacion.py`) con corteza `bark_brown_02` y la cara cortada con anillos; la foto de una pila (`firewood_logs`) proyectada en cilindros se leía como piedra.
 - **big_plant**: solo existe `potted_plant_01` (1,35 m, ya estaba bajada). Escalala ×1,15 y cambiá la maceta a cerámica Lana o Piedra. Alternativa: `potted_plant_02` sobre un banquito. No hay planta de interior de 1,5–1,9 m.
 - **decor**: `wicker_basket_02`, `wooden_bowl_02`, `ceramic_vase_04`, `B07B8PXTSY` (vaso esmaltado óxido), `B07QHL8W81` (par crema y azul pizarra), `B078JMXRGC` (bandeja de pizarra y abedul), `B07HSPJ11F` (faroles de gres), `B07QFB5MW6` (vasija gris de 50 cm) y `decorative_book_set_01`.
 
@@ -29,7 +29,7 @@ Fuentes: solo Poly Haven y ambientCG (CC0) y Amazon Berkeley Objects (CC BY 4.0,
 - **nightstand ×2**: `B082JH6LSF` (pino miel, dos cajones). Alternativa: `B072ZLCB32` (nogal con hierro).
 - **bed_bench**: `B07K7NQR23` (roble con asiento de cuero, 1,20 m). Alternativa: `B07B4SC9RP` (lino sobre hierro negro, 1,49 m).
 - **reading_chair**: `B082QDSXMN` (Rivet Spear, marfil con brazos de nogal). Alternativa: `B07B4MTFRH`.
-- **sheepskin**: no hay modelo. Usá el material `sheepskin_teddy` sobre una piel modelada, con pelo de Blender si hay primer plano.
+- **sheepskin**: no hay modelo y un disco con la foto de la lana se leía como una mancha blanca: se sacó. Solo vuelve modelada, con pelo.
 
 ## Segunda suite, baño y balcón
 - **nightstand_suite2**: `B072ZLCB32`. Alternativa: `B07RMZ83ZY`.
@@ -50,9 +50,8 @@ Fuentes: solo Poly Haven y ambientCG (CC0) y Amazon Berkeley Objects (CC BY 4.0,
 - **knit_rust**: Fabric085, 4K.
 - **leather_cognac**: fabric_leather_02, 4K.
 - **rug_weave**: Carpet014, 2K, lana crema tejida en canasta, trama de 45 cm (la bereber Carpet016 se leía como una placa gris).
-- **sheepskin_teddy**: curly_teddy_natural, 4K.
 - **black_metal**: Metal046A, 2K.
-- **bath_stone**: large_grey_tiles, 4K.
-- **firewood_logs**: Logs001, 2K.
+- **travertino_crema** y **travertino_beige**: ambientCG Travertine009 y Travertine001, 2K, sin juntas: paredes, piso y mesada del baño en placas dibujadas por `losas()` (la «bath_stone» de antes era una vereda con musgo).
+- **bark_brown_02**: Poly Haven, 2K, 1 m: corteza de la leña del hogar, a 30 cm.
 - **terry_towel**: terry_cloth, 2K.
 - Los tamaños de baldosa se agregaron a `tex/dims.json`.
