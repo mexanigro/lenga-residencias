@@ -242,9 +242,41 @@ def almohada(nombre, ancho, alto, grueso, material, lugar, presion=2.0, encoge=0
     o.modifiers.new('suave', 'SUBSURF').levels = 1
     bpy.ops.object.shade_smooth()
     o.data.materials.append(material)
+    asentar(o)
     if vivo:
         ribete(o, vivo)
     return o
+
+
+def asentar(o, tope=0.2):
+    """Baja una tela simulada hasta que toque lo que tiene abajo. Rayos hacia abajo desde los vértices del tercio de
+    abajo de la malla evaluada (con su subsurf), arrancando 2 mm por encima de cada uno y salteando la propia malla y
+    las copias de choque. Infladas contra el respaldo, el roce las dejaba colgadas: las europeas a 3,7 cm del colchón,
+    las de dormir a 5 y el almohadón a 7. Mueve la malla, no el objeto (ver plano())."""
+    bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get()
+    ev = o.evaluated_get(dg)
+    me = ev.to_mesh()
+    vs = [o.matrix_world @ v.co for v in me.vertices]
+    ev.to_mesh_clear()
+    z0, z1 = min(v.z for v in vs), max(v.z for v in vs)
+    abajo = [v for v in vs if v.z < z0 + 0.33 * (z1 - z0)]
+    random.seed(0)
+    gap = tope
+    for p in random.sample(abajo, min(300, len(abajo))):
+        org = p + Vector((0, 0, 0.002))
+        for _ in range(8):
+            ok, loc, _n, _i, ob, _m = sc().ray_cast(dg, org, Vector((0, 0, -1)))
+            if not ok:
+                break
+            if ob.name == o.name or ob.name.startswith('Choque'):
+                org = loc - Vector((0, 0, 1e-4))
+                continue
+            gap = min(gap, p.z - loc.z)
+            break
+    if 0.002 < gap < tope:
+        o.data.transform(Matrix.Translation((0, 0, 0.001 - gap)))
+        print(f'ASENTADO {o.name}: bajó {gap * 100:.1f} cm')
 
 
 def ribete(o, material, radio=0.0045):
@@ -318,20 +350,47 @@ def cama():
     for o in (base_, colchon):
         con_choque(o)
     tela_mat('Funda', BLANCOS['Funda'])
-    D.pbr('Cuero almohadón', D.tx('leather_cognac', 'leather_cognac'), size=0.6, rough=0.45)
+    # del tono de la frazada. Más claro o con el brillo de tela de las sábanas (0,5), a la luz se leía rosado
+    tela_mat('Lino arcilla', (0.28, 0.13, 0.07), sheen=0.2)
     acolchado(CAMA_X, fondo, pie, 2.0, 0.6)
     ropa()
     print('CAMA LISTA')
 
 
-def acolchado(cx, fondo, pie, ancho, z, sufijo=''):
-    """Acolchado que cae sobre el colchón y cuelga por los costados y el pie; arranca a 55 cm del respaldo
-    (ahí queda fijo: es el único borde fijo que va, porque queda apoyado)."""
+def acolchado(cx, fondo, pie, ancho, z, sufijo='', doblez=0.66, solapa=0.32, r=0.03, grosor=0.025):
+    """Acolchado tendido: cae sobre el colchón y cuelga por los costados y el pie, y la cabecera va doblada hacia los
+    pies sobre sí misma (media vuelta de radio r armada antes de simular, con la solapa encima).
+    Lo único fijo es la franja que apoya en el colchón junto al doblez, sin lo que cuelga: fija 4 cm en el aire, la
+    cabecera quedaba levantada 8 cm, y fija de lado a lado, las esquinas quedaban paradas como una placa.
+    La tela simulada no tiene espesor: la solapa cae pegada a la capa de abajo y el grosor de las dos capas se
+    encimaba, sin doblez a la vista. Después de simular, la solapa se corre dos grosores hacia afuera (gradual en la
+    media vuelta) y el doblez queda como un rollo de 5 cm."""
     x0, x1 = cx - ancho / 2, cx + ancho / 2
-    ac = plano(f'Acolchado{sufijo}', x0 - 0.3, x1 + 0.3, fondo + 0.55, pie + 0.3, z + 0.04, 120, 110, amp=0.02,
-               seed=2, pin=(1, fondo + 0.5, fondo + 0.62))
+    yd, z0 = fondo + doblez, z + 0.008  # línea del doblez; apoyado, a la distancia de choque
+    ac = plano(f'Acolchado{sufijo}', x0 - 0.3, x1 + 0.3, yd - math.pi * r - solapa, pie + 0.3, z0, 120, 150,
+               amp=0.012, seed=2)
+    pin, dob = ac.vertex_groups.new(name='pin'), ac.vertex_groups.new(name='doblez')
+    for v in ac.data.vertices:
+        s = yd - v.co.y
+        if s > 0:
+            a = min(s / r, math.pi)
+            v.co.y = yd - r * math.sin(a) + max(0.0, s - math.pi * r)
+            v.co.z += r * (1 - math.cos(a))
+            dob.add([v.index], (1 - math.cos(a)) / 2, 'REPLACE')
+        elif v.co.y <= yd + 0.12 and abs(v.co.x - cx) <= ancho / 2 - 0.12:  # sobre la parte plana del colchón
+            v.co.z = z0  # apoyado: sin las ondas del arranque
+            pin.add([v.index], 1.0, 'REPLACE')
     simular(ac, 60, calidad=8, encoge=0.015, pin=True)
-    terminar(ac, mat('Acolchado lino') or tela_mat('Acolchado lino', BLANCOS['Acolchado lino']), grosor=0.025,
+    k = ac.vertex_groups['doblez'].index  # por nombre: la referencia de antes de aplicar la tela ya no vale
+    ns = [v.normal.copy() for v in ac.data.vertices]  # en la solapa apuntan hacia la capa de abajo
+    n_ = 0
+    for v, n in zip(ac.data.vertices, ns):
+        w = next((g.weight for g in v.groups if g.group == k), 0.0)
+        if w:
+            v.co = v.co - n * w * (2 * grosor - 0.003)
+            n_ += 1
+    print(f'DOBLEZ {ac.name}: {n_} vértices corridos')
+    terminar(ac, mat('Acolchado lino') or tela_mat('Acolchado lino', BLANCOS['Acolchado lino']), grosor=grosor,
              arriba=True)
     return ac
 
@@ -374,18 +433,20 @@ def respaldo(n=9):
 
 
 def ropa(cx=CAMA_X, fondo=PARED_Y + 0.11, pie=PARED_Y + 0.11 + 2.12, ancho=2.0, z=0.6, sufijo='', caja=CAJA,
-         respaldo='Respaldo', cojin=('Manta verde', 'Lana cruda'), lumbar=('Cuero almohadón', True)):
+         respaldo='Respaldo', lumbar='Lino arcilla'):
     """Frazada y almohadas sobre una cama ya hecha (colchón con su tope en z, respaldo en y = fondo, acolchado
-    'Acolchado{sufijo}' ya simulado). Se puede repetir: borra las anteriores de esa cama.
-    cojin: (tela, tela del cordón) del almohadón cuadrado; lumbar: (material, es cuero)."""
+    'Acolchado{sufijo}' ya simulado). Se puede repetir: borra las anteriores de esa cama. lumbar: su tela."""
     borrar([c for o in raices(('Almohada', 'Europea', 'Lumbar', 'Cojín', 'Vivo', 'Choque'), caja) for c in hijos(o)]
            + [c for o in sc().objects if o.parent is None and o.name == f'Manta{sufijo}' for c in hijos(o)])
     x0, x1, k = cx - ancho / 2, cx + ancho / 2, ancho / 2.0
-    # una copia quieta del acolchado hace de cuerpo de choque (tela contra tela simulada se atraviesa)
+    # una copia quieta del acolchado, con su mismo espesor, hace de cuerpo de choque (tela contra tela simulada se
+    # atraviesa)
     ac = sc().objects[f'Acolchado{sufijo}']
     choque = bpy.data.objects.new('Choque acolchado', ac.data.copy())
     sc().collection.objects.link(choque)
-    con_choque(choque, grosor=0.03)  # el acolchado terminado tiene 2,5 cm de alto
+    so = choque.modifiers.new('grosor', 'SOLIDIFY')
+    so.thickness, so.offset = ac.modifiers['grosor'].thickness, 1.0
+    con_choque(choque, grosor=0.003)
     choque.hide_render = True
     for o in raices(respaldo, caja):  # las almohadas se apoyan en el respaldo
         for c in hijos(o):
@@ -408,10 +469,10 @@ def ropa(cx=CAMA_X, fondo=PARED_Y + 0.11, pie=PARED_Y + 0.11 + 2.12, ancho=2.0, 
     for i, s in enumerate((-1, 1)):
         almohada(f'Almohada{sufijo} {i}', 0.74, 0.5, 0.13, blanco, (cx + s * 0.42 * k, fondo + 0.45, z + 0.27, -55, -s * 3),
                  encoge=0.0)  # funda floja: arrugas
-    almohada(f'Cojín{sufijo}', 0.45, 0.45, 0.12, mat(cojin[0]), (cx - 0.36, fondo + 0.64, z + 0.34, -67, 4),
-             vivo=mat(cojin[1]))
-    cuero = dict(rigidez=45, flexion=2.0) if lumbar[1] else {}
-    almohada(f'Lumbar{sufijo}', 0.55, 0.32, 0.11, mat(lumbar[0]), (cx + 0.2, fondo + 0.66, z + 0.28, -68, -4), **cuero)
+    # un solo almohadón, de lino, sobre el doblez del acolchado: el de cuero se leía como una piedra y el escocés,
+    # parado en una punta, sobraba
+    almohada(f'Lumbar{sufijo}', 0.55, 0.32, 0.11, mat(lumbar), (cx + 0.04, fondo + 0.70, z + 0.26, -66, 2),
+             vivo=mat(lumbar))
     bpy.data.objects.remove(choque)
     print('ROPA LISTA', sufijo)
 
@@ -619,6 +680,81 @@ def superficies():
         L.new(bump.outputs['Normal'], b.inputs['Normal'])
 
 
+def piso(ancho=0.185, largo=1.9, junta=0.0008):
+    """Piso de tablas de 18,5 × 190 cm: cada tabla toma otro pedazo de la foto, ±7 % de tono y ±10 % de rugosidad, con
+    una junta oscura de menos de 1 mm y un bisel de 2 mm. La foto sola traía tablas de 9 cm con juntas casi
+    invisibles y repartidas a intervalos irregulares: el piso se leía como una sola superficie. Se agranda al doble
+    y sus juntas quedan como vetas dentro de cada tabla. Las tablas corren a lo largo de x, hacia las ventanas."""
+    m = mat('Piso madera miel')
+    N, L = m.node_tree.nodes, m.node_tree.links
+    if any(n.name == 'Tablas' for n in N):
+        return
+    b = next(n for n in N if n.type == 'BSDF_PRINCIPLED')
+    mp = next(n for n in N if n.type == 'MAPPING')
+    mp.inputs['Scale'].default_value = (1 / 2.4,) * 3
+
+    def op(tipo, a, c=None, rango=None):
+        if rango:  # MapRange: a de (desde, hasta) a (en, a)
+            n = N.new('ShaderNodeMapRange')
+            for k, v in zip(('From Min', 'From Max', 'To Min', 'To Max'), rango):
+                n.inputs[k].default_value = v
+            L.new(a, n.inputs['Value'])
+            return n.outputs['Result']
+        n = N.new('ShaderNodeMath')
+        n.operation = tipo
+        for i, v in enumerate((a, c)):
+            if isinstance(v, (int, float)):
+                n.inputs[i].default_value = v
+            elif v is not None:
+                L.new(v, n.inputs[i])
+        return n.outputs[0]
+
+    p = N.new('ShaderNodeSeparateXYZ')
+    L.new(mp.inputs['Vector'].links[0].from_socket, p.inputs[0])
+    fy = op('DIVIDE', p.outputs['Y'], ancho)
+    fila = op('FLOOR', fy)
+    corrida = N.new('ShaderNodeTexWhiteNoise')  # cada fila arranca en otro lugar
+    corrida.noise_dimensions = '1D'
+    L.new(fila, corrida.inputs['W'])
+    u = op('ADD', op('DIVIDE', p.outputs['X'], largo), corrida.outputs['Value'])
+    cid = N.new('ShaderNodeCombineXYZ')
+    L.new(fila, cid.inputs[0])
+    L.new(op('FLOOR', u), cid.inputs[1])
+    azar = N.new('ShaderNodeTexWhiteNoise')
+    azar.name = 'Tablas'
+    L.new(cid.outputs[0], azar.inputs['Vector'])
+    corre = N.new('ShaderNodeVectorMath')  # otro pedazo de la foto
+    corre.operation = 'MULTIPLY'
+    corre.inputs[1].default_value = (17.3, 9.1, 0.0)
+    L.new(azar.outputs['Color'], corre.inputs[0])
+    L.new(corre.outputs[0], mp.inputs['Location'])
+    rgb = N.new('ShaderNodeSeparateColor')
+    L.new(azar.outputs['Color'], rgb.inputs[0])
+    # distancia al borde de la tabla, en metros
+    dy = op('MULTIPLY', op('MINIMUM', op('FRACT', fy), op('SUBTRACT', 1.0, op('FRACT', fy))), ancho)
+    dx = op('MULTIPLY', op('MINIMUM', op('FRACT', u), op('SUBTRACT', 1.0, op('FRACT', u))), largo)
+    canto = op('MINIMUM', dx, dy)
+    hs = N.new('ShaderNodeHueSaturation')
+    L.new(b.inputs['Base Color'].links[0].from_socket, hs.inputs['Color'])
+    L.new(op(None, rgb.outputs['Red'], rango=(0, 1, 0.93, 1.07)), hs.inputs['Value'])
+    oscuro = N.new('ShaderNodeMix')
+    oscuro.data_type, oscuro.blend_type = 'RGBA', 'MULTIPLY'
+    oscuro.inputs[7].default_value = (0.45, 0.45, 0.45, 1)
+    L.new(op(None, canto, rango=(junta * 0.5, junta, 1, 0)), oscuro.inputs[0])
+    L.new(hs.outputs['Color'], oscuro.inputs[6])
+    L.new(oscuro.outputs[2], b.inputs['Base Color'])
+    rs = b.inputs['Roughness'].links[0].from_socket
+    L.new(op('MULTIPLY', rs, op(None, rgb.outputs['Green'], rango=(0, 1, 0.9, 1.1))), b.inputs['Roughness'])
+    bump = N.new('ShaderNodeBump')  # bisel de 2 mm en el canto de cada tabla
+    bump.inputs['Strength'].default_value = 0.5
+    bump.inputs['Distance'].default_value = 0.0008
+    L.new(op(None, canto, rango=(0, 0.002, 0, 1)), bump.inputs['Height'])
+    if b.inputs['Normal'].links:
+        L.new(b.inputs['Normal'].links[0].from_socket, bump.inputs['Normal'])
+    L.new(bump.outputs['Normal'], b.inputs['Normal'])
+    L.new(bump.outputs['Normal'], b.inputs['Coat Normal'])
+
+
 def banco():
     """Banco al pie de la cama hecho acá: el de catálogo traía el asiento como una placa marrón lisa."""
     borrar([c for o in raices(('bed_bench', 'Banco')) for c in hijos(o)])
@@ -634,6 +770,8 @@ def banco():
     # asiento de cuero, el del almohadón: una lana lisa en primer plano se leía como una placa gris de fieltro
     cuero = mat('Cuero almohadón') or D.pbr('Cuero almohadón', D.tx('leather_cognac', 'leather_cognac'),
                                              size=0.6, rough=0.45)
+    # el relieve de la foto a fuerza 1 arrugaba el asiento como papel; un cuero de tapicería es casi liso
+    next(n for n in cuero.node_tree.nodes if n.type == 'NORMAL_MAP').inputs['Strength'].default_value = 0.35
     # chato, bordes redondeados y una comba de 2 cm al centro (la almohada inflada parecía eso)
     bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0, 0))
     asiento = bpy.context.object
@@ -656,15 +794,46 @@ def banco():
 
 
 def alfombra():
-    """Alfombra bereber: el rulo de la lana tiene que leerse (relieve 2,2 y trama más chica) y el tono variar
-    un poco, como una alfombra de lana real. Antes era una superficie beige lisa."""
+    """Alfombra de lana tejida en canasta (trama de 45 cm, bloques de ~2 cm) con un ribete de algodón de 3 cm y el
+    tono que varía un poco. La bereber lisa se leía como una placa gris; la medida y el canto están en D.rug()."""
     m = mat('Alfombra de lana')
     N, L = m.node_tree.nodes, m.node_tree.links
-    next(n for n in N if n.type == 'MAPPING').inputs['Scale'].default_value = (1 / 0.35,) * 3
-    next(n for n in N if n.type == 'NORMAL_MAP').inputs['Strength'].default_value = 2.2
-    ajustar_albedo(m, (0.50, 0.46, 0.38))
+    next(n for n in N if n.type == 'MAPPING').inputs['Scale'].default_value = (1 / 0.45,) * 3
+    next(n for n in N if n.type == 'NORMAL_MAP').inputs['Strength'].default_value = 1.6
+    ajustar_albedo(m, (0.60, 0.56, 0.48))
     if any(n.name == 'Manchado' for n in N):
         return
+    b = next(n for n in N if n.type == 'BSDF_PRINCIPLED')
+    # ribete: a menos de 3 cm del canto (media medida en la propiedad 'medio' de cada alfombra)
+    tc, medio = N.new('ShaderNodeTexCoord'), N.new('ShaderNodeAttribute')
+    medio.attribute_type, medio.attribute_name = 'OBJECT', 'medio'
+    p, h = N.new('ShaderNodeSeparateXYZ'), N.new('ShaderNodeSeparateXYZ')
+    L.new(tc.outputs['Object'], p.inputs[0])
+    L.new(medio.outputs['Vector'], h.inputs[0])
+    lados = []
+    for eje in 'XY':
+        ab = N.new('ShaderNodeMath')
+        ab.operation = 'ABSOLUTE'
+        L.new(p.outputs[eje], ab.inputs[0])
+        resta = N.new('ShaderNodeMath')
+        resta.operation = 'SUBTRACT'
+        L.new(h.outputs[eje], resta.inputs[0])
+        L.new(ab.outputs[0], resta.inputs[1])
+        lados.append(resta.outputs[0])
+    canto = N.new('ShaderNodeMath')
+    canto.operation = 'MINIMUM'
+    L.new(lados[0], canto.inputs[0])
+    L.new(lados[1], canto.inputs[1])
+    borde = N.new('ShaderNodeMapRange')
+    borde.inputs['From Min'].default_value, borde.inputs['From Max'].default_value = 0.029, 0.031
+    borde.inputs['To Min'].default_value, borde.inputs['To Max'].default_value = 1.0, 0.0
+    L.new(canto.outputs[0], borde.inputs['Value'])
+    rib = N.new('ShaderNodeMix')
+    rib.data_type = 'RGBA'
+    rib.inputs[7].default_value = (0.42, 0.38, 0.31, 1)  # algodón crudo, más oscuro que la lana
+    L.new(borde.outputs['Result'], rib.inputs[0])
+    L.new(b.inputs['Base Color'].links[0].from_socket, rib.inputs[6])
+    L.new(rib.outputs[2], b.inputs['Base Color'])
     b = next(n for n in N if n.type == 'BSDF_PRINCIPLED')
     antes = b.inputs['Base Color'].links[0].from_socket
     tc, rz = N.new('ShaderNodeTexCoord'), N.new('ShaderNodeTexNoise')
@@ -681,6 +850,107 @@ def alfombra():
     L.new(antes, mix.inputs[6])
     L.new(rango.outputs['Result'], mix.inputs[7])
     L.new(mix.outputs[2], b.inputs['Base Color'])
+
+
+def lino_cortina():
+    """Lino semitransparente: la trama del lino, luz que pasa (translúcido, del color de la tela) y 22 % de
+    transparencia. El ruedo y el cabezal son de tela doble: dejan pasar menos y a contraluz se leen como bandas."""
+    m = mat('Cortina lino')
+    if m:
+        return m
+    m = tela_mat('Cortina lino', (0.78, 0.75, 0.69), size=0.25, sheen=0.3, rough=0.9)
+    N, L = m.node_tree.nodes, m.node_tree.links
+    b = next(n for n in N if n.type == 'BSDF_PRINCIPLED')
+    out = next(n for n in N if n.type == 'OUTPUT_MATERIAL')
+    tl = N.new('ShaderNodeBsdfTranslucent')
+    L.new(b.inputs['Base Color'].links[0].from_socket, tl.inputs['Color'])
+    m1 = N.new('ShaderNodeMixShader')
+    m1.inputs[0].default_value = 0.45
+    L.new(b.outputs[0], m1.inputs[1])
+    L.new(tl.outputs[0], m1.inputs[2])
+    z = N.new('ShaderNodeSeparateXYZ')
+    L.new(N.new('ShaderNodeNewGeometry').outputs['Position'], z.inputs[0])
+    bandas = []
+    for desde, hasta, en, a in ((0.10, 0.11, 1, 0), (D.H - 0.14, D.H - 0.13, 0, 1)):  # ruedo y cabezal
+        r = N.new('ShaderNodeMapRange')
+        for k, v in zip(('From Min', 'From Max', 'To Min', 'To Max'), (desde, hasta, en, a)):
+            r.inputs[k].default_value = v
+        L.new(z.outputs['Z'], r.inputs['Value'])
+        bandas.append(r.outputs['Result'])
+    doble = N.new('ShaderNodeMath')
+    doble.operation = 'MAXIMUM'
+    L.new(bandas[0], doble.inputs[0])
+    L.new(bandas[1], doble.inputs[1])
+    paso = N.new('ShaderNodeMapRange')
+    paso.inputs['To Min'].default_value, paso.inputs['To Max'].default_value = 0.22, 0.06
+    L.new(doble.outputs[0], paso.inputs['Value'])
+    m2 = N.new('ShaderNodeMixShader')
+    L.new(paso.outputs['Result'], m2.inputs[0])
+    L.new(m1.outputs[0], m2.inputs[1])
+    L.new(N.new('ShaderNodeBsdfTransparent').outputs[0], m2.inputs[2])
+    L.new(m2.outputs[0], out.inputs[0])
+    return m
+
+
+def cortina(nombre, a, b, m, onda=0.09, hondo=0.10, paso=0.012, filas=54):
+    """Paño de lino que cuelga de un riel de techo en ondas de `onda` m y `hondo` m de fondo, con el ruedo a 1,5 cm
+    del piso. Las columnas van a paso parejo sobre la tela (no sobre el riel). Hacia abajo los pliegues se abren un
+    poco, cada uno con su fondo, y la onda deriva apenas: con la onda perfecta de arriba abajo se leía como una chapa.
+    ponytail: sin simular; una cortina con peso cuelga recta, la variación de los pliegues va armada."""
+    a, b = Vector(a), Vector(b)
+    largo = (b - a).length
+    d = (b - a) / largo
+    nrm = Vector((-d.y, d.x))
+    lam = largo / max(3, round(largo / onda))
+    A = hondo / 2
+    ts = np.linspace(0, largo, 3000)
+    s = np.concatenate([[0], np.cumsum(np.hypot(np.diff(ts), np.diff(A * np.sin(2 * np.pi * ts / lam))))])
+    nc = int(s[-1] / paso)
+    tj = np.interp(np.linspace(0, s[-1], nc + 1), s, ts)
+    z1, z0 = D.H - 0.035, 0.015
+    random.seed(sum(map(ord, nombre)))
+    ph = [random.uniform(0, 2 * math.pi) for _ in range(3)]
+    vs = []
+    for i in range(filas + 1):
+        u = i / filas  # 0 arriba, 1 en el ruedo
+        for t in tj:
+            fondo = 1 + u * (0.15 + 0.12 * math.sin(2 * math.pi * t / (2.7 * lam) + ph[0])
+                             + 0.08 * math.sin(2 * math.pi * t / (1.3 * lam) + ph[1]))
+            tt = t + u * 0.12 * lam * math.sin(2 * math.pi * t / (3.4 * lam) + ph[2])
+            q = a + d * t + nrm * (A * math.sin(2 * math.pi * tt / lam) * fondo)
+            vs.append((q.x, q.y, z1 - u * (z1 - z0)))
+    w = nc + 1
+    caras = [(i * w + j, i * w + j + 1, (i + 1) * w + j + 1, (i + 1) * w + j) for i in range(filas) for j in range(nc)]
+    # una sola cara, sin espesor: tiene que mirar al cuarto, porque el visor del recorrido descarta las caras de atrás
+    # y el horneado ilumina cada cara de su lado. Así armadas miran a nrm; si el centro del departamento queda del otro
+    # lado, se dan vuelta (ponytail: vale para cortinas en ventanas del perímetro)
+    techo = sc().objects['Techo']
+    centro = sum((techo.matrix_world @ Vector(c) for c in techo.bound_box), Vector()) / 8
+    if (centro.xy - a).dot(nrm) < 0:
+        caras = [c[::-1] for c in caras]
+    me = bpy.data.meshes.new(nombre)
+    me.from_pydata(vs, [], caras)
+    me.shade_smooth()
+    D._obj(nombre, me, m)
+    # riel de techo, laqueado como el cielorraso
+    lo, hi = a - d * 0.03, b + d * 0.03
+    x0, x1 = sorted((lo.x, hi.x))
+    y0, y1 = sorted((lo.y, hi.y))
+    D.box(f'{nombre} riel', x0 - abs(nrm.x) * 0.012, y0 - abs(nrm.y) * 0.012, D.H - 0.016,
+          x1 + abs(nrm.x) * 0.012, y1 + abs(nrm.y) * 0.012, D.H, mat('Laca blanca'), bevel=0.002)
+
+
+def cortinas():
+    """Rehace las cortinas del armado crudo (D.curtain: una onda rígida de dos filas de vértices) con lino_cortina()
+    y cortina(), sobre la misma línea: el primer y el último vértice de la fila de abajo están en sus extremos."""
+    m = lino_cortina()
+    for o in [o for o in sc().objects if o.name.startswith('Cortina') and 'Espesor' in o.modifiers]:
+        vs, w = o.data.vertices, len(o.data.vertices) // 2
+        a, b = (o.matrix_world @ vs[0].co).xy, (o.matrix_world @ vs[w - 1].co).xy
+        nombre = o.name
+        bpy.data.objects.remove(o)
+        cortina(nombre, a, b, m)
+    print('CORTINAS LISTAS')
 
 
 CAJA2 = ((9.0, -10.0), (13.0, -5.6))  # segunda suite
@@ -706,8 +976,7 @@ def suite2():
     for o in (base_, colchon):
         con_choque(o)
     acolchado(cx, fondo, pie, ancho, z, sufijo=' 2')
-    ropa(cx, fondo, pie, ancho, z, sufijo=' 2', caja=CAJA2, respaldo='Cabecera', cojin=('Lana cruda', 'Manta a cuadros'),
-         lumbar=('Manta a cuadros', False))
+    ropa(cx, fondo, pie, ancho, z, sufijo=' 2', caja=CAJA2, respaldo='Cabecera', lumbar='Manta a cuadros')
     veladores(CAJA2)
     print('SUITE 2 LISTA')
 
@@ -911,10 +1180,6 @@ def arreglos():
     # cocina como una raya blanca y cada spot como un punto
     for n in ('Piso madera miel', 'Madera miel'):
         next(x for x in mat(n).node_tree.nodes if x.type == 'BSDF_PRINCIPLED').inputs['Coat Roughness'].default_value = 0.3
-    # voile: 0,93 de difuso y 0,98 de translúcido reflejaban más que cualquier tela real (techo ~0,85)
-    cn = mat('Cortina').node_tree.nodes
-    next(x for x in cn if x.type == 'BSDF_DIFFUSE').inputs[0].default_value = (0.80, 0.78, 0.74, 1)
-    next(x for x in cn if x.type == 'BSDF_TRANSLUCENT').inputs[0].default_value = (0.85, 0.81, 0.74, 1)
     # los veladores del dormitorio 2 quedaban a 1,4 cm de la mesa de luz y el jarrón del comedor a 7,7 cm de la mesa
     for o in [o for o in sc().objects if o.parent is None and o.name.startswith(APOYADOS)]:
         apoyar(o)
@@ -959,6 +1224,7 @@ def departamento():
     cama()
     detalles()
     acabados()
+    cortinas()
     luz()
     suite2()
     veladores(LIVING)
@@ -980,6 +1246,7 @@ def acabados():
     tapizado()
     listones()
     superficies()
+    piso()
     alfombra()
     banco()
     print('ACABADOS LISTOS')

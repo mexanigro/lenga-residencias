@@ -49,7 +49,7 @@ Fuentes: solo Poly Haven y ambientCG (CC0) y Amazon Berkeley Objects (CC BY 4.0,
 - **plaid_green**: curly_teddy_checkered, 4K.
 - **knit_rust**: Fabric085, 4K.
 - **leather_cognac**: fabric_leather_02, 4K.
-- **rug_berber**: Carpet016, 4K.
+- **rug_weave**: Carpet014, 2K, lana crema tejida en canasta, trama de 45 cm (la bereber Carpet016 se leía como una placa gris).
 - **sheepskin_teddy**: curly_teddy_natural, 4K.
 - **black_metal**: Metal046A, 2K.
 - **bath_stone**: large_grey_tiles, 4K.

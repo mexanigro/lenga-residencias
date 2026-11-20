@@ -2711,23 +2711,6 @@
    "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
    "mb": 32.2
   },
-  "rug_berber": {
-   "slot": "rug_wool",
-   "source_id": "Carpet016",
-   "source": "ambientCG",
-   "license": "CC0 1.0",
-   "url": "https://ambientcg.com/a/Carpet016",
-   "attribution": "Carpet016 from ambientCG.com, CC0 (credit optional).",
-   "path": "tex/rug_berber/",
-   "res": "4K",
-   "tile_m": [
-    1.7,
-    1.7
-   ],
-   "notes": "PICK. Beige textured wool (berber-like); tint slightly lighter toward Lana for the big living rug.",
-   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
-   "mb": 21.0
-  },
   "sheepskin_teddy": {
    "slot": "sheepskin",
    "source_id": "curly_teddy_natural",
@@ -2812,6 +2795,23 @@
    "notes": "For modeled folded towels (2K); tint to linen/cream.",
    "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
    "mb": 18.8
+  },
+  "rug_weave": {
+   "slot": "rug_wool",
+   "source_id": "Carpet014",
+   "source": "ambientCG",
+   "license": "CC0 1.0",
+   "url": "https://ambientcg.com/a/Carpet014",
+   "attribution": "Carpet014 from ambientCG.com, CC0 (credit optional).",
+   "path": "tex/rug_weave/",
+   "res": "2K",
+   "tile_m": [
+    0.45,
+    0.45
+   ],
+   "notes": "PICK. Cream wool basket weave; replaced Carpet016 (berber), which read as a flat grey slab.",
+   "maps": "Diffuse.jpg (sRGB colour), Rough.jpg, nor_gl.jpg (OpenGL normal), arm.jpg (R=AO G=rough B=metal) where AO exists, disp.jpg (height) extra",
+   "mb": 18.1
   }
  }
 }

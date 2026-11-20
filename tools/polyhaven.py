@@ -1,9 +1,10 @@
-"""Baja texturas y modelos CC0 de Poly Haven a %LOCALAPPDATA%/lenga3d/assets (fuera del repo: rutas cortas).
-Uso: python -I tools/polyhaven.py"""
+"""Baja texturas y modelos CC0 de Poly Haven y ambientCG a %LOCALAPPDATA%/lenga3d/assets (fuera del repo: rutas
+cortas). Uso: python -I tools/polyhaven.py"""
 import json
 import os
 import pathlib
 import urllib.request
+import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = pathlib.Path(os.environ.get('LENGA3D', pathlib.Path(os.environ.get('LOCALAPPDATA', '~')) / 'lenga3d')).expanduser() / 'assets'
@@ -17,6 +18,9 @@ MODELS = ['mid_century_lounge_chair', 'modern_arm_chair_01', 'potted_plant_04', 
           'grass_medium_01', 'shrub_04',  # pasto y arbusto para las jardineras del balcón
           'folding_wooden_stool']  # banco de la ducha: la caja de roble no aguantaba la mirada
 MAPS = ['Diffuse', 'Rough', 'nor_gl', 'arm']
+# ambientCG: nombre local -> id. Alfombra de lana tejida en canasta: la bereber lisa se leía como una placa gris
+AMBIENTCG = {'rug_weave': 'Carpet014'}
+ACG_MAPS = {'Color': 'Diffuse', 'Roughness': 'Rough', 'NormalGL': 'nor_gl', 'Displacement': 'disp'}
 
 
 def get(url, dest):
@@ -45,3 +49,16 @@ for m in MODELS:
     for path, inc in b.get('include', {}).items():
         get(inc['url'], OUT / 'models' / m / path)
     print('model', m)
+
+for name, aid in AMBIENTCG.items():
+    dest = OUT / 'tex' / name
+    if not (dest / 'Diffuse.jpg').exists():
+        z = OUT / 'zip' / f'{aid}.zip'
+        get(f'https://ambientcg.com/get?file={aid}_2K-JPG.zip', z)
+        with zipfile.ZipFile(z) as f:
+            for n in f.namelist():
+                for k, v in ACG_MAPS.items():
+                    if n.endswith(f'_{k}.jpg') and '/' not in n:
+                        dest.mkdir(parents=True, exist_ok=True)
+                        (dest / f'{v}.jpg').write_bytes(f.read(n))
+    print('tex', name)

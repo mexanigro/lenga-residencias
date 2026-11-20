@@ -351,7 +351,8 @@ def materials():
                     nstr=0.6)
     M['tela_osc'] = pbr('Cuero coñac', tx('leather_cognac', 'poly_wool_herringbone'), size=0.5, tint=(*OTONO, 1.9),
                         rough_gain=0.8, coat=0.1, nstr=0.6)
-    M['alfombra'] = pbr('Alfombra de lana', tx('rug_berber', 'poly_wool_herringbone'), size=0.5, tint=(0.66, 0.6, 0.5, 1.8),
+    # lana tejida en canasta (ambientCG Carpet014): la bereber lisa se leía como una placa gris
+    M['alfombra'] = pbr('Alfombra de lana', tx('rug_weave', 'rug_berber'), size=0.45, tint=(0.66, 0.6, 0.5, 1.8),
                         sheen=0.5, nstr=1.2)
     M['lino'] = pbr('Lino crudo', tx('linen_natural', 'rough_linen'), size=0.35, tint=(*LANA, 1.7), sheen=0.3, nstr=0.8)
     M['lino_arena'] = pbr('Manta a cuadros', tx('knit_rust', 'rough_linen'), size=0.4,
@@ -584,8 +585,10 @@ def sofa(x, y, rot=0, w=2.8, d=1.02, mat=None):
 
 
 def rug(x, y, w, d, rot=0, mat=None):
+    """Alfombra de 1 cm con el canto redondeado. 'medio' (media medida) lo usa el ribete del material."""
     g = group('Alfombra', x, y, rot)
-    box('Alfombra', -w / 2, -d / 2, 0.0, w / 2, d / 2, 0.014, mat or M['alfombra'], bevel=0.006, parent=g)
+    o = box('Alfombra', -w / 2, -d / 2, 0.0, w / 2, d / 2, 0.01, mat or M['alfombra'], bevel=0.005, seg=4, parent=g)
+    o['medio'] = (w / 2, d / 2, 0.0)
     return g
 
 
@@ -1051,8 +1054,6 @@ def build(real=True):
     mueble('cushions', 2.98, -9.05, rot=0, z=apoyo(2.98, -9.05) - 0.03, pick='B07JLGCKPV')   # cuero
     mueble('bed_bench', 2.6, -7.3, rot=0)
     rug(2.6, -8.15, 3.3, 2.5)
-    mueble('reading_chair', 0.7, -6.88, rot=120)           # rincón de lectura junto a la ventana
-    box('Manta butaca', 0.55, -7.15, 0.45, 0.95, -6.75, 0.5, M['manta_bosque'], bevel=0.02, seg=4)
     curtain('Cortina suite a', (0.12, -6.05), (0.12, -6.9))
     curtain('Cortina suite b', (0.12, -8.8), (0.12, -9.6))
     downlight(2.6, -6.3, 5)

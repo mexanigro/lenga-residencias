@@ -27,7 +27,6 @@ Modelos 3D © Amazon.com, del dataset [Amazon Berkeley Objects](https://amazon-b
 - Rivet Modern Stoneware Vases, 2-Piece Set, 5.2 (B07QHL8W81)
 - Stone & Beam Table Lamp, 18 (B07QJLF9XP)
 - Stone & Beam Mid-Century 2-Drawer File Cabinet, 21.7 (B082JH6LSF)
-- Rivet Spear Mid-Century Modern Channel Tufted Accent Chair with Wood Arms, 29.1 (B082QDSXMN)
 - Stone & Beam Jane Wood-Framed Classic Woven Dining Chair, 34 (B0857JQ3BZ)
 
 ## Poly Haven y ambientCG (CC0)
@@ -36,4 +35,4 @@ Modelos y materiales de dominio público de [Poly Haven](https://polyhaven.com) 
 
 - Modelos: ceramic_vase_01, ceramic_vase_02, ceramic_vase_03, ceramic_vase_04, decorative_book_set_01, folding_wooden_stool, grass_medium_01, outdoor_table_chair_set_01, planter_box_01, potted_plant_01, potted_plant_02, potted_plant_04, shrub_04, wooden_bowl_01, wooden_bowl_02
 - Cielo: overcast_soil_puresky (HDRI de Poly Haven)
-- Materiales: bath_stone, black_metal, firewood_logs, floor_wood_honey, floor_wood_plank_alt, granite_dark, knit_rust, leather_cognac, linen_natural, oak_slats, plaid_green, rug_berber, sheepskin_teddy, stone_ledge, stone_ledge_alt, terry_towel, tile_backsplash, wool_cream
+- Materiales: bath_stone, black_metal, firewood_logs, floor_wood_honey, floor_wood_plank_alt, granite_dark, knit_rust, leather_cognac, linen_natural, oak_slats, plaid_green, rug_weave, sheepskin_teddy, stone_ledge, stone_ledge_alt, terry_towel, tile_backsplash, wool_cream
