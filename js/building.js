@@ -5,6 +5,7 @@ import { FLOOR_ZONES, RENDER } from './zones.js';
 import { PLATES } from './assets.js';
 import { drawPlan } from './plan.js';
 import { DEPTO } from './depto.js';
+import { VIDEO } from './video.js';
 
 const $ = (s) => document.querySelector(s);
 const NS = 'http://www.w3.org/2000/svg';
@@ -113,7 +114,7 @@ const bbox = (z) => { const xs = z.map((p) => p[0]), ys = z.map((p) => p[1]); re
 export function initBuilding({ lockScroll }) {
   const stage = $('#stage'), frame = $('#frame'), zonesSvg = $('#zones');
   const tip = $('#tip'), crumbs = $('#crumbs');
-  const levels = { floor: $('#floorLevel'), unit: $('#unitLevel'), pano: $('#panoLevel') };
+  const levels = { floor: $('#floorLevel'), unit: $('#unitLevel'), pano: $('#panoLevel'), video: $('#videoLevel') };
   let state = { level: 'building' }, live = false, hover = null, busy = false, pano = null, settling = false;
 
   /* ---------------- edificio ---------------- */
@@ -335,6 +336,7 @@ export function initBuilding({ lockScroll }) {
   $('#tabIso').addEventListener('click', () => setTab('iso'));
   $('#tabPlan').addEventListener('click', () => setTab('plan'));
   $('#tourBtn').addEventListener('click', () => go({ ...state, level: 'pano', room: 'living' }));
+  $('#videoBtn').addEventListener('click', () => go({ level: 'video', floor: state.floor, unit: state.unit }));
 
   /* ---------------- 360 ----------------
      El recorrido es el del departamento modelo (tipo L2), renderizado en 3D: el mismo para todas las
@@ -391,8 +393,7 @@ export function initBuilding({ lockScroll }) {
     go({ level: 'unit', floor: state.floor, unit: state.unit }, { replace: true, failed: true });
   }
   // pos: dónde está parado en el plano (x, −y); sin pos, en el punto de vista del ambiente
-  function placeMe(room, yaw, pos) {
-    const map = $('#panoMap');
+  function placeMe(room, yaw, pos, map = $('#panoMap')) {
     let g = map.querySelector('.me-g');
     if (!g) g = svgEl('g', { class: 'me-g' }, map);
     const v = DEPTO.views[room];
@@ -400,6 +401,55 @@ export function initBuilding({ lockScroll }) {
     const [x, y] = pos || v.pos;
     g.innerHTML = `<path class="cone" d="M0 0 L-2.6 -4.6 A5.2 5.2 0 0 1 2.6 -4.6 Z" transform="translate(${x} ${y}) rotate(${yaw.toFixed(1)})"/><circle class="me" cx="${x}" cy="${y}" r=".55"/>`;
   }
+  /* ---------------- video guiado ----------------
+     Piloto: living y cocina, con ángulos fijos que se encadenan sin corte (js/guiado.js). */
+  let guiado = null;
+  const vbar = $('#vidAngles');
+  function markAngle(k) {
+    vbar.querySelectorAll('button').forEach((b) => b.setAttribute('aria-current', String(b.dataset.angle === k)));
+    vbar.querySelector('[aria-current="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' });
+  }
+  async function renderVideo(st) {
+    const u = FLOORS.find((x) => x.n === st.floor).units.find((x) => x.id === st.unit);
+    $('#vKicker').textContent = u.type === DEPTO.type ? `Unidad ${u.id}, departamento modelo` : 'Departamento modelo de 2 suites';
+    if (!vbar.childElementCount) {
+      let room = null;
+      for (const [k, a] of Object.entries(VIDEO.angles)) {
+        if (a.room !== room) {
+          room = a.room;
+          const r = document.createElement('span');
+          r.className = 'vid-room';
+          r.textContent = VIDEO.labels[room];
+          vbar.appendChild(r);
+        }
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.textContent = a.name;
+        b.dataset.angle = k;
+        b.setAttribute('aria-label', `${VIDEO.labels[a.room]}: ${a.name}`);
+        b.addEventListener('click', () => { markAngle(k); guiado.go(k); });
+        vbar.appendChild(b);
+      }
+      drawPlan($('#vidMap'), TYPES[DEPTO.type], { areas: false });
+    }
+    if (!guiado) {
+      const { createGuiado } = await import('./guiado.js');
+      guiado = createGuiado($('#vidStage'), {
+        reduced,
+        onAngle(k) { // el título y el mapa dicen dónde se está; la barra, adónde se va
+          const a = VIDEO.angles[k];
+          $('#vTitle').textContent = VIDEO.labels[a.room];
+          $('#vidStage').setAttribute('aria-label', `${VIDEO.labels[a.room]}: ${a.name}`);
+          placeMe(null, a.yaw, a.pos, $('#vidMap'));
+        },
+      });
+    }
+    const k = guiado.angle ?? Object.keys(VIDEO.angles)[0]; // al volver (del 360°, por ejemplo), sigue donde estaba
+    markAngle(k);
+    await guiado.open(k);
+  }
+  $('#vid360').addEventListener('click', () => go({ level: 'pano', floor: state.floor, unit: state.unit, room: VIDEO.angles[guiado?.angle]?.room ?? 'living' }));
+
   $('#zoomIn').addEventListener('click', () => pano?.zoom(-10));
   $('#zoomOut').addEventListener('click', () => pano?.zoom(10));
 
@@ -409,6 +459,7 @@ export function initBuilding({ lockScroll }) {
     if (state.floor) items.push([`Piso ${state.floor}`, { level: 'floor', floor: state.floor }]);
     if (state.unit) items.push([`Unidad ${state.unit}`, { level: 'unit', floor: state.floor, unit: state.unit }]);
     if (state.room) items.push(['Vista 360°', state]);
+    if (state.level === 'video') items.push(['Video', state]);
     crumbs.innerHTML = '';
     items.forEach(([label, to], i) => {
       if (i) crumbs.appendChild(document.createElement('i'));
@@ -423,7 +474,7 @@ export function initBuilding({ lockScroll }) {
   }
 
   /* ---------------- router y transiciones ---------------- */
-  const hashOf = (s) => s.level === 'building' ? '#edificio' : `#/piso/${s.floor}${s.unit ? `/${s.unit}` : ''}${s.room ? `/${s.room}` : ''}`;
+  const hashOf = (s) => s.level === 'building' ? '#edificio' : `#/piso/${s.floor}${s.unit ? `/${s.unit}` : ''}${s.room ? `/${s.room}` : ''}${s.level === 'video' ? '/video' : ''}`;
   function parse(hash) {
     const m = hash.match(/^#\/piso\/(\d+)(?:\/(\w+))?(?:\/(\w+))?/);
     if (!m) return { level: 'building' };
@@ -431,6 +482,7 @@ export function initBuilding({ lockScroll }) {
     if (!f || f.zone === 'club') return { level: 'building' };
     const u = m[2] && f.units.find((x) => x.id === m[2]);
     if (!u) return { level: 'floor', floor: f.n };
+    if (m[3] === 'video') return { level: 'video', floor: f.n, unit: u.id };
     if (m[3] && Object.hasOwn(DEPTO.views, m[3])) return { level: 'pano', floor: f.n, unit: u.id, room: m[3] };
     return { level: 'unit', floor: f.n, unit: u.id };
   }
@@ -463,7 +515,7 @@ export function initBuilding({ lockScroll }) {
     catch (err) {
       console.error(err);
       // el 360° no pudo abrir (sin WebGL, sin conexión con la librería, panorama que no baja): volver a la unidad
-      if (next.level === 'pano') pending ??= [{ level: 'unit', floor: next.floor, unit: next.unit }, { replace: true, failed: true }];
+      if (next.level === 'pano' || next.level === 'video') pending ??= [{ level: 'unit', floor: next.floor, unit: next.unit }, { replace: true, failed: true }];
     } finally {
       busy = false;
       if (pending) { const [n, o] = pending; pending = null; go(n, o); }
@@ -497,8 +549,9 @@ export function initBuilding({ lockScroll }) {
     setHover(null);
     // con un nivel abierto, lo de atrás (vuelo, fachada, atajo) queda fuera del teclado y del lector
     $('#top').inert = $('.skip').inert = next.level !== 'building';
-    const order = ['building', 'floor', 'unit', 'pano'];
-    const down = order.indexOf(next.level) > order.indexOf(prev.level);
+    const order = ['building', 'floor', 'unit', 'pano', 'video']; // el video está a la par del 360°
+    const down = Math.min(3, order.indexOf(next.level)) > Math.min(3, order.indexOf(prev.level));
+    if (next.level !== 'video') guiado?.pause();
     document.body.classList.toggle('in-level', next.level !== 'building');
     document.body.classList.toggle('show-elevator', live && (next.level === 'building' || next.level === 'floor'));
     lockScroll(next.level !== 'building');
@@ -518,34 +571,43 @@ export function initBuilding({ lockScroll }) {
       if (next.level === 'floor') {
         if (prev.level === 'floor' && prev.floor !== next.floor) renderFloor(next.floor);
         else { renderFloor(next.floor); show(levels.floor); }
-        await Promise.all([hide(levels.unit), hide(levels.pano)]);
+        await Promise.all([hide(levels.unit), hide(levels.pano), hide(levels.video)]);
         pano?.pause();
       }
       if (next.level === 'unit') {
         if (prev.level !== 'unit' || prev.unit !== next.unit) renderUnit(next.floor, next.unit);
         if (prev.level === 'floor' || prev.level === 'building') renderFloor(next.floor);
         show(levels.unit);
-        await hide(levels.pano);
+        await Promise.all([hide(levels.pano), hide(levels.video)]);
         pano?.pause();
         if (!levels.floor.hidden) hide(levels.floor);
       }
       if (next.level === 'pano') {
-        if (prev.level !== 'unit' && prev.level !== 'pano') renderUnit(next.floor, next.unit);
+        if (!['unit', 'pano', 'video'].includes(prev.level)) renderUnit(next.floor, next.unit);
         show(levels.pano);
+        if (prev.level === 'video') hide(levels.video); // el video está encima: se va ya, no cuando cargue el 360°
         await renderPano(next, prev.level !== 'pano');
-        if (prev.level !== 'pano') { hide(levels.unit); hide(levels.floor); }
+        if (prev.level !== 'pano') { hide(levels.unit); hide(levels.floor); hide(levels.video); }
+      }
+      if (next.level === 'video') {
+        if (!['unit', 'pano'].includes(prev.level)) renderUnit(next.floor, next.unit);
+        show(levels.video);
+        await renderVideo(next);
+        hide(levels.unit); hide(levels.floor); hide(levels.pano);
+        pano?.pause();
       }
     }
     renderCrumbs();
-    const focusTarget = { floor: '#fTitle', unit: '#uTitle', pano: '#pTitle' }[next.level];
+    const focusTarget = { floor: '#fTitle', unit: '#uTitle', pano: '#pTitle', video: '#vTitle' }[next.level];
     if (focusTarget && prev.level !== next.level) $(focusTarget).focus({ preventScroll: true });
-    if (failed) $('.unit-hint').textContent = 'No se pudo abrir el recorrido 360° en este navegador.';
+    if (failed) $('.unit-hint').textContent = 'No se pudo abrir el recorrido en este navegador.';
   }
 
   window.addEventListener('popstate', () => go(parse(location.hash), { push: false }));
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
-    const up = { floor: { level: 'building' }, unit: { level: 'floor', floor: state.floor }, pano: { level: 'unit', floor: state.floor, unit: state.unit } }[state.level];
+    const toUnit = { level: 'unit', floor: state.floor, unit: state.unit };
+    const up = { floor: { level: 'building' }, unit: { level: 'floor', floor: state.floor }, pano: toUnit, video: toUnit }[state.level];
     if (up) goUp(up);
   });
   window.addEventListener('resize', () => { if (state.floor) markFloor(state.floor); if (state.level !== 'building') zoomTo(state.floor, true); });

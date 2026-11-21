@@ -303,6 +303,16 @@ body.in-level .elevator__rail li[data-zone]::before { opacity: 0; }
 .pano-bar button { height: 40px; padding: 0 1rem; border-radius: 999px; font: 500 .84rem/1 var(--sans); color: var(--piedra-2); white-space: nowrap; transition: background-color .2s, color .2s; }
 .pano-bar button:hover { color: var(--piedra); background: rgba(239, 233, 223, .08); }
 .pano-bar button[aria-current="true"] { background: var(--piedra); color: var(--noche); }
+/* video guiado: dos videos superpuestos; el que pasa adelante empieza en el mismo cuadro, sin fundido */
+.vid { position: absolute; inset: 0; background: #000; }
+.vid img, .vid video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.vid video { opacity: 0; }
+.vid video.is-on { opacity: 1; }
+@media (max-aspect-ratio: 4/3) { .vid img, .vid video { object-fit: contain; object-position: 50% 70%; } } /* celular parado: el cuadro entero, más abajo que la ficha */
+.vid-link { margin-top: .55rem; padding: 0; font: 500 .8rem/1.3 var(--sans); color: var(--brasa); text-decoration: underline; text-underline-offset: 3px; }
+.vid-link:hover, .vid-link:focus-visible { color: #F7C687; }
+.vid-room { padding: 0 .35rem 0 .75rem; font: 500 .72rem/1 var(--sans); color: var(--niebla); white-space: nowrap; }
+.vid-room:not(:first-child) { margin-left: .4rem; border-left: 1px solid rgba(239, 233, 223, .18); }
 .pano-hint { position: absolute; left: 50%; bottom: 92px; translate: -50% 0; display: flex; align-items: center; gap: .7rem; padding: .8rem 1.2rem; border-radius: 999px; font-size: .9rem; pointer-events: none; transition: opacity .6s; }
 .pano-hint.is-off { opacity: 0; }
 .pano-zoom { position: absolute; right: var(--gutter); bottom: 22px; display: grid; gap: 4px; padding: 5px; border-radius: 999px; }
